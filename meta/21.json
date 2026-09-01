@@ -3,52 +3,68 @@
   "date": "2022-11-26",
   "questions": {
     "1": {
-      "domain": "애플리케이션보안"
+      "domain": "애플리케이션보안",
+      "explanation": "sendmail은 `/etc/mail/access`(텍스트 정책)를 직접 읽지 않고 해시 DB를 참조한다. `makemap hash /etc/mail/access.db < /etc/mail/access` 로 변환(`makemap` = map 생성 도구, `hash` = DB 타입). RELAY/REJECT/DISCARD 정책을 편집한 뒤 반드시 재생성해야 반영된다."
     },
     "2": {
-      "domain": "네트워크보안"
+      "domain": "네트워크보안",
+      "explanation": "Cisco IOS에서 기능 비활성화는 해당 설정 명령 앞에 **`no`** 를 붙인다. `Router(config)# no snmp-server` → SNMP 에이전트 전체 비활성화. 미사용 SNMP는 커뮤니티 스트링 노출·무단 SET 위험이 있어 끄는 것이 원칙. 필요 시 v3 + ACL로 제한."
     },
     "3": {
-      "domain": "정보보안관리및법규"
+      "domain": "정보보안관리및법규",
+      "explanation": "1) 수용 가능한 목표 위험 수준 = **DoA(Degree of Assurance)**, 경영진 승인 필요. 2) **X** — 위험이 낮아도 방치하면 안 된다. 위협·취약점 환경은 변하므로 보호대책의 효과성과 잔여위험 수준을 주기적으로 모니터링·재평가해야 한다."
     },
     "4": {
-      "domain": "정보보안관리및법규"
+      "domain": "정보보안관리및법규",
+      "explanation": "BCP 5단계: ①프로젝트 착수(범위·정책·조직) ②**BIA(업무영향분석)** — 핵심 업무 식별, 중단 시 재무·법규 영향 산정, RTO/RPO 결정 ③**복구 전략 개발** — 대체 사이트(미러/핫/웜/콜드)·인력·데이터 백업 전략 ④**복구 계획 수립** — 절차서·매뉴얼 작성 ⑤테스트·유지보수(모의훈련·현행화). 2~4단계가 문제의 답."
     },
     "5": {
-      "domain": "네트워크보안"
+      "domain": "네트워크보안",
+      "explanation": "**APT**(지능형 지속 위협): 특정 표적을 정해 제로데이·스피어피싱·워터링홀 등 다양한 기법으로 침투 후 장기간 은밀하게 내부 이동·정보 수집·유출. '표적성 + 지속성 + 은밀성'이 특징. 21·26회 반복."
     },
     "6": {
-      "domain": "애플리케이션보안"
+      "domain": "애플리케이션보안",
+      "explanation": "**불완전한 암호화 저장**(OWASP 'Cryptographic Failures') 점검: ①DB의 중요정보가 **SQL 쿼리로 평문 조회** 가능한지(암호화 미적용) ②**세션 ID**·암호화 쿠키가 충분히 랜덤한지(예측 가능하면 세션 예측 공격) ③**암호화 알고리즘**이 안전한지(MD5·DES·자체 알고리즘 금지, AES/SHA-256+ 사용, 키 관리)."
     },
     "7": {
-      "domain": "네트워크보안"
+      "domain": "네트워크보안",
+      "explanation": "인터넷(네트워크) 계층 VPN. **IPSec**: 대표적 L3 VPN 프로토콜. **AH**: 무결성·인증·재전송 방지(기밀성 없음). **ESP**: 무결성·인증에 더해 **암호화(기밀성)** 제공 → 실제 VPN은 대부분 ESP 사용. 키 관리는 IKE(UDP 500)."
     },
     "8": {
-      "domain": "정보보안관리및법규"
+      "domain": "정보보안관리및법규",
+      "explanation": "정성적 위험분석 기법. **델파이법**: 전문가 집단의 익명 설문·피드백 반복으로 합의 도출(단기간, 정확도 낮음). **시나리오법**: 특정 조건에서 발생 가능한 결과들을 추정. **퍼지행렬법**: 자산·위협을 '높음/중간/낮음' 같은 정성적 언어값(퍼지 집합)으로 표현해 기대손실 평가. 정량적은 과거자료분석·수학공식·확률분포법."
     },
     "9": {
-      "domain": "시스템보안"
+      "domain": "시스템보안",
+      "explanation": "익스플로잇 구성. **셸코드(Shell Code)**: 익스플로잇의 본체, 셸 획득 등 목적 동작을 하는 기계어. **NOP**: 아무것도 안 하는 명령, x86 hex `0x90` — NOP sled로 정확한 리턴 주소 예측 부담을 줄임. **jmp esp**(또는 call esp): ESP가 가리키는(주입한 셸코드) 곳으로 실행 흐름을 넘기는 명령 → 스택 오버플로우 익스플로잇의 핵심 가젯. 7·21회 반복."
     },
     "10": {
-      "domain": "애플리케이션보안"
+      "domain": "애플리케이션보안",
+      "explanation": "Apache `LimitRequestBody`(httpd.conf 또는 <Directory>): 요청 본문 최대 바이트 제한(0=무제한). 파일 업로드 크기를 제한해 대용량 업로드 기반 DoS와 대형 웹셸 업로드를 완화. PHP는 별도로 `upload_max_filesize`·`post_max_size`(php.ini). 14·21회 반복."
     },
     "11": {
-      "domain": "네트워크보안"
+      "domain": "네트워크보안",
+      "explanation": "IDS 탐지 방식. **오용(Misuse/Signature) 탐지**: 알려진 공격 패턴(룰)과 비교. 장점: 오탐 낮음, 명확. 단점: 미지의 공격·변형 탐지 불가, 지속적 룰 업데이트 필요. **이상(Anomaly) 탐지**: 정상 프로파일을 학습해 통계적으로 벗어나면 침입 판단. 장점: 미지의 공격 탐지 가능. 단점: 오탐 높음, 정상 기준 설정 어려움."
     },
     "12": {
-      "domain": "정보보안관리및법규"
+      "domain": "정보보안관리및법규",
+      "explanation": "재해복구센터(DRS) 4유형. **미러**: 주센터와 동일 구성 Active-Active 실시간 이중 서비스 → RTO 즉시·RPO 0, 비용 최고, 데이터 갱신 많으면 동기화 부하. **핫**: 대기 상태, 수시간. **웜**: 핵심만, 수일. **콜드**: 공간·전원만 + 데이터 원격 보관 → **RTO 가장 김**(장비 조달·구성·복구에 수주), 비용 최저. 21·27회 반복."
     },
     "13": {
-      "domain": "정보보안관리및법규"
+      "domain": "정보보안관리및법규",
+      "explanation": "개인정보취급자 비밀번호 작성규칙(기술적·관리적 보호조치): ①복잡도·길이 — 2종 조합 시 10자 이상, 3종 조합 시 8자 이상 ②추측 쉬운 값 금지 — 연속 숫자, 생일, 전화번호, ID 유사 문자열 배제 ③유효기간 설정 — 최소 반기 1회 이상 변경. (최신 가이드는 길이 중심·변경주기 완화 추세이므로 개정본 확인.)"
     },
     "14": {
-      "domain": "네트워크보안"
+      "domain": "네트워크보안",
+      "explanation": "SYN Flooding 완화 iptables 룰: `iptables -A INPUT -p tcp --syn --dport 80 -m recent --update --seconds 2 --hitcount 30 --name SYNLIST -j DROP`. `--syn`(SYN만), `--dport 80`(대상 포트), `-m recent`(출발지 IP별 카운터), `--seconds 2 --hitcount 30`(2초 내 30회 초과 시), `-j DROP`(차단). `--set` 로 카운터 등록하는 앞 룰이 함께 필요."
     },
     "15": {
-      "domain": "정보보안관리및법규"
+      "domain": "정보보안관리및법규",
+      "explanation": "정량적 위험평가. **SLE**(단일손실예상액) = **AV(자산가치) × EF(노출계수)** — 1회 사고의 예상 손실. **ARO**(연간발생률). **ALE**(연간손실예상액) = **SLE × ARO**. **ROI(%)** = **(ALE − X) / X × 100**(X = 대책 도입 비용, ALE만큼 연간 손실이 제거된다고 가정). ROI > 0 이면 투자 타당."
     },
     "16": {
-      "domain": "애플리케이션보안"
+      "domain": "애플리케이션보안",
+      "explanation": "BIND zone 설정. **Master named.conf**: `type master; file \"korea.co.kr.db\"; allow-update { none; }` 또는 슬레이브 IP(전송은 `allow-transfer`). **zone 파일**: SOA(serial·refresh·retry·expire·minimum), NS 레코드, `ns1 IN A 192.168.1.1` / `ns2 IN A 192.168.1.2`. **Slave named.conf**: `type slave; file \"slave/korea.co.kr.db\"; masters { 192.168.1.1; }`. serial을 올려야 슬레이브가 갱신을 감지."
     }
   }
 }
