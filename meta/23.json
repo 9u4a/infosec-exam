@@ -3,58 +3,76 @@
   "date": "2023-07-29",
   "questions": {
     "1": {
-      "domain": "시스템보안"
+      "domain": "시스템보안",
+      "explanation": "Windows 서비스별 로그 경로. IIS 웹: `...\\inetpub\\logs\\LogFiles\\W3SVC1`, IIS FTP: `MSFTPSVC1`. **HTTPERR**(`%windir%\\System32\\LogFiles\\HTTPERR`): HTTP.sys 커널의 연결 오류·거부·타임아웃 로그. **DHCP**(`...\\System32\\dhcp` 또는 `LogFiles\\DHCP`): 임대 부여·갱신·거부 로그. 침해 분석 시 서비스별 위치를 알아야 로그를 수집한다."
     },
     "2": {
-      "domain": "시스템보안"
+      "domain": "시스템보안",
+      "explanation": "x86-64 System V ABI 함수 호출 규약: 정수/포인터 인자는 **RDI, RSI, RDX, RCX, R8, R9** 순으로 레지스터 전달, 초과분은 스택. 반환값은 RAX. 32비트(cdecl)는 스택 전달과 대비. 리버싱·익스플로잇에서 함수 인자를 추적할 때 필수 지식(printf: RDI=포맷, RSI/RDX/RCX=가변인자)."
     },
     "3": {
-      "domain": "시스템보안"
+      "domain": "시스템보안",
+      "explanation": "**동적 링킹(Dynamic Linking)**: 공유 라이브러리(.so) 함수를 실행 시점에 연결. 첫 호출 시 **PLT**(코드 스텁)가 동적 링커를 호출해 실제 주소를 찾고 **GOT**(데이터 테이블)에 기록, 이후 호출은 GOT를 통해 바로 점프(lazy binding). GOT는 쓰기 가능 → **GOT overwrite** 공격 표적. 대응: Full RELRO(GOT를 읽기 전용화)."
     },
     "4": {
-      "domain": "정보보안관리및법규"
+      "domain": "정보보안관리및법규",
+      "explanation": "**ISMS-P** 인증기준 3개 영역. ①**관리체계 수립 및 운영**(16개): 방침·범위·위험관리·운영·점검(PDCA). ②**보호대책 요구사항**(64개): 정책·자산·인적·물리·인증권한·접근통제·암호·개발·운영·사고대응·재해복구 등 12개 분야. ③**개인정보 처리단계별 요구사항**(22개): 수집·보유이용·제공·파기·정보주체 권리. 합계 102개 항목."
     },
     "5": {
-      "domain": "시스템보안"
+      "domain": "시스템보안",
+      "explanation": "`/var/log/messages`(syslog) 한 줄 = **①생성일시 ②호스트명 ③프로세스명(facility/태그) ④PID(프로세스 번호, `[ ]`) ⑤메시지 본문**. 예: `Mar 29 14:23:57 alex sshd[1234]: Failed password ...`. 로그 분석 시 어떤 프로세스가 언제 무엇을 남겼는지 파싱하는 기본 형식."
     },
     "6": {
-      "domain": "애플리케이션보안"
+      "domain": "애플리케이션보안",
+      "explanation": "입력값을 문자열 연결로 쿼리에 넣으면 `gubun` 자리에 `a' OR 'a'='a` 를 넣어 항상 참 → 전체 행 노출. 대응: **PreparedStatement** — 쿼리를 `?` 자리표시자를 가진 상수 문자열로 미리 컴파일하고 `setString(1, gubun)` 으로 값을 바인딩 → 입력이 데이터로만 취급되어 쿼리 구조 불변. 여러 회차에서 반복되는 SQLi 방어 정답."
     },
     "7": {
-      "domain": "시스템보안"
+      "domain": "시스템보안",
+      "explanation": "PAM 모듈 타입: **auth**(자격증명 검증), **account**(계정 유효성·접근 허용 조건), **password**(비밀번호 변경·정책), **session**(인증 후·종료 시 세션 설정: 홈 마운트·로그·리소스 제한). `/etc/pam.d/` 각 서비스 파일에서 control flag(required/requisite/sufficient/optional/include)와 조합해 인증 흐름 구성."
     },
     "8": {
-      "domain": "네트워크보안"
+      "domain": "네트워크보안",
+      "explanation": "**hping3**: TCP/UDP/ICMP/RAW-IP 패킷을 플래그·포트·크기·전송률·출발지 위조까지 옵션으로 조립해 보내는 도구. 방화벽 룰 점검, 포트 스캔(스텔스), SYN/ICMP/UDP flooding 등 DoS 모의훈련에 사용. 살바토레 산필리포 개발(23·32회 반복)."
     },
     "9": {
-      "domain": "시스템보안"
+      "domain": "시스템보안",
+      "explanation": "**Tripwire**: 파일·디렉토리의 해시·속성 기준선(baseline)을 저장해 두고 이후 변경을 탐지하는 **무결성 점검(HIDS)** 도구. **Nessus**(Tenable): 방대한 플러그인 DB로 원격 시스템의 알려진 취약점·설정 오류를 자동 스캔. Tripwire=무결성, Nessus=취약점. 2·31회 등 반복."
     },
     "10": {
-      "domain": "애플리케이션보안"
+      "domain": "애플리케이션보안",
+      "explanation": "**HeartBleed**(CVE-2014-0160): OpenSSL heartbeat 확장이 요청이 명시한 payload 길이를 검증하지 않고 응답 버퍼 크기로 사용 → 서버 메모리를 64KB씩 반복 열람(개인키·세션·평문 유출). 대응: OpenSSL 1.0.1g+ 패치, 인증서·키 재발급, 사용자 비밀번호 재설정. 3·8·26·32회 등 최다 빈출 취약점."
     },
     "11": {
-      "domain": "정보보안관리및법규"
+      "domain": "정보보안관리및법규",
+      "explanation": "위험관리 3단계. **위험 분석**: 자산의 위협·취약점을 분석해 위험의 종류와 규모(크기) 결정. **위험 평가**: 위험도를 산출하고 기존 통제를 파악해 대응 여부·우선순위 결정. **대책 선정**: 수용가능 수준(DoA)까지 위험을 줄일 정당한 대책 선정·이행계획 수립. '분석=크기 산정, 평가=우선순위·판단' 구분이 핵심."
     },
     "12": {
-      "domain": "정보보안관리및법규"
+      "domain": "정보보안관리및법규",
+      "explanation": "정보자산 분석 절차. **정보자산 식별**: 보호 가치 있는 자산을 형태·소유자·관리자·특성과 함께 목록화. **자산 관리자 지정**: 자산별 책임자·관리자 배정. **정보자산 중요도 평가**: 침해 시 영향을 기밀성·무결성·가용성 관점에서 평가해 중요도(등급) 산정 → 위험 분석의 자산가치 입력."
     },
     "13": {
-      "domain": "애플리케이션보안"
+      "domain": "애플리케이션보안",
+      "explanation": "확장자·MIME만 검사하는 파일 업로드 필터의 전형적 우회: 확장자 대소문자 혼용/이중확장자/Null바이트(`test.php%00.jpg`), 프록시로 `Content-Type` 변조. 성공 조건: ①필터 통과 ②크기 제한(LimitRequestBody) 통과 ③업로드 경로에서 스크립트 실행 가능(AddType으로 text/html 재지정 안 됨, FilesMatch로 직접 호출 차단 안 됨). 근본 대응: 화이트리스트+실행권한 제거+웹루트 외 저장+파일명 난수화. 29회와 동일 문제."
     },
     "14": {
-      "domain": "네트워크보안"
+      "domain": "네트워크보안",
+      "explanation": "TCP 6비트 제어 플래그. **URG**: 긴급 데이터(urgent pointer와 함께). **ACK**: 수신 확인(받은 SEQ+1을 ACK로). **PSH**: 버퍼링 없이 즉시 상위 계층 전달. **RST**: 비정상 연결 강제 종료(스캔 시 닫힌 포트 응답). **SYN**: 연결 개시·순서번호 동기화. **FIN**: 정상 연결 종료 요청. SYN/FIN/RST의 조합으로 스캔 유형(SYN/FIN/Xmas/Null)이 갈린다."
     },
     "15": {
-      "domain": "시스템보안"
+      "domain": "시스템보안",
+      "explanation": "인터넷에 직접 노출된 Windows에서 **NetBIOS over TCP/IP** 바인딩이 켜져 있으면 139/445를 통해 공유 열거·널 세션·원격 자원 접근 위험. 설정: `ncpa.cpl` → 어댑터 속성 → TCP/IPv4 → 고급 → WINS 탭 → 'NetBIOS over TCP/IP 사용 안 함'. 방화벽 139/445 차단 병행. 23·28회 동일 문제."
     },
     "16": {
-      "domain": "네트워크보안"
+      "domain": "네트워크보안",
+      "explanation": "**HTTP GET Flooding with Cache-Control**(캐시 우회 플러딩). `Cache-Control: max-age=0`(또는 no-cache)를 붙여 CDN·캐시 서버가 아닌 **원본 서버**가 매 요청을 처리하게 강제 → 부하 극대화. Referer가 공격 대상과 무관한 제3의 도메인 → 자동화된 봇넷/C&C 유도 트래픽 정황. 대응: 임계치 기반 차단, 동일 URL 반복 요청·비정상 Referer 필터, CAPTCHA, L7 방어."
     },
     "17": {
-      "domain": "정보보안관리및법규"
+      "domain": "정보보안관리및법규",
+      "explanation": "개인정보 안전성 확보조치 기준의 접근권한 관리·접근통제. **접근권한**: 최소권한 차등 부여, 인사이동·퇴직 시 지체없이 변경·말소, 부여·변경·말소 내역 최소 3년 보관, 계정 개인별 발급(공유 금지), 비밀번호 작성규칙 수립. **접근통제**: 접속 IP 제한, 접속기록 분석으로 이상 유출 시도 탐지·대응, 홈페이지·P2P·공유설정을 통한 노출 방지, 모바일 기기 분실 대비 보호조치."
     },
     "18": {
-      "domain": "애플리케이션보안"
+      "domain": "애플리케이션보안",
+      "explanation": "BIND named.conf zone 설정. **Master**: `type master; file \"...zone\"; allow-transfer { slave IP; };`(존 파일을 직접 보유·수정). **Slave**: `type slave; file \"slave/...zone\"; masters { master IP; };`(마스터에서 zone transfer로 복제). Zone Transfer(AXFR)는 반드시 `allow-transfer` 로 슬레이브 IP만 허용 — 전체 공개 시 내부 호스트 목록 정보 노출."
     }
   }
 }
