@@ -3,58 +3,76 @@
   "date": "2024-08-10",
   "questions": {
     "1": {
-      "domain": "시스템보안"
+      "domain": "시스템보안",
+      "explanation": "`/etc/login.defs`: 리눅스 계정·패스워드 기본 정책 파일. **PASS_MIN_LEN 8**(최소 길이), PASS_MAX_DAYS(최대 사용일), PASS_MIN_DAYS(최소 변경 간격), PASS_WARN_AGE(경고일). 실제 복잡도(문자조합)는 PAM 모듈 `pam_pwquality`(구 pam_cracklib)의 `/etc/security/pwquality.conf` 에서 설정. 이미 존재하는 계정엔 `chage` 로 개별 적용."
     },
     "2": {
-      "domain": "네트워크보안"
+      "domain": "네트워크보안",
+      "explanation": "무선랜 CSMA/CA의 충돌 회피 핸드셰이크. 송신 전 **RTS(Request To Send)** 를 보내고 AP가 **CTS(Clear To Send)** 로 응답하면 전송. RTS/CTS 프레임의 Duration 필드에 매체 점유 예상 시간(NAV)이 들어 있어 주변 단말이 그 시간만큼 전송을 미룬다 → 숨은 노드 문제 완화. 수신 성공은 ACK로 확인."
     },
     "3": {
-      "domain": "애플리케이션보안"
+      "domain": "애플리케이션보안",
+      "explanation": "이름 해석 흐름. 클라이언트→**재귀(Recursive/캐시) DNS 서버**: 최종 답을 대신 찾아주는 서버(ISP·회사 내부). 캐시에 없으면 루트→TLD→**책임(Authoritative) DNS 서버**(해당 도메인의 실제 레코드 보유)로 반복(iterative) 질의. 재귀 서버 캐시가 오염되면 파밍으로 이어짐."
     },
     "4": {
-      "domain": "애플리케이션보안"
+      "domain": "애플리케이션보안",
+      "explanation": "**HTTP Request Smuggling**: 프런트엔드(프록시/LB)와 백엔드가 `Content-Length` 와 `Transfer-Encoding: chunked` 를 서로 다르게 해석하는 점(CL.TE / TE.CL)을 악용해, 한 연결에 '숨겨진' 두 번째 요청을 밀어넣는다 → 접근제어 우회, 캐시 포이즈닝, 다른 사용자 요청 탈취. 대응: 프런트/백엔드 파서 일치, TE·CL 동시 존재 요청 거부, HTTP/2 종단간."
     },
     "5": {
-      "domain": "네트워크보안"
+      "domain": "네트워크보안",
+      "explanation": "**오탐(False Positive)**: 정상 트래픽을 공격으로 판단 → 운영 방해, 경보 피로. **미탐(False Negative)**: 실제 공격을 정상으로 판단 → 침해 놓침(더 위험). 시그니처 기반은 미탐↑(변형 공격), 이상탐지 기반은 오탐↑. 룰 튜닝으로 균형을 맞춘다."
     },
     "6": {
-      "domain": "애플리케이션보안"
+      "domain": "애플리케이션보안",
+      "explanation": "**XPath/XQuery Injection** 방어 설계. (A) **공통 검증(Validator) 컴포넌트**: XML 삽입 가능 문자(`' \" [ ] / = @` 등)를 걸러내는 검증 로직을 만들어 모든 XML 조회 지점에 일괄 적용. (B) 개별 코드에서도 입력값을 **필터링/치환**하는 시큐어코딩 규칙 정의. (C) 입력이 쿼리 구조를 못 바꾸는 안전한 **API**(파라미터 바인딩, 예: Java XQuery API) 사용."
     },
     "7": {
-      "domain": "네트워크보안"
+      "domain": "네트워크보안",
+      "explanation": "**APT**(지능형 지속 위협): 특정 표적을 정해 스피어피싱·제로데이·워터링홀 등 다양한 기법으로 침투 후, 오랜 기간 탐지를 회피하며 내부 이동(lateral movement)·정보 수집·유출을 수행. 단발성 공격과 달리 '표적성+지속성+은밀성'. 대응: 다층 방어, EDR, 이상행위 분석, 킬체인 기반 차단."
     },
     "8": {
-      "domain": "네트워크보안"
+      "domain": "네트워크보안",
+      "explanation": "**Slow Read Attack**(TCP Window 0 / Sockstress류): 요청은 정상적으로 보내되 자신의 TCP 수신 윈도우를 0(또는 아주 작게)으로 광고해 서버가 응답을 조금씩만 보내며 연결을 오래 붙잡게 한다. 소수의 연결로 서버 커넥션 풀 고갈. Slowloris(헤더 지연)·RUDY(바디 지연)와 함께 Slow HTTP DoS. 대응: 연결 타임아웃·최소 전송률 제한, 동시연결 수 제한, L7 방어."
     },
     "9": {
-      "domain": "애플리케이션보안"
+      "domain": "애플리케이션보안",
+      "explanation": "XSS 3유형(용어만 다르게 반복 출제). **Reflected**: 입력이 저장되지 않고 응답에 즉시 반사 → 악성 링크 클릭 유도. **Stored**: 서버 DB에 저장되어 열람자 전원 피해. **DOM Based**: 서버 응답이 아니라 클라이언트 자바스크립트가 DOM(`document.location`, `innerHTML` 등)을 안전하지 않게 다뤄 발생."
     },
     "10": {
-      "domain": "네트워크보안"
+      "domain": "네트워크보안",
+      "explanation": "**HIDS**: 호스트에 설치되어 시스템 콜·파일 무결성·로그·레지스트리를 분석(Tripwire, OSSEC). 암호화 트래픽 내부도 봄, 호스트마다 설치 필요. **NIDS**: 네트워크 세그먼트에서 패킷을 캡처·분석(Snort, Suricata). 네트워크당 하나로 광범위 커버, 암호화 트래픽·스위칭 환경(미러포트 필요)엔 한계."
     },
     "11": {
-      "domain": "정보보안관리및법규"
+      "domain": "정보보안관리및법규",
+      "explanation": "위험 3요소. **자산**: 조직이 가치를 두고 보호해야 할 모든 것. **위협**: 자산에 손실을 초래하는 원치 않는 사건의 잠재적 원인·행위자. **취약성**: 위협이 악용하는 자산의 약점. 위험 = f(자산가치, 위협, 취약성). 여러 회차에서 표현만 바꿔 반복 출제되는 최빈출 개념."
     },
     "12": {
-      "domain": "정보보안관리및법규"
+      "domain": "정보보안관리및법규",
+      "explanation": "**위험관리**: 위험을 수용 가능 수준으로 유지하기 위해 분석하고 비용 대비 효과적인 대책을 마련하는 과정. 단계: **위험 분석**(식별된 위험의 가능성·영향 분석) → 위험 평가(우선순위·수용 판단) → **위험 처리**(완화·전가·수용·회피 방안 결정) → 대책 구현 → 사후관리."
     },
     "13": {
-      "domain": "시스템보안"
+      "domain": "시스템보안",
+      "explanation": "**UAC**(사용자 계정 컨트롤): 관리자 계정이라도 평소엔 표준 권한으로 동작하고, 시스템 변경 작업 시 동의(관리자면 예/아니오, 표준 사용자면 관리자 암호)를 요구해 권한 상승을 통제. cmd를 '관리자 권한으로 실행'하려는 의도. [예] 버튼이 비활성이고 [아니오]만 활성 → 참조할 로컬 Administrator 계정이 비활성/삭제되었거나, 관련 시스템 파일·정책이 손상된 상태."
     },
     "14": {
-      "domain": "정보보안관리및법규"
+      "domain": "정보보안관리및법규",
+      "explanation": "**개인정보 영향평가(PIA)** 시 고려사항(개인정보보호법 제33조·시행령): ①처리하는 개인정보의 규모(정보주체 수) ②제3자 제공 여부 ③정보주체 권리 침해 가능성 및 위험 정도 ④민감정보·고유식별정보 처리 여부 ⑤보유기간. 공공기관은 일정 규모 이상 개인정보파일 구축·운용 시 PIA 의무."
     },
     "15": {
-      "domain": "네트워크보안"
+      "domain": "네트워크보안",
+      "explanation": "`entered Promiscuous mode` = NIC가 자신 목적지가 아닌 프레임도 버리지 않고 모두 수신 → **스니핑** 준비 정황(정상적으로도 tcpdump·IDS가 사용). 대응: ①SSH/HTTPS 등 암호화 통신 ②더미 허브 대신 스위치 사용(+포트 보안) ③`ifconfig eth0 -promisc` 로 해제 ④ARP watch·스니핑 탐지 도구(ping/ARP/DNS/decoy 테스트)로 지속 점검."
     },
     "16": {
-      "domain": "애플리케이션보안"
+      "domain": "애플리케이션보안",
+      "explanation": "**XSS**: 웹 페이지에 악성 스크립트를 삽입해 다른 사용자의 브라우저에서 실행시켜 쿠키·세션 탈취, 화면 변조, 악성 사이트 리다이렉트. 기법: Reflected(반사, 악성 URL), Stored(저장, 게시글), DOM Based(클라이언트 DOM 조작). 대응: 출력 시 컨텍스트별 인코딩, 입력 검증, CSP, HttpOnly 쿠키."
     },
     "17": {
-      "domain": "애플리케이션보안"
+      "domain": "애플리케이션보안",
+      "explanation": "DB 권한 최소화. 일반/원격 사용자에게 주면 안 되는 권한 예: CREATE/DROP USER, DROP ANY TABLE, BACKUP ANY TABLE, GRANT ANY, ALTER SYSTEM 등. 최소화 방법: ①접속 IP 화이트리스트 ②시스템(딕셔너리) 테이블 접근 제한 ③PUBLIC Role에 불필요 권한 부여 금지 ④REMOTE_OS_AUTHENT·OS_ROLES=FALSE ⑤최신 보안패치·벤더 권고 적용, 애플리케이션 계정은 필요한 테이블·DML만."
     },
     "18": {
-      "domain": "애플리케이션보안"
+      "domain": "애플리케이션보안",
+      "explanation": "`OpenSSL 1.0.1`(1.0.1a~1.0.1f) + 서버가 `heartbeat` 확장 사용 → **HeartBleed**(CVE-2014-0160). 시스템 조치: OpenSSL 1.0.1g 이상 업그레이드, 불가 시 `-DOPENSSL_NO_HEARTBEATS` 로 재컴파일. 서비스 조치: 개인키 유출 가능성 → 인증서·키 재발급(폐기), 사용자 비밀번호·세션 강제 재설정."
     }
   }
 }
