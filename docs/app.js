@@ -234,13 +234,19 @@ function questionCard(q, opts = {}) {
     return wrap;
   }
 
-  if (revealed) {
-    slot.appendChild(buildAnswer());
-  } else {
-    const btn = el(`<button class="btn primary wide">정답 보기 ▼</button>`);
-    btn.addEventListener('click', () => { slot.innerHTML = ''; slot.appendChild(buildAnswer()); });
-    slot.appendChild(btn);
+  const toggleBtn = el(`<button class="btn primary wide reveal-btn"></button>`);
+  let answerEl = null;
+  let shown = false;
+  function setShown(next) {
+    shown = next;
+    if (shown && !answerEl) { answerEl = buildAnswer(); slot.appendChild(answerEl); }
+    if (answerEl) answerEl.hidden = !shown;
+    toggleBtn.textContent = shown ? '정답 닫기 ▲' : '정답 보기 ▼';
+    toggleBtn.classList.toggle('open', shown);
   }
+  toggleBtn.addEventListener('click', () => setShown(!shown));
+  slot.appendChild(toggleBtn);
+  setShown(revealed);
   return card;
 }
 

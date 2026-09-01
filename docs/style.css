@@ -50,6 +50,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; padding: 0; }
 body {
   background: var(--bg);
@@ -161,6 +162,7 @@ label.field > span { display: block; font-size: .85rem; font-weight: 600; color:
   white-space: pre-wrap; background: var(--surface-2);
   padding: 10px; border-radius: 8px; font-size: .9rem; overflow-x: auto;
 }
+.reveal-btn.open { background: var(--surface); color: var(--text-dim); border-color: var(--border); }
 .answer-wrap { margin-top: 14px; border-top: 1px dashed var(--border); padding-top: 12px; }
 .a-body { white-space: pre-wrap; }
 .a-label { font-weight: 700; color: var(--ok); }
