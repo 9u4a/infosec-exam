@@ -1,0 +1,113 @@
+{
+  "title": "정보보안기사 실기 기출문제 및 정답",
+  "data": [
+    {
+      "id": 1,
+      "type": "단답형",
+      "question": "윈도우 OS 환경에서 특정 서비스의 로그 파일 저장 경로에 대한 문제이다. ( )에 들어갈 로그 파일 경로명을 기술하시오.\n[IIS 로그]\nC:\\Windows\\inetpub\\logs\\Logfiles\\W3SVC1\nC:\\Windows\\inetpub\\logs\\Logfiles\\MSFTPSVC1\nC:\\Windows\\System32\\Logfiles\\ ( A )\n[DHCP 로그]\nC:\\Windows\\System32\\Logfiles\\ ( B )",
+      "answer": "HTTPERR, DHCP"
+    },
+    {
+      "id": 2,
+      "type": "단답형",
+      "question": "64비트 리눅스에서 아래 프로그램 코드를 실행하려고 한다. printf를 통해 함수가 호출될 때 A, B, C 각 파라미터가 저장되는 레지스터 명을 기술하시오.\nint main()\n{ printf (\"%c, %c, %c\\n\", 'A','B','C'); }",
+      "answer": "RDI, RSI, RDX"
+    },
+    {
+      "id": 3,
+      "type": "단답형",
+      "question": "리눅스 환경에서 컴파일 과정에 관한 설명이다. ( )에 들어갈 용어를 기술하시오.\n- 리눅스 환경에서 ( A ) 방식으로 컴파일 하는 경우, 외부 라이브러리 함수를 사용할 수 있도록 주소를 프로그램에 연결시켜주는 테이블인 ( B ) 를 참조한다.\n- ( B ) 는 실제 해당 함수의 주소가 들어 있는 ( C )를 참조하여 함수 주소를 얻어 온다.",
+      "answer": "Dynamic Linking, PLT(Procedure Linkage Table), GOT(Global Offset Table)"
+    },
+    {
+      "id": 4,
+      "type": "단답형",
+      "question": "정보보호 및 개인정보 관리체계 인증(ISMS-P)은 인증 기준이 3개 영역, 102개 항목으로 세분화되어 있다. 이 중 3개 영역을 기술하시오.",
+      "answer": "관리체계 수립 및 운영, 보호대책 요구사항, 개인정보 처리 단계별 요구사항"
+    },
+    {
+      "id": 5,
+      "type": "단답형",
+      "question": "유닉스의 /var/log/message 로그가 다음과 같이 기록되어 있다. 로그의 내용을 5개 항목으로 나누었을 때 ( ) 가 의미하는 바를 기술하시오.\n[/var/log/message 샘플]\nMar 29 14:23:57(로그생성일시) alex(로그가 생성된 호스트 명) kernel:(3) [295087,236116](4) Call Trace:(5)\nMar 29 14:23:57 alex kernel: [295087,236131] do_idle+0x83/0xf0\nMar 29 14:23:57 alex systemd [1] apt-daily-upgrade.service: Consumed 50.187s CPU time",
+      "answer": "로그를 생성한 프로세스명, 로그를 생성한 프로세스의 프로세스 번호, 상세 로그 메시지"
+    },
+    {
+      "id": 6,
+      "type": "단답형",
+      "question": "SQL Injection 취약점을 대응하는 방법에 대한 설명이다. ( ) 에 들어갈 용어를 설명하시오.\n[공격 대상 SQL 구문]\nstring query = \"select * from member a where gubun = '\" + a.gubun \"'\"\n[대응 방법]\n외부로부터 입력받은 값을 검증하지 않고, SQL문을 생성하는데 그대로 사용하는 경우 문제가 발생할 수 있다. 즉, gubun 값으로 a' or 'a'='a 를 입력하는 경우 쿼리가 항상 참이 되므로 member 테이블의 모든 내용이 조회된다. 이에 대한 대응 방안으로 파라미터를 받는 ( ) 객체를 상수 스트링(?) 으로 정의하고, 파라미터를 setString 과 같은 메소드로 설정하면 외부의 입력이 쿼리문의 구조를 바꾸는 것을 예방할 수 있다.",
+      "answer": "Prepared Statement"
+    },
+    {
+      "id": 7,
+      "type": "단답형",
+      "question": "리눅스의 PAM(Pluggable Authentication Module) 모듈의 종류에 대한 설명이다. ( )에 들어갈 모듈명을 기술하시오.\n1) ( A ) : 실질적인 인증기능, 패스워드 확인을 담당하는 모듈\n2) ( B ) : 사용자의 시스템 사용 권한을 확인하는 모듈\n3) password : 패스워드를 설정하거나 확인하는 데 사용하는 모듈\n4) ( C ) : 사용자가 인증 성공 시 세션을 맺어주는 모듈",
+      "answer": "auth, account, session"
+    },
+    {
+      "id": 8,
+      "type": "단답형",
+      "question": "Salvatore Sanfilippo가 개발한 보안 테스트 툴로 ICMP, TCP, UDP 등과 같은 다양한 프로토콜을 지원한다. 다량의 공격용 패킷을 생성하여 DDoS 훈련 목적으로도 사용하는 이 툴의 이름은 무엇인가?",
+      "answer": "hping3"
+    },
+    {
+      "id": 9,
+      "type": "단답형",
+      "question": "보안 점검 도구에 대하여 ( )에 들어갈 명칭을 기술하시오.\n- Tripwire은 ( A ) 을 점검하는 도구이다.\n- ( B ) 는 미국 Tenable사가 개발하였고, 네트워크에 연결된 다양한 종류의 시스템에 대하여 자동화된 취약점 스캔을 지원하며 광범위한 취약점 DB를 가지고 있다.",
+      "answer": "무결성, NESSUS"
+    },
+    {
+      "id": 10,
+      "type": "단답형",
+      "question": "CVE-2014-0160으로 알려진 오픈 SSL 취약점이다. 오픈 SSL의 하트비트 체크 로직의 취약점을 악용하여 시스템 메모리에서 중요 데이터를 탈취할 수 있는 이 취약점의 이름은 무엇인가?",
+      "answer": "하트블리드 (HeartBleed)"
+    },
+    {
+      "id": 11,
+      "type": "단답형",
+      "question": "위험관리 3단계에 대한 설명이다. ( )에 들어갈 단계명을 기술하시오.\n( A ) : 자산의 위협과 취약점을 분석하여 보안 위험의 종류와 규모를 결정하는 과정\n( B ) : 식별된 자산, 위협 및 취약점을 기준으로 위험도를 산출하여 기존의 보호대책을 파악하고 위험의 대응 여부와 우선 순위를 결정하기 위한 평가 과정\n(대책 선정) : 허용가능 수준으로 위험을 줄이기 위해 적절하고 정당한 정보보호 대책을 선정하고 이행 계획을 수립하는 과정",
+      "answer": "위험분석, 위험 평가"
+    },
+    {
+      "id": 12,
+      "type": "단답형",
+      "question": "위험관리를 위한 정보자산 분석 절차에 대한 설명이다. ( )에 들어갈 단계명을 기술하시오.\n( A ) : 보호받을 가치가 있는 자산을 식별하고, 이를 정보자산의 형태, 소유자, 관리자, 특성 등을 포함하여 자산 목록을 작성\n(자산 관리자 지정) : 식별된 정보자산에 대하여 책임자 및 관리자 지정\n( B ) : 식별된 자산에 대해 침해 사고가 발생할 경우 그 영향을 기밀성, 무결성, 가용성 측면에서 파악하여 자산의 중요도를 산정",
+      "answer": "정보자산 식별, 정보자산 중요도 평가"
+    },
+    {
+      "id": 13,
+      "type": "서술형",
+      "question": "PHP 로 작성된 게시판의 소스코드이다. 해당 게시판의 취약점명, 업로드 로직을 우회하는 기법, 공격이 성공하기 위한 조건을 설명하시오.\n[게시판 소스 코드]\n<?\n// 파일 확장자 중 업로드를 허용할 확장자를 정의함\n$full_filename = explode(\".\", $_FILES['userfile']['name']);\n$extension = $full_filename[sizeof($full_filename)-1];\nif (!( ereg($extension\",\"hwp\") || ereg($extension\",\"pdf\") || ereg($extension\",\"jpg\")) )\nprint \"업로드 금지 파일 입니다\";\nexit;\n\nIf (($_FILES[\"file\"][\"type\"] == \"image/gif\") || ($_FILES[\"file\"][\"type\"] == \"image/jpeg\") ||\n($_FILES[\"file\"][\"type\"] == \"image/JPG\") || ($_FILES[\"file\"][\"type\"] == \"text/plain\"))\n{\necho \"파일 업로드 성공\"\n}\nelse\n{\necho \"파일 업로드 실패. 허용된 파일의 형식이 아닙니다.\"\n}\n?>",
+      "answer": "1) 파일 업로드 취약점 : 실행 가능한 파일을 웹서버에 업로드 하여 중요정보 탈취, 시스템 명령어 수행 등과 같은 악의 적인 행위 가능\n2) 우회 기법\n2-1) 파일 타입 변조 : Proxy 툴을 이용하여 Request Message 헤더내에 파일 유형을 알려주는 Content-Type 속성을 image/jpeg 으로 변경\n2-2) 파일 확장자 변조 : 파일 확장자를 대소문자를 섞거나(test.PhP), 이중 확장자(test.php.jpeg or test.jpeg.php) 사용\n2-3) Null 바이트 삽입 : Null바이트(%00)와 .jpeg 확장자를 함께 접목하여 업로드(예: test.php%00.jpeg)하면 파일 확장자 검증 로직은 통과되고, 서버에 저장시에는 Null바이트를 문자의 끝으로 해석하여 test.php로 저장됨.\n3) 공격 성공 조건\n3-1) 파일 타입 또는 확장자 변조가 서버의 필터링 로직을 통과해야 함\n3-2) 업로드 하는 파일이 서버에 설정된 업로드 제한 조건(예: 사이즈 제한(LimitRequestBody)에 걸리지 않아야 함\n3-3) 업로드 된 파일이 서버에 설정된 아래와 같은 실행 제한 조건에 걸리지 않아야 함\n  - AddType 지시자에 따라 MIME type 이 text/html로 재조정(실행불가)\n  - FileMatch 지시자에 따라 직접 URL 호출 금지"
+    },
+    {
+      "id": 14,
+      "type": "서술형",
+      "question": "TCP 헤더에 포함되어 있는 6비트의 Flag 에 대한 설명이다. ( ) 에 적절한 설명을 기술하시오.\nURG : 긴급하게 전송할 데이터가 있는 경우 사용하며, 순서에 상관없이 우선순위를 높여 처리됨\nPSH : 버퍼링된 데이터를 버퍼가 찰 때까지 기다리지 않고 수신 즉시 애플리케이션 계층으로 전달\nSYN : ( A )\nACK : ( B )\nFIN : ( C )\nRST : ( D )",
+      "answer": "1) 최초 연결 수립을 요청하고, 순서 번호를 동기화할 때 사용됨\n2) 상대로부터 패킷을 받았다는 것을 알려주며, 일반적으로 받은 시퀀스 번호에 +1 하여 응답을 보냄\n3) 송신 장비가 연결 종료를 요청 시 사용\n4) 연결 상의 문제가 발생한 비정상 세션을 강제로 끊을 때 사용"
+    },
+    {
+      "id": 15,
+      "type": "서술형",
+      "question": "윈도우 OS에서 사용하는 NetBIOS 바인딩이 보안상 취약한 이유와 보안 설정하는 방법을 설명하시오.(보안 설정은 ncpa.cpl을 이용하여 설명)",
+      "answer": "1) 보안상 취약한 이유 : 인터넷에 직접 연결되어 있는 윈도우 시스템에 NetBIOS TCP/IP 바인딩이 활성화되어 있는 경우, 공격자가 원격에서 네트워크 공유자원을 사용할 우려가 존재하기 때문\n2) 보안설정 방법 : 윈도우 OS에서 시작> 실행> ncpa.cpl> 로컬 영역 연결> 속성> TCP/IP> [일반] 탭에서 [고급] 클릭> [WINS] 탭에서 TCP/IP에서 “NetBIOS 사용 안 함” 또는, “NetBIOS over TCP/IP 사용 안 함” 선택"
+    },
+    {
+      "id": 16,
+      "type": "서술형",
+      "question": "보안 이벤트 분석 결과 1초에 1000번 이상 다음과 같은 패킷이 유입되고 있는 것이 확인되었다. 패킷 헤더 중 a, b를 보고 어떤 공격인지 설명하시오.\n[HTTP Request]\nGET /test.jsp\nHost : webserver.com\nUser-Agent : Mozilla/5.0\nReferer : http://www.abc.com/default.jsp (a)\nCache-control : max age=0 (b)",
+      "answer": "1) 공격명 : HTTP Get Flooding with Cache Control (C&C Attack)\n2) 공격명 판단 사유 : Cache-Control 요청 헤더에 max-age=0 옵션이 설정되었기 때문에 no cache 와 유사하게 동작함. 이에, 모든 요청은 캐시서버가 아닌 원본 웹서버로 향하게 되어 부하를 가중시킴. 또한 /test.jsp를 호출한 서버(Referer) 가 공격 대상 Host와 다르므로, 제3의 호스트(www.abc.com)에 존재하는 default.jsp 를 통해 대량의 자동화된 공격 패킷이 유입된 것으로 추정됨."
+    },
+    {
+      "id": 17,
+      "type": "실무형",
+      "question": "코로나 극복 후 새로운 서비스를 재개하려는 소상공인이 있다. 기존에 보유하고 있던 1만 명 미만의 고객 정보를 프리미엄 서비스에 활용하는 경우 개인정보의 안전성 확보 조치 기준에 따라 개인정보처리시스템 접근권한 관리, 접근통제를 위해 준수해야 할 사항을 기술하시오.",
+      "answer": "1) 개인정보처리시스템 접근권한 관리\n ② 개인정보처리자는 전보 또는 퇴직 등 인사이동이 발생하여 개인정보취급자가 변경되었을 경우 지체없이 개인정보처리시스템의 접근 권한을 변경 또는 말소하여야 한다.\n ③ 개인정보처리자는 제1항 및 제2항에 의한 권한 부여, 변경 또는 말소에 대한 내역을 기록하고, 그 기록을 최소 3년간 보관하여야 한다.\n ④ 개인정보처리자는 개인정보처리시스템에 접속할 수 있는 사용자계정을 발급하는 경우 개인정보취급자 별로 사용자계정을 발급하여야 하며, 다른 개인정보취급자와 공유되지 않도록 하여야 한다.\n ⑤ 개인정보처리자는 개인정보취급자 또는 정보주체가 안전한 비밀번호를 설정하여 이행할 수 있도록 비밀번호 작성규칙을 수립하여 적용하여야 한다.\n2) 개인정보처리시스템 접근 통제\n ① 개인정보처리자는 정보통신망을 통한 불법적인 접근 및 침해사고 방지를 위해 다음 각 호의 기능을 포함한 조치를 하여야 한다.\n  1. 개인정보처리시스템에 대한 접속 권한을 IP(Internet Protocol)주소 등으로 제한하여 인가받지 않은 접근을 제한\n  2. 개인정보처리시스템에 접속한 IP(Internet Protocol)주소 등을 분석하여 불법적인 개인정보 유출 시도 탐지 및 대응\n ③ 개인정보처리자는 취급중인 개인정보가 인터넷 홈페이지, P2P, 공유설정, 공개된 무선망 이용 등을 통하여 열람권한이 없는 자에게 공개되거나 유출되지 않도록 개인정보처리시스템, 업무용 컴퓨터, 모바일 기기 및 관리용 단말기 등에 접근 통제 등에 관한 조치를 하여야 한다.\n ⑥ 개인정보처리자가 별도의 개인정보처리시스템을 이용하지 아니하고 업무용 컴퓨터 또는 모바일 기기를 이용하여 개인정보를 처리하는 경우에는 제1항을 적용하지 아니할 수 있으며, 이 경우 업무용 컴퓨터 또는 모바일 기기의 운영체제(OS : Operating System)나 보안프로그램 등에서 제공하는 접근 통제 기능을 이용할 수 있다.\n ⑦ 개인정보처리자는 업무용 모바일 기기의 분실․도난 등으로 개인정보가 유출되지 않도록 해당 모바일 기기에 비밀번호 설정 등의 보호조치를 하여야 한다."
+    },
+    {
+      "id": 18,
+      "type": "실무형",
+      "question": "Korea.co.kr 도메인의 존 파일을 설정하려고 한다. MASTER와 SLAVE DNS 서버의 named.conf 설정값을 각각 작성하시오. (zone 파일은 ns.korea.co.kr.zone 이다)\n- master name 서버 : ns1.korea.co.kr (192.168.1.53)\n- slave name 서버 : ns2.korea.co.kr (192.168.2.53)",
+      "answer": "1) Master DNS 서버의 zone 파일 설정\n/etc/named.conf\nzone \"ns.korea.co.kr\" IN {\ntype master;\nfile \"ns.korea.co.kr.zone\";\nallow-update { 192.168.2.53; };\n};\n\n2) Slave DNS 서버의 zone 파일 설정\n/etc/named.conf\nzone \"ns.korea.co.kr\" IN {\ntype slave ;\nfile \"slave/ns.korea.co.kr.zone\";\nmasters { 192.168.1.53; };\nallow-update { none; };\n};"
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "title": "정보보안기사 실기 기출문제 및 정답",
+  "data": [
+    {
+      "id": 1,
+      "type": "단답형",
+      "question": "다음은 특정 명령어를 수행한 결과이다. ( )에 들어갈 명령어를 기술하시오.\nroot@kali:~#Telnet webserver.com 80\nTrying 192.168.1.2…\nConnect to webserver.com.\nEscape character is '^]'.\n(   ) * HTTP/1.0\n\nHTTP/1.1  200  OK\nDate: Sat, 6 Aug 2022 09:01:01 KST\nServer: Microsoft-IIS/5.0\nAllow: GET,HEAD,POST,OPTIONS,TRACE\nContent-Length:0\nConnection: close\nContent-Type: text/plain; charset-euc-kr\n\nConnection closed by foreign host.",
+      "answer": "OPTIONS"
+    },
+    {
+      "id": 2,
+      "type": "단답형",
+      "question": "위험분석과 관련하여 ( )안에 들어갈 명칭을 기술하시오.\n( A ) : 시스템에 관한 전문적인 지식을 가진 전문가의 집단을 구성하고 위험을 분석 및 평가하여 정보시스템이 직면한 다양한 위험과 취약성을 토론을 통해 분석하는 방법\n( B ) : 어떤 사건도 기대대로 발생하지 않는다는 사실에 근거하여 일정 조건하에서 위험에 대한 발생가능한 결과들을 추정하는 방법\n( C ) : 비교 우위 순위결정표에 따라 위험 항목들의 서술적 순위를 결정하는 방법",
+      "answer": "델파이법, 시나리오법, 순위결정법"
+    },
+    {
+      "id": 3,
+      "type": "단답형",
+      "question": "위험분석 접근법과 관련하여 ( )안에 들어갈 명칭을 기술하시오\n( A ) : 모든 시스템에 대하여 보호의 기본 수준을 정하고 이를 달성하기 위하여 일련의 보호대책을 표준화된 체크리스트를 기반으로 선택하는 방식\n( B ) : 정립된 모델에 기초하여 자산 분석, 위협 분석, 취약성 분석의 각 단계를 수행하여 위험을 평가하는 방식\n( C ) : 고위험(high risk) 영역을 식별하여 상세 위험분석을 수행하고 다른 영역은 베이스라인 접근법을 사용하는 방식",
+      "answer": "베이스라인(기준) 접근법, 상세 위험 분석, 복합 접근법"
+    },
+    {
+      "id": 4,
+      "type": "단답형",
+      "question": "접근통제 정책에 대하여 다음 ( ) 에 들어갈 용어를 기술하시오.\n( A ) : 사용자나 사용자 그룹에 근거한 사용자 중심의 접근 제어를 수행하는 방법\n( B ) : 모든 객체는 정보의 비밀수준에 근거하여 보안 레벨이 주어지고 허가된 사용자만 접근 가능토록 제어하는 방법\n( C ) : 사용자와 객체 상호관계를 역할을 기반으로 접근 권한을 부여하는 방법",
+      "answer": "DAC, MAC, RBAC"
+    },
+    {
+      "id": 5,
+      "type": "단답형",
+      "question": "침입탐지시스템(IDS)과 관련하여 ( )에 들어갈 용어를 기술하시오.\n( A ) : 정상적인 행위를 이상행위로 판단하여 탐지하는 상황\n( B ) : 이상행위를 탐지하지 못하는 상황",
+      "answer": "오탐(False Positive), 미탐(False Negative)"
+    },
+    {
+      "id": 6,
+      "type": "단답형",
+      "question": "IPSec에서 지원하는 기능(서비스)을 3가지만 기술하시오.",
+      "answer": "기밀성, 제한된 트래픽 흐름의 기밀성, 데이터 근원지 인증, 접근제어, 비연결형 무결성, 재전송 공격 방지"
+    },
+    {
+      "id": 7,
+      "type": "단답형",
+      "question": "다음의 설명에서 ( )에 들어갈 용어를 기술하시오.\n( A )는 사토시 나카모토가 개발한 가상화폐로, 거래 데이터를 기록하는 저장소(DB)로 ( B )를 이용한다. Hash 연산을 수행하여 발생된 거래(작업)을 증명한 대가로 ( A )를 획획하는 행위를 ( C )이라 한다.",
+      "answer": "비트코인, 블록체인, 채굴(마이닝)"
+    },
+    {
+      "id": 8,
+      "type": "단답형",
+      "question": "다음 설정 파일에서 디렉터리 인덱싱 취약점을 대응하기 위하여 삭제해야 하는 지시자를 기술하시오.\n<Directory /var/www>\nOptions indexes FollowSymLinks\nAllowOverride none\nRequire all granted\n</Directory>",
+      "answer": "indexes"
+    },
+    {
+      "id": 9,
+      "type": "단답형",
+      "question": "클라우드 서비스 이용을 위해 서브 도메인에 CNAME 을 설정하여 사용 중, 서비스 이용을 중지 했지만 DNS의 CNAME 설정은 삭제하지 않아 공격자가 피싱 사이트로 악용하는 공격을 무엇이라고 하나?",
+      "answer": "서브도메인 하이재킹 or 서브도메인 테이크오버(Takeover)"
+    },
+    {
+      "id": 10,
+      "type": "단답형",
+      "question": "정보보호 및 개인정보관리체계 인증 기준 중 '물리적 정보보호 대책' 에 해당하는 사항을 3가지 기술하시오.",
+      "answer": "보호구역 지정(통제구역,제한구역 등), 출입통제(출입 이력 검토), 정보시스템 보호(중요도 고려한 배치, 케이블 손상 방지 등), 보호설비 운영(UPS, 화재감지 등), 보호구역내 작업(작업 기록 검토), 반출입 기기 통제(정보시스템, 모바일 기기, 저장 매체 등), 업무환경 보안(클린데스크 등)"
+    },
+    {
+      "id": 11,
+      "type": "서술형",
+      "question": "개인정보 최소수집 원칙에 의거하여 개인정보 수집이 가능한 경우 4가지를 기술하시오",
+      "answer": "1. 정보주체의 동의를 받은 경우\n2. 법률에 특별한 규정이 있거나 법령상 의무를 준수하기 위하여 불가피한 경우\n3. 공공기관이 법령 등에서 정하는 소관업무의 수행을 위하여 불가피한 경우\n4. 정보주체와의 계약의 체결 및 이행을 위하여 불가피하게 필요한 경우\n5. 정보주체 또는 그 법정대리인이 의사 표시를 할 수 없는 상태에 있거나 주소불명 등으로 사전 동의를 받을 수 없는 경우로서 명백히 정보주체 또는 제3자의 급박한 생명, 신체, 재산의 이익을 위하여 필요하다고 인정되는 경우\n6. 개인정보처리자의 정당한 이익을 달성하기 위하여 필요한 경우로서 명백하게 정보주체의 권리보다 우선하는 경우. 이 경우 개인정보처리자의 정당한 이익과 상당한 관련이 있고 합리적인 범위를 초과하지 아니하는 경우에 한한다."
+    },
+    {
+      "id": 12,
+      "type": "서술형",
+      "question": "스위칭 허브의 기능 및 동작 원리에 대하여 서술하시오.",
+      "answer": "1. 스위칭 허브의 기능 : 패킷의 목적지 주소(MAC, IP, Port 등)를 확인하여, 목적지가 연결된 스위치의 포트로만 패킷을 전송하는 장치로 패킷의 고속 전송, 로드 밸런싱, QoS 기능을 수행\n\n2. 동작 원리(L2 예시)\n1) Learning : 출발지의 Mac 주소를 확인하여 수신된 포트번호와의 매핑 정보를 스위치의 MacAddress Table에 저장(MAC주소 + 스위치 포트번호)\n2) Fowarding : 목적지 Mac 주소가 스위치의 MacAddress Table에 있는 경우, 목적지 주소에만 프레임을 전달\n3) Filtering : 출발지와 목적지가 같은 세그먼트(인터페이스)에 존재하는 경우 다른 세그먼트와 연결된 포트로 넘어가지 않도록 제어\n4) Flooding : 목적지 Mac 주소가 스위치의 MacAddress Table에 없는 경우 수신된 포트를 제외한 모든포트로 Broadcast 수행\n5) Aging : 설정된 Timer 시간(예:300초)동안 저장된 MAC 주소를 가진 프레임이 들어오지 않으면 MacAddress Table에 저장된 정보를 삭제"
+    },
+    {
+      "id": 13,
+      "type": "서술형",
+      "question": "다음과 같은 Snort 룰로 탐지된 패킷을 보고, 어떤 공격이 수행되었는지 설명하시오.\n[Snort Rule]\nalert tcp any any -> any 21 {content:”anonymous”; nocase; msg:”Anonymous FTP attempt”;sid:1000012}\n[탐지 패킷]\nTCP TTL:64 TOS:0x10 ID:5450 IpLen:20 DgmLen:68 DF\n***AP*** Seq: 0xE95B8593 Ack: 0x7D3F3893 Win:0x1D TcpLen:32\nTCP options (3) => NOP NOP TS: 45113 1572881\n55 53 45 52 20 41 6E 4F 6E 59 6D 4F 75 53 0D 0A   USER AnOnYmOuS..",
+      "answer": "Anonymous FTP 공격이 수행 되었음.\n- 공격자는 열려있는 ftp 서비스(포트21)에 접속 후, 보안시스템의 탐지를 우회하기 위하여 계정명에 대소문자를 혼합한 AnOnYmOuS 를 입력하여 로그인을 시도하였음.\n- Snort rule에서 nocase로 대소문자를 구분하지 않았기 때문에, 공격시도에 대한 탐지가 가능하였음\n- Anonymous FTP 서비스가 enable된 경우, 서버에 계정이 없는 사용자도 접근이 가능하므로 서버내 권한 관리가 적절히 이루어지지 않을 경우 악성코드를 업로드 하거나 중요 파일에 접근 가능한 리스크가 있음. 따라서 꼭 필요한 경우가 아닌 경우 anonymous ftp 서비스는 disable 해야 함."
+    },
+    {
+      "id": 14,
+      "type": "실무형",
+      "question": "스팸메일 릴레이 제한 설정과 관련하여 다음 ( )에 들어갈 명칭을 기술하시오.\n# cat /etc/mail/( 1 ) | grep \"R$\\*\" | grep \"Relaying denied\"\nR$*      $#error $@ 5.7.1 $ : \"550 Relaying denied\"\n\n# cat /etc/mail/access\nlocalhost.localdomain RELAY\nlocalhost                  RELAY\n127.0.0.1                  RELAY\nspam.com                ( 2 ) # Relay를 허용하지 않음\n\n# ( 3 ) hash etc/mail/( 4 ) < etc/mail/access",
+      "answer": "(1) sendmail.cf\n(2) REJECT (or DISCARD)\n(3) makemap\n(4) access.db (or access)"
+    },
+    {
+      "id": 15,
+      "type": "실무형",
+      "question": "Smurf attack을 방지하기 위하여, 신뢰 할 수 있는 네트워크 범위(192.168.1.0/24)에서 시작하는 UDP 패킷으로 ip directed broadcast 를 제한 설정하는 라우터 명령어를 기술하시오.\n(config)# ( A )\n(config)# ( B )\n(config-if)# ( C )\n^z\nRouter#",
+      "answer": "(A) : access-list 100 permit udp 192.168.1.0 0.0.0.255 any\n(B) : interface FastEthernet 0/0\n(C) : ip directed-broadcast 100"
+    },
+    {
+      "id": 16,
+      "type": "실무형",
+      "question": "위험 대응 기법과 관련하여 다음 물음에 답하시오.\n1) 위험수용의 의미는?\n2) 위험감소를 위한 보안 대책 선정시, 특정 보안대책의 평가기준을 결정하는 정량적인 방법은?\n3) 위험회피시 위험이 있는 프로세스나 사업은 어떻게 대처하는가?\n4) 위험전가를 위한 2가지 방법은?",
+      "answer": "1. 위험의 정도가 수용 가능한 수준이라 판단하고 프로세스를 그대로 유지하거나 사업을 추진\n2. 정보보호 대책의 효과(가치) 는 보호대책 적용으로 감소한 연간손실예상액(ALE)에서 정보보호 대책 운영 비용을 뺀 금액을 계산하여 값이 높을수록 상대적으로 효과적인 정보보호 대책임.\n  * 계산 공식 : (3)번 값이 높은 보호대책을 선정하는 것이 효과적임\n    (1) 적용후 SLE(단일 손실예상액 ) = AV(자산가치) * EF(노출계수)\n    (2) 적용후 ALE(연간 손실예상액) = SLE * ARO(연간발생률)\n    (3) 보호대책의 효과(가치) = 감소한 ALE(적용전 ALE - 적용후 ALE) - 보호대책 운영 비용\n3. 위험이 있는 프로세스나 사업은 축소 또는 포기하는 방향으로 추진한다.\n4. 보험 가입 또는 외주(보안, 소방 업체) 위탁"
+    }
+  ]
+}

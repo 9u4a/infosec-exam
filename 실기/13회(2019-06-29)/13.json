@@ -1,0 +1,101 @@
+{
+  "title": "정보보안기사 실기 기출문제 및 정답",
+  "data": [
+    {
+      "id": 1,
+      "type": "단답형",
+      "question": "Victim의 MAC 주소를 위조한 스니핑 공격은?",
+      "answer": "ARP 스푸핑"
+    },
+    {
+      "id": 2,
+      "type": "단답형",
+      "question": "침해사고 발생시 실시간 경보,분석체계를 운영하며 금융,통신 분야별 정보통신 기반 시설을 보호하기 위한 업무를 수행하는 기관은?",
+      "answer": "ISAC(Information Sharing Analysis Center), 정보공유분석센터"
+    },
+    {
+      "id": 3,
+      "type": "단답형",
+      "question": "침입탐지시스템(IDS)의 침입탐지 정책에 대하여 설명하시오.\n(1) 미리 등록된 패턴을 기반으로 이상행위를 탐지하는 기법은?\n(2) 정상행위와 이상행위를 프로파일링 하여 통계적인 방법으로 이상행위를 탐지하는 기법은?\n(3) 정상행위를 이상행위로 판단하거나 이상행위를 탐지하지 못하는 상황은?",
+      "answer": "(1) 오용탐지(Misuse) or 지식기반 탐지\n(2) 이상탐지(Anomaly) or 행위기반 탐지\n(3) 오탐(False Positive), 미탐(False Negative)"
+    },
+    {
+      "id": 4,
+      "type": "단답형",
+      "question": "Github의 DDoS 공격에 악용된 캐시솔루션은?",
+      "answer": "Memcached"
+    },
+    {
+      "id": 5,
+      "type": "단답형",
+      "question": "리눅스의 /etc 아래에 위치하고 있으며 패스워드의 사용기간 만료, 최대 사용기간, 최소 변경 기간 등의 패스워드 정책을 설정할 수 있는 파일은?",
+      "answer": "login.defs"
+    },
+    {
+      "id": 6,
+      "type": "단답형",
+      "question": "웹 애플리케이션의 소스 코드를 보지 않고 외부 인터페이스나 구조를 분석하여 취약적을 발견하는 방식을 (1)이라 하고, 개발된 소스 코드를 살펴봄으로써 코딩 상의 취약점을 찾는 방식을 (2)라고 한다.",
+      "answer": "(1) 블랙박스 테스트, (2) 화이트박스 테스트"
+    },
+    {
+      "id": 7,
+      "type": "단답형",
+      "question": "정성적 위험분석 방법론 2가지에 대해 답하시오.\n(1) 어떤 사건도 기대대로 발생하지 않는다는 사실에 근거하여 일정 조건하에서 위험에 대한 발생 가능한 결과들을 추정하는 방법\n(2) 시스템에 관한 전문적인 지식을 가진 전문가의 집단을 구성하고 위험을 분석 및 평가하여 정보시스템이 직면한 다양한 위험과 취약성을 토론을 통해 분석하는 방법",
+      "answer": "(1) 시나리오법, (2) 델파이법"
+    },
+    {
+      "id": 8,
+      "type": "단답형",
+      "question": "자산에 대해 보험을 들어 손실에 대비하는 등 조직의 자산에 대한 위협, 위험, 취약점 등을 제3자에게 전가하는 위험관리 방식은?",
+      "answer": "위험전가"
+    },
+    {
+      "id": 9,
+      "type": "단답형",
+      "question": "모든 시스템에 대하여 보호의 기본 수준을 정하고 이를 달성하기 위하여 일련의 보호대책을 선택하는 방식은?",
+      "answer": "기준접근법 (Baseline 접근법)"
+    },
+    {
+      "id": 10,
+      "type": "단답형",
+      "question": "비즈니스 연속성을 보장하기 위한 계획을 무엇이라 하는가?",
+      "answer": "BCP(Business Continuity Plan)"
+    },
+    {
+      "id": 11,
+      "type": "서술형",
+      "question": "파일 업로드 취약점 대응을 위한 .htaccess 파일 설정의 의미에 대하여 답하시오.\n(1) <FilesMatch \\.(ph|lib|sh|)\nOrder Allow DENY\nDeny From ALL \n</FilesMatch>\n(2) AddType text/html .php .php1.php2.php3 .php4 .phtml",
+      "answer": "(1) FilesMatch 지시자를 이용, .ph, .lib, .sh 등의 Server Side Script 파일에 대해서 직접 URL 호출 금지 (업로드된 스크립트(웹쉘)의 실행을 방지하기 위한 목적임)\n(2) AddType 지시자를 이용 Server Side Script 확장자를 text/html MIME Type으로 재조정하여 업로드된 스크립트 실행 방지"
+    },
+    {
+      "id": 12,
+      "type": "서술형",
+      "question": "IDS는 내부 트래픽에 대하여 미러 방식으로 사용하고, IPS는 인라인 방식으로 외부와 내부 접점에 배치하여 사용하는 이유는?",
+      "answer": "IPS는 실시간 차단을 목적으로 하기 때문에 인라인 방식으로 구성되어야 하며, 외부에서의 악의적인 침입 시도를 차단하는 데 포커스를 두어 내부와 외부의 접점에 배치하는 것이 좋다. IPS를 내부망에 배치하여 운영하는 경우 오탐으로 인하여 네트워크에 문제가 발생할 수 있으므로, 내부망에는 침입 탐지를 목적으로 하는 IDS를 배치하는 것이 좋다. IDS는 포트 미러링 방식으로 업무 데이터 흐름에 영향을 주지 않고 패킷을 분석하여 침입 여부를 탐지할 수 있기 때문이다."
+    },
+    {
+      "id": 13,
+      "type": "서술형",
+      "question": "IPSec의 AH, ESP 보안 헤더에 대하여 전송모드/터널 모드로 운영 시 인증 구간, 암호화 구간을 설명하고, 키 교환 프로토콜명을 기술하시오.",
+      "answer": "(1) AH 전송모드\n - 인증구간 : IP 헤더에서 전송 중 변경가능 필드를 제외한 IP패킷 전체\n - 암호화 구간 : 없음\n(2) AH 터널모드\n - 인증구간 : New IP 헤더에서 전송 중 변경가능 필드를 제외한 New IP 패킷 전체\n - 암호화 구간 : 없음\n(3) ESP 전송모드\n - 인증구간 : ESP 헤더와 암호화된 데이터(IP Payload + ESP 트레일러)\n - 암호화 구간 : IP Payload와 ESP 트레일러\n(4) ESP 터널모드\n - 인증구간 : ESP 헤더와 암호화된 데이터(Original IP 헤더 + IP Payload + ESP 트레일러)\n - 암호화 구간 : Original IP 패킷 전체 + ESP 트레일러\n(5) 키교환 프로토콜명 : IKE(Internet Key Exchange)"
+    },
+    {
+      "id": 14,
+      "type": "실무형",
+      "question": "HeartBleed 취약점 탐지위한 Snort Rule 설정 의미를 설명하시오.\nalert tcp any any < > any (1)[443,465,523] ((2)content:\"|18 03 00|\"; depth: 3; (3)content:\"|01|\"; distance: 2; within: 1; \n(4) content:!\"|00|\"; within: 1; (5)msg: \"SSLv3 Malicious Heartbleed Request V2”; \n(6) sid: 1;)",
+      "answer": "(1) 탐지 대상 포트 번호를 443, 465, 523으로 지정\n(2) Content에서 첫 3바이트를 검사하여 바이너리 값으로 \"18 03 00\"이 있는지 검사\n(3) (2)번이 끝난 위치에서 2바이트 떨어진 위치에서 1바이트를 검사하여 바이너리 값으로 \"01\"이 있는지 검사\n(4) (3)번이 끝난 위치에서 바로 1바이트를 검사하여 바이너리 값으로 \"00\"이 포함되지 않은지 검사\n(5) (1)~(4)의 탐지 룰에 모두 매칭되는 경우 로그에 \"SSLv3 Malicious Heartbleed Request V2\"로 기록\n(6) 해당 룰의 식별자를 1로 지정"
+    },
+    {
+      "id": 15,
+      "type": "실무형",
+      "question": "요청 헤더와 응답 헤더를 보여 주며 공격에 대하여 질문에 답하시오.\n[요청헤더]\nGET /cgi/bin/ HTTP/1.1\nHost: example.com\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\nAccept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7\nConnection: close\n[응답헤더]\nHTTP/1.1 200 OK\nDate: Tue, 24 Mar 2026 10:30:00 GMT\nServer: Apache/2.4.58 (Unix)\nContent-Type: text/html; charset=UTF-8\nContent-Length: 3421\nConnection: close\n\n<html>\n<head><title>Index of /cgi/bin</title></head>\n<body>\n<h1>Index of /cgi/bin</h1>\n<ul>\n  <li><a href=\"logo.png\">logo.png</a></li>\n  <li><a href=\"backup.zip\">backup.zip</a></li>\n  <li><a href=\"test/\">test/</a></li>\n</ul>\n</body>\n</html>",
+      "answer": "(1) 공격 명칭: 디렉터리 인덱싱\n(2) 판단 근거: 응답 코드가 200 OK이고, /cgi/bin 디렉터리의 내부 파일 목록(Index of /cgi/bin)이 반환되었기 때문\n(3) 보안 조치 방법: apache.conf (또는 httpd.conf) 설정 파일 내 Options 지시자에서 indexes 키워드 제거"
+    },
+    {
+      "id": 16,
+      "type": "실무형",
+      "question": "Robot.txt 파일에 대하여 다음 물음에 답하시오.\n(1) Robot.txt 파일의 용도\n(2) 아래 설정값의 의미\nuseragent : yeti\nuseragent : googlebot\n(가) allow : /\n\nuseragent : googlebot-image\n(나) disallow : /admin/\n(다) disallow : /*.pdf$",
+      "answer": "(1) 용도: 검색엔진 웹 크롤러(로봇)의 접근 범위를 제어하고 특정 디렉터리나 파일에 대한 크롤링을 허용/거부하기 위한 파일\n(2-가) yeti 및 googlebot 로봇에 대해 루트 디렉터리(/) 하위 전체 항목 크롤링 허용\n(2-나) googlebot-image 로봇에 대해 /admin/ 디렉터리 크롤링 금지\n(2-다) googlebot-image 로봇에 대해 .pdf 확장자로 끝나는 모든 파일의 크롤링 금지"
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "title": "정보보안기사 실기 기출문제 및 정답",
+  "data": [
+    {
+      "id": 1,
+      "type": "단답형",
+      "question": "개인정보보호위원회와 한국인터넷진흥원에서 발간한 \"개인정보영향평가 수행 안내서\"에 따르면 위험도 산정 공식을 다음과 같이 제시하고 있다. ( )에 들어갈 항목명을 기술하시오.\n[위험도 산정 공식]\n위험도 = 자산가치(영향도) + ((A) * (B)) * (C)",
+      "answer": "침해요인 발생 가능성, 법적 준거성, 2"
+    },
+    {
+      "id": 2,
+      "type": "단답형",
+      "question": "DB 암호화 기법에 대한 설명이다. ( )에 해당하는 기법의 명칭을 기술하시오.\n( A ) : 암복호화 모듈이 API 라이브러리 형태로 각 애플리케이션 서버에 설치되고, 응용프로그램에서 암복화 모듈을 호출하는 방식\n( B ) : 암복호화 모듈이 DB서버에 설치되고 DBMS에서 플러그인으로 연결된 암복화 모듈을 호출하는 방식\n( C ) : DBMS에 내장되어 있는 암호화 기능을 이용하여 암복호화 처리를 수행하는 방식",
+      "answer": "API, Plug-in, TDE(Transparent Data Encryption)"
+    },
+    {
+      "id": 3,
+      "type": "단답형",
+      "question": "LAN 스위칭 기법에 대한 설명이다. ( )에 해당하는 기법의 명칭을 기술하시오.\n( A ) : 프레임의 헤더(목적지 주소)만을 보고 경로를 결정해 주는 방식\n( B ) : 프레임의 앞 64바이트만을 읽어 에러를 처리하고, 목적지 포트로 포워드 하는 방식\n( C ) : 전체 프레임을 다 받은 다음에 경로를 결정하는 방식",
+      "answer": "Cut through, Modified Cut through (Fragment Free), Store and Forward"
+    },
+    {
+      "id": 4,
+      "type": "단답형",
+      "question": "EAP를 통해 인증을 수행하고 AES-CCMP 기반 암호화를 지원하는 무선랜 보안 표준은?",
+      "answer": "WPA2"
+    },
+    {
+      "id": 5,
+      "type": "단답형",
+      "question": "VLAN(Virtual LAN) 의 주소 할당 방법에 대한 설명이다. ( ) 에 해당하는 방식명을 기술하시오.\n( A ) : VLAN 할당을 관리자가 각 스위치에서 직접 할당하는 방식\n( B ) : MAC주소 등을 기반으로 VLAN 할당이 자동으로 이루어지는 방식",
+      "answer": "정적 VLAN(포트 주소 기반), 동적 VLAN(MAC 주소 기반)"
+    },
+    {
+      "id": 6,
+      "type": "단답형",
+      "question": "검색로봇에게 웹사이트의 페이지를 수집할 수 있도록 허용/제한하는 국제 권고안으로 웹사이트의 루트 디렉터리에 위치해야 하며, 로봇 배제 표준을 따르는 일반 텍스트 파일(text/plain)로 작성해야 하는 파일명은 무엇인가?",
+      "answer": "robots.txt"
+    },
+    {
+      "id": 7,
+      "type": "단답형",
+      "question": "ISO 31000 위험평가 방법론에 따른 위험평가 절차에 대한 설명이다. ( )에 들어갈 위험평가 단계명을 기술하시오.\n( A ) : 운영 실패, 공급망 중단 또는 인재 격차와 같은 외부 및 내부 위험을 고려하여 잠재된 위험 식별\n( B ) : 확인된 위험이 조직의 목표 및 운영에 미칠 가능성과 잠재적 영향을 분석\n( C ) : 조직의 위험 감수성(Risk Appetite), 수용 능력, 위험과 보상 간의 균형을 고려하여 위험 허용 수준(DoA) 결정하고, 위험의 중요성에 따라 위험 처리 필요성을 결정",
+      "answer": "위험식별, 위험분석, 위험평가"
+    },
+    {
+      "id": 8,
+      "type": "단답형",
+      "question": "다음과 같은 기능을 수행하는 정보보호 솔루션의 이름은 무엇인가?\n- PC에 설치된 에이전트, 네트워크 센서를 통하여, 이동식 디스크, 이메일, 메신저, 웹사이트 파일 업로드를 이용한 내부 문서 이동 탐지\n- HTTPS와 같은 암호화 통신에서도 중요 내부 문서 이동 탐지 가능\n- 일부 솔루션에서는 파일 암호화, 파일 삭제와 같은 부가 기능 탑재",
+      "answer": "DLP(Data Loss Prevention)"
+    },
+    {
+      "id": 9,
+      "type": "단답형",
+      "question": "유닉스에서 현재 실행되고 있는 프로세스 정보가 기록되며, 숨겨진 프로세스를 찾기 위해 참조하는 경로는 /( A )이다.",
+      "answer": "proc"
+    },
+    {
+      "id": 10,
+      "type": "단답형",
+      "question": "다음 아파치 로그를 보고 물음에 답하시오\n[아파치 로그]\n200.3.1.4 - - [30/May/2023:01:20:01 +09:00] \"(1) GET /bulletin/read.php?no=101&item=book (2) HTTP/1.1\" 200 3549 (3) \"http://test.co.kr/main.php\" \"Mozilla/5.0 (compatible;MSIE 10.0;Windows NT 6.1;WOW64;Trident/6.0)\"\n1) no=101&item=book 의 의미는?\n2) http 상태코드는 무엇인가?\n3) http://test.co.kr/main.php 의 의미는?",
+      "answer": "1) /bulletin/read.php 파일을 GET 방식으로 호출할 때 2개의 파라미터(no, item)에 값을 각각 할당하여(no=101 and item=book) 매칭되는 결과를 요청\n2) 200 (웹서버가 요청을 정상적으로 처리했음을 의미)\n3) 현재 URL을 호출한 referer URL을 의미(즉, test.co.kr/main.php에서 GET 방식으로 현재 URL(/bulletin/read.php)를 호출하였음)"
+    },
+    {
+      "id": 11,
+      "type": "단답형",
+      "question": "개인정보 가명처리 기법 중 수치 데이터를 임의의 수인 자리수, 실제 수 기준으로 올림 또는 내림 처리하는 기법의 명칭은 무엇인가?",
+      "answer": "랜덤 라운딩"
+    },
+    {
+      "id": 12,
+      "type": "단답형",
+      "question": "아파치 SW 재단에서 개발한 JAVA 기반의 오픈소스 프로그램으로 자바기반 프로그램을 개발할 때 로그를 쉽고 편하게 남기기 위한 목적으로 사용된다. 2021년말 이 프로그램의 JNDI Lookup 메소드를 호출할 때 입력값에 대한 검증 없이, 임의의 코드가 실행되는 취약점이 발견되어 전세계를 떠들썩하게 만들었던 프로그램의 이름은 무엇인가?",
+      "answer": "Log4J"
+    },
+    {
+      "id": 13,
+      "type": "서술형",
+      "question": "다음의 두 가지 조치가 필요한 이유를 설명하시오.\n1) chmod -s {파일명}\n2) find / -user root -type f \\( -perm -4000 -o -perm -2000 \\) |xargs ls -al",
+      "answer": "1. 두 가지 조치의 의미\n 1) 특정 파일에 설정된 특수 비트(SetUID, SetGID) 를 제거함.\n 2) / 경로 하위에 존재하는 root 가 소유주인 파일 중 특수비트(SetUID, SetGID)가 설정된 파일을 검색함.\n2. 두가지 조치가 필요한 이유\n - 특수비트가 설정된 파일을 실행하는 경우 파일의 소유주(SetUID 설정시), 또는 소유그룹(SetGID 설정시) 권한으로 실행됨. 특히 root 가 소유주 또는 소유 그룹인 파일에 특수비트가 설정되면, 일반 사용자 계정으로 실행하더라도 root 권한으로 실행되어 악의적인 행위가 가능하기 때문임."
+    },
+    {
+      "id": 14,
+      "type": "서술형",
+      "question": "rsh, rlogin, rexec 등은 인증 없이 관리자의 원격접속을 가능하게 하는 명령어들이므로 사용하지 않는 것이 안전하다. 불가피하게 사용하는 경우 /etc/hosts.equiv, $HOME/.rhosts 파일의 소유자, 권한, 파일 내 보안 설정을 어떻게 해야 안전한지 설명하시오.",
+      "answer": "1) /etc/hosts.equiv 및 $HOME/.rhosts 파일의 소유자를 root 또는, 해당 계정으로 변경\n - chown root /etc/hosts.equiv\n - chown <해당 계정명> $HOME/.rhosts \n2) 두 개 파일의 권한을 600 이하로 변경\n - chmod 600 /etc/hosts.equiv\n - chmod 600 $HOME/.rhosts\n3) 두 개 파일 내에서 \"+\"를 제거하고 허용할 호스트 및 계정만 등록\n(설정 예시) \n  +    +      # 모든 호스트의 모든 유저가 내 서버로 인증 없이 접속가능\nhostA      # 2번째 필드가 없다면 hostA의 현재 사용 중인 유저 접속가능\nhostA   +     # hostA 의 모든 유저가 인증없이 접속 가능\nhostA user01   # hostA 의 user01 사용자만 인증없이 접속가능."
+    },
+    {
+      "id": 15,
+      "type": "서술형",
+      "question": "IPTables와 관련하여 다음 물음에 답하시오.\n1) IPTables의 3가지 Chain 설명\n2) 다음 IPTables 룰의 의미 설명\n  iptables -A INPUT -p tcp ! --syn -m state --state NEW -j LOG --log-prefix \"[Faked NEW request]\"",
+      "answer": "1-1) INPUT Chain : 방화벽이 최종 목적지인 룰이 등록되는 체인\n1-2) FORWARD Chain : 방화벽을 경유하는 룰이 등록되는 체인\n1-3) OUTPUT Chain : 방화벽이 최초 출발지인 룰이 등록되는 체인\n2) TCP 연결을 신규(NEW)로 맺는 패킷의 TCP Flag값이 SYN이 아닌 경우 \"[Faked NEW request]\"을 접두어로 하여 로그에 남기라는 의미"
+    },
+    {
+      "id": 16,
+      "type": "서술형",
+      "question": "SNMP 서비스 사용 시 적용되어야 하는 보안 설정 4가지를 설명하시오.",
+      "answer": "1) 커뮤니티 스트링을 default 값이 아닌 유추하기 어려운 값으로 변경한다. \n2) 암호화가 지원되는 SNMP 버전 3을 사용한다\n3) ACL을 적용하여 SNMP를 이용할 수 있는 호스트를 제한한다.\n4) RW(Read-Write)모드는 삭제하고 가급적 RO(Read-Only)모드를 사용한다."
+    },
+    {
+      "id": 17,
+      "type": "실무형",
+      "question": "A기업에서는 다양한 유닉스 계열 서버를 운영하고 있다. Solaris, Linux, AIX, HP-UX 서버에서 패스워드 최소 길이를 8자리 이상으로 강화하기 위한 설정 방법을 기술하시오.",
+      "answer": "1) Solaris\n   - 설정대상 파일 : /etc/default/passwd \n   - 설정값 : PASSLENGTH = 8\n2) Linux\n   - 설정대상 파일 : /etc/login.defs\n   - 설정값 : PASS_MIN_LEN 8\n3) AIX\n  - 설정대상 파일 : /etc/security/user\n  - 설정값 : minlen = 8\n4) HP-UX\n  - 설정대상 파일 : /etc/default/security\n  - 설정값 : MIN_PASSWORD_LENGTH = 8"
+    },
+    {
+      "id": 18,
+      "type": "실무형",
+      "question": "xinetd 서비스에 대한 환경설정 파일에서 (1) ~(4)에 적절한 값을 기술하시오.\n#  cd /etc/xinetd.d/\n# cat telnet\nservice telnet\n{\n        flags  = REUSE   # 서비스 포트가 사용중인 경우 해당포트 재사용허용\n        socket_type  = stream  #TCP 프로토콜 선택\n        wait  = no               # 한번에 다중사용자에게 서비스 제공\n        user  = root           #  root 권한으로 실행 \n        server  = /usr/sbin/in.telnetd  #실행할 데몬 파일\n        log_on_failure  += USERID    #서버 접속 실패시 USERID를 로그에 기록\n        disable        = no                       # 서비스 사용\n        (    1    ) = 10.0.0.0/8              # 10.0.0.0/8 대역은 서비스 미허용\n        (    2    ) = 192.168.10.0/24  # 192.168.10.0/24 대역은 서비스 허용\n        (    3    ) = 3                               # 동시에 접속가능한 최대 세션 수 3개\n        access_time =  (    4    )          #접속을 허용할 시간 (9시 ~ 18시)\n}",
+      "answer": "1) no_access\n2) only_from\n3) instances\n4) 09:00-18:00"
+    }
+  ]
+}
