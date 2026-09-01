@@ -1,0 +1,101 @@
+{
+  "title": "정보보안기사 실기 기출문제 및 정답",
+  "data": [
+    {
+      "id": 1,
+      "type": "단답형",
+      "question": "Sendmail에서 스팸메일 릴레이 제한 설정 후 access db를 생성하려고 한다. ( )에 들어갈 명령어를 기술하시오.\n# ( A ) ( B ) etc/mail/access.db < etc/mail/access",
+      "answer": "makemap, hash"
+    },
+    {
+      "id": 2,
+      "type": "단답형",
+      "question": "라우터에서 snmp 프로토콜을 비활성화 하려고 한다. ( )에 들어갈 명령어를 기술하시오.\nRouter# configure terminal\nRouter(config)# ( A ) ( B )",
+      "answer": "no, snmp-server"
+    },
+    {
+      "id": 3,
+      "type": "단답형",
+      "question": "위험분석 관련하여 다음 물음에 답하시오.\n1) 위험을 모두 제거하는 것은 현실적으로 불가능하므로, 수용가능한 수준으로 경감시키기 위한 보호대책을 마련하는 것이 중요하다. 이 경우, 수용가능한 수준의 위험을 지칭하는 용어를 기술하시오.\n2) 위험이 낮으면 원칙적으로 비용절감을 위해 그냥 두는 것이 맞나? O, X로 답하시오.",
+      "answer": "1) DoA (Degree of Assurance, 위험 허용(수용) 수준)\n2) X (보호대책의 효과성을 주기적으로 평가하여, 위험수준을 지속적으로 모니터링 해야 함)"
+    },
+    {
+      "id": 4,
+      "type": "단답형",
+      "question": "업무 연속성 계획(BCP) 5단계 중 2~4단계의 명칭을 기술하시오.",
+      "answer": "BIA(Business Impact Analysis, 사업영향평가), 복구전략개발, 복구계획 수립"
+    },
+    {
+      "id": 5,
+      "type": "단답형",
+      "question": "특정 대상을 겨냥해 다양한 공격 기법(특히 알려지지 않은 취약점을 이용)을 동원하여 장기간 지속적으로 공격하는 기법을 무엇이라고 하나?",
+      "answer": "APT(Advance Persistent Threat, 지능형지속위협)"
+    },
+    {
+      "id": 6,
+      "type": "단답형",
+      "question": "불완전한 암호화 저장 취약점이 있는 웹 어플리케이션은 데이터와 자격 증명을 적절히 보호하기 위한 암호화 기능을 거의 사용하지 않아서, 보호되지 않은 데이터를 이용하여 신원 도용이나 신용카드 사기와 같은 범죄가 이루어질 수 있다. 해당 취약점을 점검하는 방법에 대하여 ( ) 에 들어갈 용어를 설명하시오.\n1) DB에 저장된 중요정보가 (A) 로 열람가능한지 확인한다\n2) (B) 또는 암호화된 쿠키값이 명백하게 랜덤으로 생성되는지 확인한다\n3) 적절한 (C) 이 제대로 적용되었는지 검증한다.",
+      "answer": "SQL Query, 세션ID, 암호화알고리즘"
+    },
+    {
+      "id": 7,
+      "type": "단답형",
+      "question": "TCP/IP 의 인터넷계층에서 동작하는 프로토콜에 대하여 ( )에 들어갈 용어를 기술하시오.\n1) ( A ) : 인터넷 계층에서 동작하는 대표적인 VPN 프로토콜\n2) ( B ) : ( A )의 세부 프로토콜로 무결성 보장, 메시지 인증 가능\n3) ( C ) : ( A )의 세부 프로토콜로도 암호화를 통한 기밀성 유지 가능",
+      "answer": "IPSec, AH, ESP"
+    },
+    {
+      "id": 8,
+      "type": "단답형",
+      "question": "위험분석 방법과 관련하여 ( )안에 들어갈 명칭을 기술하시오.\n( A ) : 시스템에 관한 전문적인 지식을 가진 전문가의 집단을 구성하고 위험을 분석 및 평가하여 정보시스템이 직면한 다양한 위험과 취약성을 토론을 통해 분석하는 방법\n( B ) : 어떤 사건도 기대대로 발생하지 않는다는 사실에 근거하여 일정 조건하에서 위험에 대한 발생가능한 결과들을 추정하는 방법\n( C ) : 자산, 위협, 보안체계등 위험분석 요인들을 정성적 언어로 표현된 값을 사용하여 기대손실을 평가하는 방법",
+      "answer": "델파이법, 시나리오법, 퍼지행렬법"
+    },
+    {
+      "id": 9,
+      "type": "단답형",
+      "question": "익스플로잇 코드와 관련되어 ( )에 들어갈 용어를 기술하시오.\n( A ) 어셈블리어/기계어로 구성되어 있는 익스플로잇 코드의 본체에 해당하는 프로그램\n( B ) NOP(No Operation)에 해당하는 x86 Hex Code\n( C ) ESP(Extended Stack Pointer) 레지스터에 있는 값을 EIP(Extended Instruction Pointer) 레지스터로 옮기는 어셈블리 명령",
+      "answer": "(A) : Shell Code\n(B) : 0x90\n(C) : RET EIP ESP or JUMP ESP"
+    },
+    {
+      "id": 10,
+      "type": "단답형",
+      "question": "httpd.conf 파일에서 디렉토리에 업로드 가능한 최대파일사이즈를 제한하는 명령어는?",
+      "answer": "LimitRequestBody"
+    },
+    {
+      "id": 11,
+      "type": "서술형",
+      "question": "IDS에서 사용하는 침입탐지 방식에 대하여 다음 물음에 답하시오.\n1) 오용 탐지의 정의\n2) 이상 탐지의 정의\n3) 오용 탐지의 장점\n4) 오용 탐지의 단점",
+      "answer": "1) 오용 탐지의 정의 : 잘 알려져 있는 공격(오용, misuse) 패턴을 룰로 등록 후, 패턴(시그니처)과 일치여부를 비교하여 침입여부를 판단하는 방식\n2) 이상 탐지의 정의 : 정상 행위와 이상 행위(anomaly)를 프로파일링 후, 통계적 분석을 통하여 침입여부를 판단하는 방식\n3) 오용 탐지의 장점 : 등록된 공격패턴에 의하여 탐지 되므로 오탐률이 낮음\n4) 오용 탐지의 단점 : 패턴에 없는 새로운 공격은 탐지가 불가하며, 새로운 공격 탐지를 위하여 지속적으로 패턴 업데이트를 해야 함."
+    },
+    {
+      "id": 12,
+      "type": "서술형",
+      "question": "재해복구시스템 유형에는 미러사이트, 핫사이트, 웜사이트, 콜드사이트가 있다. 다음 물음에 답하시오.\n1) 미러 사이트의 정의\n2) 미러사이트의 장단점 각 2개씩 설명\n3) RTO가 가장 오래 걸리는 방식은 무엇이며, 이유는 무엇인가?",
+      "answer": "1) 주센터와 동일한 수준의 시스템을 백업센터에 구축하고, 액티브-액티브 상태로 실시간 동시 서비스를 제공하는 방식\n2-장점) 신속한 업무재개 가능(RTO:즉시), 데이터의 최신성 보장(RPO:0)\n2-단점) 초기 투자 및 유지 보수 비용이 높음, 데이터 업데이트가 많은 경우 과부하 초래\n3) COLD 사이트. 데이터만 원격지에 보관하고 서비스를 위한 정보자원은 최소한으로 확보되어 있어, 재해 시 필요한 자원을 조달하여 복구하는데 오랜 시간이 소요됨."
+    },
+    {
+      "id": 13,
+      "type": "서술형",
+      "question": "개인정보 기술적,관리적 보호조치 기준에 포함된 개인정보취급자의 비밀번호 작성규칙 3가지를 기술하시오.",
+      "answer": "1) 패스워드 복잡도 및 길이 : 영문, 숫자, 특수 문자 중 2종류 이상 조합시는 10자리 이상, 3종류 이상 조합시는 최소 8자리 이상의 길이로 구성\n2) 유추하기 어려운 비밀번호 사용 : 연속적인 숫자나 생일, 전화번호 등 추측하기 쉬운 개인정보 및 아이디와 비슷한 비밀번호는 사용하지 않을 것을 권고\n3) 패스워드 유효기간 설정 : 비밀번호에 유효기간을 설정하여 최소 반기별 1회 이상 변경"
+    },
+    {
+      "id": 14,
+      "type": "실무형",
+      "question": "동일한 출발지 IP에서 2초동안 80번 포트로 30개 이상 SYN요청이 들어오는 경우 차단하는 IPtables 룰을 작성 하시오. (룰 옵션을 5개로 구분하여 설명하시오)",
+      "answer": "iptables -A INPUT -p TCP --syn --dport 80 -m recent --update --seconds 2 --hitcount 30 --name SYN_DROP -j DROP\n1) -A INPUT : Inbound 요청에 대하여\n2) -p tcp --syn : tcp syn 패킷이 들어오는 경우\n3) --dport 80 : 목적지 포트가 80 인 경우\n4) -m recent --update --seconds 2 --hitcount 30 --name SYN_DROP : 동일 IP에서 2초동안 30번 이상 요청오는 경우\n5) -j DROP : 차단한다."
+    },
+    {
+      "id": 15,
+      "type": "실무형",
+      "question": "정량적 위험평가 방법인 ALE와 관련하여 다음 물음에 답하시오.\n1) SLE의 정의\n2) SLE 계산 공식\n3) ALE 계산을 위해 필요한 정보는 무엇인가?\n4) 연간 손실이 완전 제거되는데 투입된 비용이 X라 할 때, 문제에서 언급된 변수만으로 ROI (%)를 구하는 계산식은?",
+      "answer": "1) 한번의 사건으로 발생 가능한 손실액\n2) AV(Asset Value, 자산 가치) * EF(Exposure Factor, 노출계수)\n3) SLE에 ARO(Annual Rate of Occurrence)를 곱하여 계산\n4) (ALE - X ) / X * 100"
+    },
+    {
+      "id": 16,
+      "type": "실무형",
+      "question": "MASTER와 SLAVE DNS 서버의 존파일 설정과 관련하여 다음 물음에 답하시오.\n - master name 서버 : ns1.korea.co.kr (192.168.1.1)\n - slave name 서버 : ns2.korea.co.kr (192.168.1.2)\n1) Master DNS 서버의 zone 파일 설정을 위하여 다음 ( )에 들어갈 설정 값을 쓰시오.\n/etc/named.conf\nzone \"korea.co.kr\" IN {\n          type ( A );\n          file \"korea.co.kr.db\";\n          allow-update { (B) };\n};\n\n/var/named/korea.co.kr.db\n$TTL 1000\n@    IN SOA  ns1.korea.co.kr  master.korea.co.kr. (\n                                      2022113001   ; serial\n                                      21600 ; refresh\n                                      3600 ;  retry\n                                      604800 ; expire\n                                      3600 ) ; minimum\n       IN NS ns1.korea.co.kr.\n       IN NS ns2.korea.co.kr.\nns1  IN A   ( C )\nns2  IN A   ( D )\n\n2) Slave DNS 서버의 zone 파일 설정을 위하여, 다음 ( ) 에 들어갈 설정값을 쓰시오.\n/etc/named.conf\nzone \"korea.co.kr\" IN {\n          type ( E );\n          file \"slave/korea.co.kr.db\";\n          masters { ( F ) };\n};",
+      "answer": "( A ) : master\n( B ) : 192.168.1.2;\n( C ) : 192.168.1.1\n( D ) : 192.168.1.2\n( E ) : slave\n( F ) : 192.168.1.1;"
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "title": "정보보안기사 실기 기출문제 및 정답",
+  "data": [
+    {
+      "id": 1,
+      "type": "단답형",
+      "question": "EAP를 통해 인증을 수행하고 AES-CCMP 기반 암호화를 지원하는 무선랜 보안 표준은?",
+      "answer": "WPA2"
+    },
+    {
+      "id": 2,
+      "type": "단답형",
+      "question": "바이러스 토탈(Virustotal)에서 제작하였고, 악성코드의 특성과 행위에 포함된 패턴을 이용하여 악성코드를 분류하는 툴의 이름은?",
+      "answer": "YARA"
+    },
+    {
+      "id": 3,
+      "type": "단답형",
+      "question": "SW 개발 보안과 관련하여 ( )에 들어갈 취약점명(공격기법)을 기술하시오.\n( A ) : DB와 연결되어 있는 애플리케이션의 입력값을 조작하여 의도하지 않은 결과를 반환하도록 하는 공격 기법\n( B ) : 게시판, 웹, 메일 등에 삽입된 악의적인 스크립트에 의해 쿠키 및 기타 개인정보를 특정 사이트로 전송시키는 공격 기법\n( C ) : 적절한 검증 절차를 수행하지 않은 사용자 입력값이 운영체제 명령어의 일부로 전달되어 의도하지 않은 시스템 명령어가 실행되도록 하는 공격 기법",
+      "answer": "SQL Injection, XSS, 운영체제 명령어 삽입"
+    },
+    {
+      "id": 4,
+      "type": "단답형",
+      "question": "마이크로소프트 오피스와 애플리케이션 사이 데이터를 전달하는 프로토콜로 엑셀에서 이 기능이 활성화될 시 악용될 수 있다. 해당 프로토콜의 이름을 기술하시오.",
+      "answer": "DDE(Dynamic Data Exchange)"
+    },
+    {
+      "id": 5,
+      "type": "단답형",
+      "question": "위험관리와 관련하여 ( )에 들어갈 용어를 기술하시오.\n( A ) : ( B )로 부터 보호해야 할 대상\n( B ) : ( A ) 에 손실을 발생시키는 원인이나 행위\n( C ) : ( B ) 에 의하여 손실이 발생하게 되는 ( A )에 내재된 약점",
+      "answer": "자산, 위협, 취약점"
+    },
+    {
+      "id": 6,
+      "type": "단답형",
+      "question": "정보의 무결성, 서비스의 연속성, 정보자산의 보호를 위한 것으로 기업 거버넌스의 부분집합으로서 전략적 방향을 제시하며 목적 달성, 적절한 위험관리, 조직 자산의 책임 있는 사용, 기업 보안 프로그램의 성공과 실패가 모니터링됨을 보장하는 것을 무엇이라고 하나?",
+      "answer": "정보보안 거버넌스"
+    },
+    {
+      "id": 7,
+      "type": "단답형",
+      "question": "DDoS, APT 등 공격 수행 시 C&C 서버와 접속하기 위한 도메인명을 지속적으로 변경하여 보안장비의 탐지를 우회하기 위한 기법을 무엇이라고 하는가?",
+      "answer": "DGA(Domain Generation Algorithm)"
+    },
+    {
+      "id": 8,
+      "type": "단답형",
+      "question": "위험분석절차 중 다음 ( )안에 들어갈 절차명을 기술하시오.\n1) ( A )\n2) ( B )\n3) 기존 보안대책 평가\n4) 취약성 평가\n5) 위험평가",
+      "answer": "( A ) : 자산식별, ( B ) : 자산 가치 및 의존도 평가"
+    },
+    {
+      "id": 9,
+      "type": "단답형",
+      "question": "HTTP 관련 공격 중 헤더의 CRLF(개행문자) 필드 부분을 조작함으로써 웹서버로 조작된 HTTP 헤더를 지속적으로 보내 서비스의 가용성을 떨어뜨리는 공격은?",
+      "answer": "Slow HTTP Header DoS 공격(Slowloris)"
+    },
+    {
+      "id": 10,
+      "type": "단답형",
+      "question": "모바일 앱의 특정화면으로 바로 이동할 수 있도록 지원하는 기능으로 공격자에 의하여 악용되는 경우 앱내 민감한 개인정보(카드정보, 주소 등)가 노출될 수 있는 취약점이 있다. 이 기능의 이름은 무엇인가?",
+      "answer": "모바일 딥링크"
+    },
+    {
+      "id": 11,
+      "type": "서술형",
+      "question": "SQL Injection을 예방하기 위한 prepared statement 에 대하여 다음 물음에 답하시오.\n(1) prepared statement 의 개념\n(2) prepared statement가 SQL injection 공격을 막을 수 있는 이유",
+      "answer": "(1) 최초에 한번 쿼리를 분석해 최적화 수행 후 메모리에 저장해 두고, 다음 요청 부터는 저장된 결과를 재사용하여 쿼리를 수행하는 방식이다. 성능 측면의 효율이 높고, SQL 인젝션 방지가 가능하다.\n(2) 사용자가 입력한 값이 SQL 명령의 일부가 아닌 매개 변수로 처리되기 때문에 SQL 인젝션 공격을 막을 수 있음."
+    },
+    {
+      "id": 12,
+      "type": "서술형",
+      "question": "DRDoS에 대하여 다음을 설명하시오.\n1) DRDoS의 공격 원리\n2) 기존 DoS와의 차이점\n3) Unicast RPF",
+      "answer": "1) 공격자는 소스 IP를 공격대상의 IP로 위조하여 다수의 반사서버로 요청을 보내고, 공격대상 서버는 반사서버로 부터 다수의 응답을 받아 서비스 거부 상태에 빠짐\n2) 출발지 IP가 위조되고 반사서버를 경유하므로 출처 파악이 어렵고, 다수의 좀비 PC 없이 대량의 패킷을 생성 가능함\n3) 인터페이스로 들어오는 패킷의 IP에 대해 라우팅 테이블을 확인하여 나갈 수 있는 Reverse path가 존재하지 않으면 IP가 위조된 것으로 판단하고 차단함"
+    },
+    {
+      "id": 13,
+      "type": "서술형",
+      "question": "패킷 필터링 방화벽과 관련하여 다음 물음에 답하시오.\n1) 존재하지 않는 외부 IP를 이용한 Spoofing 공격에 대응하기 위한 패킷필터링 방화벽 기술의 이름과 원리\n2) 공격자가 패킷을 소형 단편화하여 tiny fragment 공격을 수행하는 이유\n3) Tiny fragment 공격 대응 방법\n4) stateful 패킷필터링과 일반 패킷 필터링 방화벽의 차이점",
+      "answer": "1) Ingress 필터링 : 인터넷 상에서 사용되지 않는 IP 대역은 들어오지 못하게 차단함\n2) 쪼개진 패킷을 재조합하는 기능이 없는 방화벽의 탐지 및 차단 우회를 노림\n3) 단편화 패킷 재조합 기능 사용, 포트 번호가 없을 정도로 분할된 패킷 차단\n4) 일반 패킷 필터링은 헤더(IP, Port)만 단순검색 통제하며, Stateful 패킷 필터링은 세션 상태 테이블을 유지/관리하여 정교한 필터링 수행"
+    },
+    {
+      "id": 14,
+      "type": "실무형",
+      "question": "다음은 email 관련 로그이다. 이에 대하여 다음 물음에 답하시오.\n[Email로그]\n1 Delivered-To: hbiden@rosemontseneca.com\n2 Received: by 10.36.47.149 with SMTP id j143csp13601itj;\n3 Fri, 17 Apr 2015 06:00:53 -0700 (PDT)\n4 X-Received: by 10.55.27.42 with SMTP id b42mr5166039qkb.53.1429275653296;\n5 Fri, 17 Apr 2015 06:00:53 -0700 (PDT)\n6 Return-Path: <v.pozharskyi.ukraine@gmail.com>\n7 Received: from mail-qc0-x232.google.com (mail-qc0-x232.google.com. [2607:f8b0:400d:c01::232])\n8 by mx.google.com with ESMTPS id u123si11512941qhd.83.2015.04.17.06.00.52\n9 for <hbiden@rosemontseneca.com>\n10 (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);\n11 Fri, 17 Apr 2015 06:00:53 -0700 (PDT)\n12 Received-SPF: pass (google.com: domain of v.pozharskyi.ukraine@gmail.com designates 2607:f8b0:400d:c01::232 as permitted sender) client-ip=2607:f8b0:400d:c01::232;\n13 Authentication-Results: mx.google.com;\n14 spf=pass (google.com: domain of v.pozharskyi.ukraine@gmail.com designates 2607:f8b0:400d:c01::232 as permitted sender) smtp.mail=v.pozharskyi.ukraine@gmail.com;\n15 dkim=pass header.i=@gmail.com;\n\n1) 10번째 줄에서 RSA의 용도는?\n2) 이메일 로그에서 확인할 수 있는 스팸메일 대응 기법명과 동작원리를 설명하시오.",
+      "answer": "1) 인증서(서버 공개키) 검증 및 송신자 정당성 인증용\n2-1) SPF : 발송 도메인의 DNS TXT 레코드에 등록된 IP와 실제 메일 송신 IP를 비교하여 검증\n2-2) DKIM : 송신 서버의 개인키로 메일 헤더를 전자서명하고, DNS TXT 레코드에 등록된 공개키로 검증"
+    },
+    {
+      "id": 15,
+      "type": "실무형",
+      "question": "리눅스의 보안 설정과 관련하여 다음 물음에 답하시오.\n1) 계정임계값을 설정하는 파일명( A )과 ( B ) 에 들어갈 설정값을 기술하시오.\nauth required /lib/security/pam_tally.so ( B ) =5 unlock_time=120 no_magic root reset\n2) IPTable에 신규 정책을 등록하려고 한다. 패킷을 차단하기 위해 ( C )에 들어갈 옵션은 무엇인가?\n#iptables -A INPUT -p tcp -s 172.30.1.55 --dport 21 -j ( C )\n3) /etc/shadow 파일의 소유자를 root로 변경하고(D), 소유자에게만 읽기 권한을 부여(E)하기 위한 명령어를 기술하시오.\n4) 다음 아파치 설정에서 Limitrequestbody 5000000 의 의미(F)를 설명하시오.\n<Directory \"var/www/html/uploads\">\nLimitrequestbody 5000000\n</Directory>",
+      "answer": "(1-A) /etc/pam.d/system-auth (or common-auth)\n(1-B) deny\n(2-C) DROP\n(3-D) chown root /etc/shadow\n(3-E) chmod 400 /etc/shadow\n(4-F) 웹서버에 업로드 가능한 파일의 최대 크기를 5,000,000 바이트로 제한"
+    },
+    {
+      "id": 16,
+      "type": "실무형",
+      "question": "특정 공격과 관련된 로그를 보고 다음 물음에 답하시오.\n[로그]\nDNS standard query 0x2872 ANY cpsc.gov United states Korea, Republic of\nDNS standard query 0x2872 ANY cpsc.gov United states Korea, Republic of\nDNS standard query 0x2872 ANY cpsc.gov United states Korea, Republic of\nDNS standard query 0x2872 ANY cpsc.gov United states Korea, Republic of\n\n1) 어떤 공격이 수행된 것인가?\n2) 해당 공격이 수행된 것으로 판단한 이유는?\n3) 해당 공격의 원리는?\n4) 공격자들이 이 기법을 사용하는 이유 두 가지는?",
+      "answer": "1) DNS 증폭 DRDoS 공격\n2) DNS query 수행 시 ANY 타입으로 질의를 다수 수행함\n3) 출발지 IP를 대상 서버로 위조 후 ANY 타입 쿼리를 대량 전송하여 응답 메시지를 증폭시켜 부하 유발\n4-1) IP 스푸핑 및 반사서버 활용으로 공격 출처 추적이 어려움\n4-2) 적은 요청으로 큰 응답 패킷을 생성할 수 있어 효율성이 높음"
+    }
+  ]
+}
