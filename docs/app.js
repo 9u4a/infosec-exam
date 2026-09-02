@@ -180,8 +180,7 @@ function questionCard(q, opts = {}) {
       <span class="pill">${esc(q.domain)}</span>
       <button class="star ${store.isFav(q.qid) ? 'on' : ''}" title="즐겨찾기" aria-label="즐겨찾기">${store.isFav(q.qid) ? '★' : '☆'}</button>
     </div>
-    <div class="q-body">${esc(q.question)}</div>
-    ${q.supplement ? `<div class="supplement"><div class="supp-cap">📎 보충 자료 <span>(원본 데이터에 누락된 지문을 재구성)</span></div><div class="supp-body">${window.marked ? window.marked.parse(q.supplement) : esc(q.supplement)}</div></div>` : ''}
+    <div class="q-body">${esc(q.question)}${q.supplement ? `<div class="supplement"><span class="supp-cap">🧩 지문 재구성 <span>· 원본 데이터 누락분</span></span><div class="supp-body">${window.marked ? window.marked.parse(q.supplement) : esc(q.supplement)}</div></div>` : ''}</div>
 
     <label class="field my-answer">
       <span>내 답 (선택 입력)</span>
@@ -739,7 +738,23 @@ applyTheme();
 if (!location.hash) location.hash = '#/home';
 render();
 
-/* 서비스 워커 */
+/* 서비스 워커 — 새 버전 감지 시 1회 자동 새로고침 */
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloading) return;
+    reloading = true;
+    location.reload();
+  });
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) location.reload();
+        });
+      });
+    }).catch(() => {});
+  });
 }

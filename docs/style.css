@@ -162,11 +162,12 @@ label.field > span { display: block; font-size: .85rem; font-weight: 600; color:
   white-space: pre-wrap; background: var(--surface-2);
   padding: 10px; border-radius: 8px; font-size: .9rem; overflow-x: auto;
 }
-.supplement { margin-top: 12px; padding: 10px 12px; background: var(--surface-2); border: 1px dashed var(--border); border-radius: 8px; }
-.supp-cap { font-size: .8rem; font-weight: 700; color: var(--text-dim); margin-bottom: 6px; }
-.supp-cap span { font-weight: 400; }
-.supp-body { font-size: .92rem; overflow-x: auto; }
-.supp-body pre { white-space: pre-wrap; background: var(--surface); padding: 10px; border-radius: 6px; font-size: .85rem; overflow-x: auto; }
+.supplement { display: block; margin-top: 12px; padding: 10px 0 2px 12px; border-left: 3px solid var(--accent); }
+.supp-cap { display: block; font-size: .72rem; font-weight: 700; color: var(--accent); letter-spacing: .02em; margin-bottom: 4px; }
+.supp-cap span { font-weight: 400; color: var(--text-dim); }
+.supp-body { font-size: .95rem; line-height: 1.6; overflow-x: auto; white-space: normal; }
+.supp-body pre { white-space: pre; background: var(--surface-2); padding: 10px; border-radius: 6px; font-size: .8rem; overflow-x: auto; }
+.supp-body ul { margin: .4em 0; padding-left: 1.2em; }
 .supp-body table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; }
 .supp-body th, .supp-body td { border: 1px solid var(--border); padding: 5px 9px; text-align: left; font-size: .85rem; }
 .supp-body p:first-child { margin-top: 0; }

