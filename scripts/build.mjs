@@ -37,6 +37,7 @@ function loadRounds() {
       answer: q.answer,
       domain: null,
       explanation: null,
+      supplement: null,
       notes: [],
     }));
     rounds.push({ round, date, questions });
@@ -63,6 +64,8 @@ function applyMeta(rounds) {
         q.domain = info.domain;
       }
       if (info.explanation) q.explanation = info.explanation;
+      // 원본 지문(로그·설명문 등)이 누락된 문항의 보충 자료
+      if (info.supplement) q.supplement = info.supplement;
     }
   }
 }
@@ -137,11 +140,12 @@ function main() {
   applyMeta(rounds);
   const notes = loadNotes(rounds);
 
-  let total = 0, classified = 0, explained = 0;
+  let total = 0, classified = 0, explained = 0, supplemented = 0;
   for (const r of rounds) for (const q of r.questions) {
     total++;
     if (q.domain) classified++;
     if (q.explanation) explained++;
+    if (q.supplement) supplemented++;
   }
 
   const data = {
@@ -149,7 +153,7 @@ function main() {
     domains: DOMAINS,
     rounds,
     notes,
-    stats: { total, classified, explained, notes: notes.length },
+    stats: { total, classified, explained, supplemented, notes: notes.length },
   };
 
   mkdirSync(dirname(OUT_FILE), { recursive: true });
@@ -158,6 +162,7 @@ function main() {
   console.log(`✔ ${rounds.length}개 회차 · ${total}문항`);
   console.log(`  영역 분류 ${classified}/${total} (${(classified / total * 100).toFixed(0)}%)`);
   console.log(`  해설 ${explained}/${total}`);
+  console.log(`  보충 지문 ${supplemented}건`);
   console.log(`  노트 ${notes.length}개`);
   if (warnings.length) {
     console.log(`\n⚠ 경고 ${warnings.length}건:`);

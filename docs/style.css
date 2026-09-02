@@ -162,6 +162,15 @@ label.field > span { display: block; font-size: .85rem; font-weight: 600; color:
   white-space: pre-wrap; background: var(--surface-2);
   padding: 10px; border-radius: 8px; font-size: .9rem; overflow-x: auto;
 }
+.supplement { margin-top: 12px; padding: 10px 12px; background: var(--surface-2); border: 1px dashed var(--border); border-radius: 8px; }
+.supp-cap { font-size: .8rem; font-weight: 700; color: var(--text-dim); margin-bottom: 6px; }
+.supp-cap span { font-weight: 400; }
+.supp-body { font-size: .92rem; overflow-x: auto; }
+.supp-body pre { white-space: pre-wrap; background: var(--surface); padding: 10px; border-radius: 6px; font-size: .85rem; overflow-x: auto; }
+.supp-body table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; }
+.supp-body th, .supp-body td { border: 1px solid var(--border); padding: 5px 9px; text-align: left; font-size: .85rem; }
+.supp-body p:first-child { margin-top: 0; }
+.supp-body p:last-child { margin-bottom: 0; }
 .reveal-btn.open { background: var(--surface); color: var(--text-dim); border-color: var(--border); }
 .answer-wrap { margin-top: 14px; border-top: 1px dashed var(--border); padding-top: 12px; }
 .a-body { white-space: pre-wrap; }
