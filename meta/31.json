@@ -36,7 +36,8 @@
     },
     "9": {
       "domain": "애플리케이션보안",
-      "explanation": "sendmail 릴레이/스팸 차단 3파일. **sendmail.cf**: 메인 설정(sendmail.mc를 컴파일해 생성). **access**: 도메인·IP별 RELAY/REJECT/DISCARD/OK 정책을 적는 텍스트 파일. **access.db**: `makemap hash access.db < access`로 만든 해시 DB(실제 참조본). 오픈 릴레이(무제한 중계)는 스팸 발송 경유지로 악용되므로 반드시 제한."
+      "explanation": "sendmail 릴레이/스팸 차단 3파일. **sendmail.cf**: 메인 설정(sendmail.mc를 컴파일해 생성). **access**: 도메인·IP별 RELAY/REJECT/DISCARD/OK 정책을 적는 텍스트 파일. **access.db**: `makemap hash access.db < access`로 만든 해시 DB(실제 참조본). 오픈 릴레이(무제한 중계)는 스팸 발송 경유지로 악용되므로 반드시 제한.",
+      "supplement": "설명문 (재구성):\n\nsendmail 스팸·릴레이 차단 설정에서 `Relaying denied` 규칙이 담긴 메인 설정 파일은 ( 1 )이다. 도메인·IP별로 RELAY/REJECT/DISCARD 정책을 텍스트로 기록하는 파일은 `/etc/mail/( 2 )` 이며, 이를 `makemap hash` 명령으로 변환하여 sendmail이 실제 참조하는 해시 DB 파일은 `/etc/mail/( 3 )` 이다."
     },
     "10": {
       "domain": "애플리케이션보안",

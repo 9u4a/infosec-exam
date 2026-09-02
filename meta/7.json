@@ -60,7 +60,8 @@
     },
     "15": {
       "domain": "애플리케이션보안",
-      "explanation": "HTTP 요청 보안 문제. ①**id/password가 GET 파라미터 평문** → URL·로그·Referer·브라우저 히스토리에 노출, 스니핑 취약(민감정보는 POST + HTTPS). ②쿠키가 평문 전송 → 세션 하이재킹(Secure 속성 필요). ③**HTTPS(443)에서 HTTP(80)로 전환** → 암호화 안 된 구간 발생. ④Cache-Control로 캐시 미사용 시 서버 부하."
+      "explanation": "HTTP 요청 보안 문제. ①**id/password가 GET 파라미터 평문** → URL·로그·Referer·브라우저 히스토리에 노출, 스니핑 취약(민감정보는 POST + HTTPS). ②쿠키가 평문 전송 → 세션 하이재킹(Secure 속성 필요). ③**HTTPS(443)에서 HTTP(80)로 전환** → 암호화 안 된 구간 발생. ④Cache-Control로 캐시 미사용 시 서버 부하.",
+      "supplement": "분석 대상 HTTP Request (재구성 예시):\n\n```\nGET /login.jsp?id=admin&password=1q2w3e4r HTTP/1.1\nHost: www.example.com\nCache-Control: no-cache, must-revalidate\nCookie: JSESSIONID=A1B2C3D4E5F6; auth=Y; user_level=9\nReferer: https://www.example.com/main.jsp\nConnection: keep-alive\nUser-Agent: Mozilla/5.0\n```\n\n- 요청은 **80번 포트(HTTP, 평문)** 로 전송되나 Referer는 `https://`\n- 로그인 정보(`id`, `password`)가 **GET 파라미터에 평문**\n- 세션·권한 쿠키가 평문 구간에 노출\n- `Cache-Control: must-revalidate` 로 캐시 미사용 → 원본 서버 부하"
     },
     "16": {
       "domain": "시스템보안",

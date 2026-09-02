@@ -181,6 +181,7 @@ function questionCard(q, opts = {}) {
       <button class="star ${store.isFav(q.qid) ? 'on' : ''}" title="즐겨찾기" aria-label="즐겨찾기">${store.isFav(q.qid) ? '★' : '☆'}</button>
     </div>
     <div class="q-body">${esc(q.question)}</div>
+    ${q.supplement ? `<div class="supplement"><div class="supp-cap">📎 보충 자료 <span>(원본 데이터에 누락된 지문을 재구성)</span></div><div class="supp-body">${window.marked ? window.marked.parse(q.supplement) : esc(q.supplement)}</div></div>` : ''}
 
     <label class="field my-answer">
       <span>내 답 (선택 입력)</span>
