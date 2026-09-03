@@ -228,6 +228,11 @@ mark { background: var(--star); color: #000; padding: 0 1px; border-radius: 3px;
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
 .stat-grid .card { margin: 0; text-align: center; padding: 14px 10px; }
 .stat-grid .big { font-size: 1.7rem; font-weight: 800; }
+.score-card { border-left: 3px solid var(--accent); }
+.score-card h3 { margin-top: 0; }
+.score-line { font-size: 1.5rem; font-weight: 800; margin-top: 4px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.score-line b { color: var(--accent); font-size: 2rem; }
+.score-line .muted { font-size: 1rem; font-weight: 600; }
 .bar-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: .88rem; }
 .bar-row .bar-label { width: 92px; flex: none; color: var(--text-dim); }
 .bar-track { flex: 1; height: 16px; background: var(--surface-2); border-radius: 4px; overflow: hidden; display: flex; }
