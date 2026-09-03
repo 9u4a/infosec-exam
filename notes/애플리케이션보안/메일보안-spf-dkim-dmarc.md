@@ -1,7 +1,7 @@
 ---
 title: 메일 보안 (SPF · DKIM · DMARC · 릴레이 제한)
 domain: 애플리케이션보안
-questions: [16-13, 18-14, 20-14, 21-1, 25-6, 31-9, 32-16, 2-3]
+questions: [16-13, 18-14, 20-14, 21-1, 25-6, 31-9, 32-16, 2-3, 19-8]
 tags: [SPF, DKIM, DMARC, sendmail, 릴레이, PGP, S/MIME]
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: 특수 권한 (SetUID·SetGID·Sticky) · umask
 domain: 시스템보안
-questions: [1-11, 19-11, 24-13, 27-15, 32-18, 30-17]
+questions: [1-11, 19-11, 24-13, 27-15, 32-18, 30-17, 8-7, 15-14]
 tags: [setuid, setgid, sticky, umask, chmod, find]
 ---
 
@@ -53,3 +53,6 @@ SetUID root 실행 직후: RUID=사용자, EUID=0, SUID=0.
 | 077 | 600 | 700 |
 
 설정: `/etc/profile`, `/etc/bashrc`, `~/.bashrc` 에 `umask 022`.
+
+> 백업 스크립트 함정(15-14): `/etc/*` 를 tar로 묶으면 `shadow` 등이 포함되므로, 스크립트 앞에
+> `umask 266` (또는 077) 을 넣어 결과 tar를 **소유자만 읽기(400)** 로 만든다.

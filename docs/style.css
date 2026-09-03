@@ -96,6 +96,10 @@ p { margin: .5em 0; }
 }
 #tabbar a .ico { font-size: 1.25rem; line-height: 1; }
 #tabbar a.active { color: var(--accent); }
+@media (max-width: 400px) {
+  #tabbar a { font-size: .64rem; }
+  #tabbar a .ico { font-size: 1.15rem; }
+}
 @media (min-width: 900px) {
   #tabbar {
     top: 0; right: auto; width: 200px; bottom: 0;
@@ -193,6 +197,24 @@ label.field > span { display: block; font-size: .85rem; font-weight: 600; color:
 
 .nav-row { display: flex; gap: 8px; margin-top: 16px; }
 .nav-row .btn { flex: 1; }
+
+/* 이어풀기 카드 / 문항 점프 그리드 */
+.resume-card { border-color: var(--accent); background: var(--accent-weak); }
+.q-jump { margin-top: 14px; }
+.q-jump summary { cursor: pointer; padding: 6px 0; }
+.q-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 6px; margin-top: 8px; }
+.q-cell {
+  min-height: 40px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); color: var(--text-dim);
+  font: inherit; font-weight: 700; font-size: .85rem; cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.q-cell.g-o { background: var(--ok); border-color: var(--ok); color: #fff; }
+.q-cell.g-m { background: var(--maybe); border-color: var(--maybe); color: #fff; }
+.q-cell.g-x { background: var(--bad); border-color: var(--bad); color: #fff; }
+.q-cell.cur { outline: 3px solid var(--accent); outline-offset: 1px; }
+
+mark { background: var(--star); color: #000; padding: 0 1px; border-radius: 3px; }
 
 /* ============ 통계 ============ */
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }

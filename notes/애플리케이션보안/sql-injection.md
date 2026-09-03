@@ -1,7 +1,7 @@
 ---
 title: SQL Injection & 대응
 domain: 애플리케이션보안
-questions: [2-15, 4-12, 5-4, 6-14, 11-14, 22-10, 22-17, 23-6, 27-17, 30-18]
+questions: [2-15, 4-12, 5-4, 6-14, 11-14, 22-10, 22-17, 23-6, 27-17, 30-18, 18-3, 27-7]
 tags: [SQLi, Blind SQL Injection, PreparedStatement, 인증우회]
 ---
 
