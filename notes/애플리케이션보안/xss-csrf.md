@@ -1,7 +1,7 @@
 ---
 title: XSS 3유형 & CSRF
 domain: 애플리케이션보안
-questions: [3-9, 4-2, 14-16, 15-1, 16-11, 22-15, 26-9, 26-16, 28-4, 28-5, 31-10, 31-14, 31-18, 32-6, 5-13]
+questions: [3-9, 4-2, 14-16, 15-1, 16-11, 22-15, 26-9, 26-16, 28-4, 31-10, 31-14, 31-18, 32-6, 5-13]
 tags: [XSS, CSRF, 쿠키, HttpOnly, SameSite, CSRF토큰]
 ---
 
@@ -36,11 +36,28 @@ tags: [XSS, CSRF, 쿠키, HttpOnly, SameSite, CSRF토큰]
 - 중요 기능 **재인증**(비밀번호 재입력)
 - 상태변경은 GET 금지, POST + 토큰
 
-## 쿠키 보안 속성
+## 세션 vs 쿠키 (31-18)
+
+| | 쿠키 (Cookie) | 세션 (Session) |
+|---|---|---|
+| 저장 위치 | **클라이언트**(브라우저) | **서버**(세션 저장소), 클라이언트엔 세션 ID만 |
+| 전달 | HTTP 요청·응답 헤더(`Cookie` / `Set-Cookie`) | 쿠키에 담긴 세션 ID로 서버가 조회 |
+| 보안 | 스니핑·XSS·변조로 노출·조작 위험 | 값이 서버에 있어 상대적으로 안전, 세션 ID 탈취(하이재킹)는 여전히 위험 |
+| 수명 | `Expires`/`Max-Age` | 서버 타임아웃 |
+
+- 대응: 세션 ID는 로그인 후 재발급, 유휴 타임아웃, `Secure`+`HttpOnly`+`SameSite` 쿠키, HTTPS 전 구간.
+
+## 쿠키 보안 속성 (22-15)
 
 | 속성 | 기능 | 방어 |
 |---|---|---|
-| **Secure** | HTTPS에서만 전송 | 스니핑 |
-| **HttpOnly** | JS 접근 차단 | XSS 쿠키 탈취 |
-| **SameSite** | 교차 사이트 전송 제한 | CSRF |
-| **Expires / Max-Age** | 만료 시각 | 탈취 쿠키 재사용 창 축소 |
+| **Secure** | HTTPS(SSL/TLS) 연결에서만 쿠키 전송 | 평문 구간 스니핑 |
+| **HttpOnly** | JavaScript(`document.cookie`) 접근 차단 | XSS 쿠키 탈취 |
+| **SameSite** | 교차 사이트 요청에 쿠키 미전송 (`Lax`/`Strict`) | CSRF |
+| **Expires / Max-Age** | 만료 시각 지정 | 탈취 쿠키 재사용 창 축소 |
+
+## URL Rewrite / mod_rewrite (31-10)
+
+**IIS의 URL Rewrite 모듈**(Apache는 `mod_rewrite`)은 요청 URL 패턴을 정의해 다른 URL로 **재작성·리디렉션**한다.
+- 보안 활용: 악성 패턴 URL 차단, 확장자 숨김, HTTPS 강제, 디렉터리 트래버설·인젝션 시도 URL 정규화·거부.
+- 그 자체가 방화벽은 아니며 WAF·입력검증을 보완하는 수단.

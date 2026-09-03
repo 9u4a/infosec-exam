@@ -36,6 +36,20 @@ tags: [crontab, xinetd, logrotate, TMOUT, securetty, 서비스하드닝]
 | `access_times = 09:00-18:00` | 서비스 허용 시간대 |
 | `log_on_failure += USERID` | 실패 시 USERID 로깅 |
 
+## 파일 속성 잠금 — chattr / lsattr (12-14)
+
+일반 권한(rwx) 위에 얹는 **확장 속성**. 로그·설정 파일을 변조·삭제로부터 보호.
+
+| 명령 | 의미 |
+|---|---|
+| `lsattr <파일>` | 파일에 설정된 확장 속성 조회 |
+| `chattr +i <파일>` | **immutable** — root도 수정·삭제·이름변경·링크 불가 (해제: `chattr -i`) |
+| `chattr +a <파일>` | **append-only** — 추가만 가능(로그 파일에 적합), 덮어쓰기·삭제 불가 |
+
+- 침해 대응: 공격자가 `/etc/passwd`, `.bash_history`, 로그를 지우지 못하게 `+a`/`+i` 설정.
+- 조사 시 `lsattr` 로 비정상 immutable 파일(공격자가 백도어 보호용으로 건 것) 확인.
+- `last` : `/var/log/wtmp` 기반 로그인 이력 (→ `리눅스-유닉스-로그파일` 노트).
+
 ## 기타 하드닝
 
 | 항목 | 설정 |
