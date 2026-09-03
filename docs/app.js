@@ -517,6 +517,37 @@ route('summary', (app) => {
     </div>
   `));
 
+  // 단답형 점수 (2023 배점: 단답형 문항당 3점 — 서술형·실무형은 부분점수라 제외)
+  const DAN_PT = 3;
+  let danO = 0, danM = 0, danX = 0;
+  SUM.qids.forEach((qid) => {
+    if (!seenHas(qid)) return;
+    const q = BY_QID.get(qid);
+    if (!q || q.type !== '단답형') return;
+    const gr = store.lastGrade(qid);
+    if (gr === 'o') danO++;
+    else if (gr === 'm') danM++;
+    else if (gr === 'x') danX++;
+  });
+  const danCnt = danO + danM + danX;
+  if (danCnt) {
+    const score = danO * DAN_PT;
+    const maxPossible = (danO + danM) * DAN_PT;
+    const full = danCnt * DAN_PT;
+    const rate = Math.round((score / full) * 100);
+    const card = el(`
+      <div class="card score-card">
+        <h3>단답형 점수 <span class="muted small">2023 배점 · 문항당 ${DAN_PT}점</span></h3>
+        <div class="score-line"><b>${score}</b><span class="muted"> / ${full}점</span> <span class="pill accent">${rate}%</span></div>
+        <div class="small muted" style="margin-top:6px">
+          맞음 ${danO} · 애매 ${danM} · 틀림 ${danX} (${danCnt}문항)${danM ? ` · 애매함까지 정답이면 최대 ${maxPossible}점` : ''}
+        </div>
+        <div class="small muted" style="margin-top:3px">서술형·실무형(문항당 12·16점)은 부분점수라 점수 계산에서 제외</div>
+      </div>
+    `);
+    app.appendChild(card);
+  }
+
   // 영역별 성적
   const perDom = {};
   SUM.qids.forEach((qid) => {
