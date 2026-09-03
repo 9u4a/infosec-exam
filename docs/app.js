@@ -125,6 +125,18 @@ function toast(msg) {
   setTimeout(() => t.remove(), 1800);
 }
 
+/* 마크다운 렌더 후 표를 가로 스크롤 컨테이너로 감싼다 (모바일에서 표 밀림 방지) */
+function enhanceMarkdown(root) {
+  if (!root) return;
+  root.querySelectorAll('table').forEach((tbl) => {
+    if (tbl.parentElement && tbl.parentElement.classList.contains('md-table')) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'md-table';
+    tbl.parentNode.insertBefore(wrap, tbl);
+    wrap.appendChild(tbl);
+  });
+}
+
 function qLabel(q) { return `${q.round}회 ${q.no}번`; }
 
 /* 답안 텍스트에서 "정답" 접두어를 라벨로 분리 */
@@ -182,7 +194,7 @@ function questionCard(q, opts = {}) {
       <span class="pill">${esc(q.domain)}</span>
       <button class="star ${store.isFav(q.qid) ? 'on' : ''}" title="즐겨찾기" aria-label="즐겨찾기">${store.isFav(q.qid) ? '★' : '☆'}</button>
     </div>
-    <div class="q-body">${esc(q.question)}${q.supplement ? `<div class="supplement"><span class="supp-cap">🧩 지문 재구성 <span>· 원본 데이터 누락분</span></span><div class="supp-body">${window.marked ? window.marked.parse(q.supplement) : esc(q.supplement)}</div></div>` : ''}</div>
+    <div class="q-body">${esc(q.question)}${q.supplement ? `<div class="supplement"><span class="supp-cap">🧩 지문 재구성 <span>· 원본 데이터 누락분</span></span><div class="supp-body markdown">${window.marked ? window.marked.parse(q.supplement) : esc(q.supplement)}</div></div>` : ''}</div>
 
     <label class="field my-answer">
       <span>내 답 (선택 입력)</span>
@@ -206,7 +218,7 @@ function questionCard(q, opts = {}) {
     const wrap = el(`
       <div class="answer-wrap">
         <div class="a-body">${renderAnswer(q.answer)}</div>
-        ${q.explanation ? `<div class="expl"><b>💡 해설</b><div class="expl-body">${window.marked ? window.marked.parse(q.explanation) : esc(q.explanation)}</div></div>` : ''}
+        ${q.explanation ? `<div class="expl"><b>💡 해설</b><div class="expl-body markdown">${window.marked ? window.marked.parse(q.explanation) : esc(q.explanation)}</div></div>` : ''}
         ${notesHtml ? `<div class="note-links">${notesHtml}</div>` : ''}
         <div class="grade-row">
           <button class="btn" data-g="o"><span class="g-ico">⭕</span>맞음</button>
@@ -233,6 +245,7 @@ function questionCard(q, opts = {}) {
     const memo = $('.memo', wrap);
     memo.addEventListener('input', () => { memo.style.height = 'auto'; memo.style.height = memo.scrollHeight + 'px'; });
     memo.addEventListener('change', () => store.setMemo(q.qid, memo.value.trim()));
+    enhanceMarkdown(wrap);
     return wrap;
   }
 
@@ -249,6 +262,7 @@ function questionCard(q, opts = {}) {
   toggleBtn.addEventListener('click', () => setShown(!shown));
   slot.appendChild(toggleBtn);
   setShown(revealed);
+  enhanceMarkdown(card);
   return card;
 }
 
@@ -649,6 +663,7 @@ route('note', (app, args) => {
     ${(n.tags || []).map((t) => `<span class="pill">${esc(t)}</span>`).join('')}</div>`));
   const md = el(`<div class="card markdown"></div>`);
   md.innerHTML = window.marked ? window.marked.parse(n.md) : `<pre>${esc(n.md)}</pre>`;
+  enhanceMarkdown(md);
   app.appendChild(md);
 
   if (n.questions.length) {

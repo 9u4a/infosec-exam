@@ -161,29 +161,37 @@ label.field > span { display: block; font-size: .85rem; font-weight: 600; color:
   font-size: 1.4rem; line-height: 1; color: var(--border); padding: 4px;
 }
 .q-head .star.on { color: var(--star); }
-.q-body { white-space: pre-wrap; font-size: 1.02rem; }
-.q-body pre, .a-body pre {
-  white-space: pre-wrap; background: var(--surface-2);
-  padding: 10px; border-radius: 8px; font-size: .9rem; overflow-x: auto;
+.q-body {
+  white-space: pre-wrap; word-break: keep-all;
+  font-size: 1.05rem; line-height: 1.75;
 }
-.supplement { display: block; margin-top: 12px; padding: 10px 0 2px 12px; border-left: 3px solid var(--accent); }
-.supp-cap { display: block; font-size: .72rem; font-weight: 700; color: var(--accent); letter-spacing: .02em; margin-bottom: 4px; }
+.supplement { display: block; white-space: normal; margin-top: 14px; padding: 12px 0 4px 14px; border-left: 3px solid var(--accent); }
+.supp-cap { display: block; font-size: .74rem; font-weight: 700; color: var(--accent); letter-spacing: .02em; margin-bottom: 6px; }
 .supp-cap span { font-weight: 400; color: var(--text-dim); }
-.supp-body { font-size: .95rem; line-height: 1.6; overflow-x: auto; white-space: normal; }
-.supp-body pre { white-space: pre; background: var(--surface-2); padding: 10px; border-radius: 6px; font-size: .8rem; overflow-x: auto; }
-.supp-body ul { margin: .4em 0; padding-left: 1.2em; }
-.supp-body table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; }
-.supp-body th, .supp-body td { border: 1px solid var(--border); padding: 5px 9px; text-align: left; font-size: .85rem; }
-.supp-body p:first-child { margin-top: 0; }
-.supp-body p:last-child { margin-bottom: 0; }
+.supp-body { font-size: .95rem; }
 .reveal-btn.open { background: var(--surface); color: var(--text-dim); border-color: var(--border); }
-.answer-wrap { margin-top: 14px; border-top: 1px dashed var(--border); padding-top: 12px; }
-.a-body { white-space: pre-wrap; }
-.a-label { font-weight: 700; color: var(--ok); }
-.expl { margin-top: 10px; padding: 10px 12px; background: var(--surface-2); border-radius: 8px; }
-.expl .expl-body p:first-child { margin-top: 0; }
-.note-links { margin-top: 10px; }
-.note-links a { display: inline-block; margin: 2px 8px 2px 0; }
+.answer-wrap { margin-top: 16px; border-top: 1px dashed var(--border); padding-top: 14px; }
+.a-body {
+  white-space: pre-wrap; word-break: keep-all;
+  font-size: 1rem; line-height: 1.75;
+}
+.a-label {
+  display: inline-block; background: var(--ok); color: #fff;
+  font-weight: 700; font-size: .78rem; padding: 1px 8px;
+  border-radius: 5px; margin-right: 5px;
+}
+.expl {
+  margin-top: 16px; padding: 12px 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent); border-radius: 8px;
+}
+.expl > b { display: block; color: var(--accent); font-size: .9rem; margin-bottom: 6px; }
+.note-links { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+.note-links a {
+  display: inline-block; padding: 4px 10px;
+  background: var(--accent-weak); color: var(--accent);
+  border-radius: 999px; font-size: .85rem; font-weight: 600;
+}
 
 .grade-row { display: flex; gap: 8px; margin-top: 14px; }
 .grade-row .btn { flex: 1; flex-direction: column; gap: 2px; min-height: 56px; font-size: .8rem; }
@@ -235,17 +243,70 @@ mark { background: var(--star); color: #000; padding: 0 1px; border-radius: 3px;
 .heat > i { flex: 1; background: var(--accent-weak); border-radius: 2px 2px 0 0; min-height: 3px; }
 .heat > i.has { background: var(--accent); }
 
-/* ============ 노트 ============ */
-.note-cat { font-weight: 700; margin: 16px 0 4px; color: var(--text-dim); font-size: .9rem; }
-.note-item { display: block; padding: 11px 0; border-bottom: 1px solid var(--border); }
-.markdown h1 { font-size: 1.3rem; }
-.markdown h2 { font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
-.markdown code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; font-size: .9em; }
-.markdown pre { background: var(--surface-2); padding: 12px; border-radius: 8px; overflow-x: auto; }
-.markdown pre code { background: none; padding: 0; }
-.markdown table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; }
-.markdown th, .markdown td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
-.markdown blockquote { margin: .6em 0; padding-left: 12px; border-left: 3px solid var(--border); color: var(--text-dim); }
+/* ============ 노트 목록 ============ */
+.note-cat { font-weight: 700; margin: 18px 0 4px; color: var(--accent); font-size: .95rem; }
+.note-item { display: block; padding: 12px 2px; border-bottom: 1px solid var(--border); line-height: 1.5; }
+
+/* ============ 마크다운 (노트 · 해설 · 보충지문 공통) ============ */
+.markdown { font-size: .95rem; line-height: 1.75; white-space: normal; }
+.markdown > :first-child { margin-top: 0; }
+.markdown > :last-child { margin-bottom: 0; }
+.markdown h1 { font-size: 1.28rem; margin: 1.1em 0 .5em; }
+.markdown h2 {
+  font-size: 1.12rem; margin: 1.7em 0 .6em; color: var(--accent);
+  border-bottom: 1px solid var(--border); padding-bottom: 5px;
+}
+.markdown h3 { font-size: 1rem; margin: 1.35em 0 .45em; color: var(--accent); }
+.markdown p { margin: .6em 0; }
+.markdown strong { color: var(--accent); font-weight: 700; }
+.markdown em {
+  font-style: normal; font-weight: 600;
+  background: var(--accent-weak); padding: 0 4px; border-radius: 4px;
+}
+.markdown a { text-decoration: underline; }
+.markdown ul, .markdown ol { margin: .55em 0; padding-left: 1.4em; }
+.markdown li { margin: .32em 0; }
+.markdown li > ul, .markdown li > ol { margin: .2em 0; }
+.markdown code {
+  background: var(--surface-2); border: 1px solid var(--border);
+  padding: .5px 5px; border-radius: 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .86em; word-break: break-word;
+}
+.markdown pre {
+  background: var(--surface-2); border: 1px solid var(--border);
+  padding: 12px 14px; border-radius: 10px; margin: .85em 0;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.markdown pre code { background: none; border: 0; padding: 0; font-size: .82rem; line-height: 1.6; }
+.markdown blockquote {
+  margin: .95em 0; padding: 10px 14px;
+  border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;
+  background: var(--accent-weak); color: var(--text);
+}
+.markdown blockquote p:first-child { margin-top: 0; }
+.markdown blockquote p:last-child { margin-bottom: 0; }
+.markdown hr { border: 0; border-top: 1px solid var(--border); margin: 1.3em 0; }
+
+/* 표 — 가로 스크롤 컨테이너로 감싸 밀림 방지 */
+.md-table {
+  margin: .95em 0; border: 1px solid var(--border); border-radius: 10px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.md-table table { margin: 0; }
+.markdown table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+.markdown th, .markdown td {
+  padding: 9px 12px; text-align: left; vertical-align: top; line-height: 1.6;
+  border-bottom: 1px solid var(--border); border-right: 1px solid var(--border);
+}
+.markdown th:last-child, .markdown td:last-child { border-right: 0; }
+.markdown tbody tr:last-child td { border-bottom: 0; }
+.markdown thead th {
+  background: var(--surface-2); font-weight: 700; color: var(--text);
+  white-space: nowrap; border-bottom: 2px solid var(--border);
+}
+.markdown tbody tr:nth-child(2n) { background: rgba(128,128,128,.06); }
+.markdown tbody td:first-child { font-weight: 600; color: var(--text); }
 
 /* ============ 유틸 ============ */
 .center { text-align: center; }
