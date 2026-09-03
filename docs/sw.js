@@ -1,5 +1,5 @@
 /* 오프라인 지원. 앱 셸을 바꾸면 CACHE 버전을 올리세요 (data/bundle.js 는 네트워크 우선이라 무관). */
-const CACHE = 'infosec-sil-v6';
+const CACHE = 'infosec-sil-v7';
 const SHELL = [
   './',
   './index.html',

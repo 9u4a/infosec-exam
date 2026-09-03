@@ -618,37 +618,99 @@ function barBox(title, obj) {
 }
 
 /* ============ 노트 목록 ============ */
-route('notes', (app) => {
+route('notes', (app, args) => {
   app.appendChild(el(`<h1>학습 노트</h1>`));
   if (!DATA.notes.length) {
     app.appendChild(el(`<div class="empty">아직 노트가 없습니다.<br><span class="small">저장소의 <code>notes/</code> 폴더에 마크다운 파일을 추가하고<br><code>node scripts/build.mjs</code> 를 실행하세요.</span></div>`));
     return;
   }
-  app.appendChild(el(`<label class="field"><input type="text" id="nq" placeholder="노트 검색 (제목·태그·본문)"></label>`));
+
+  const cats = [...new Set(DATA.notes.map((n) => n.category))];
+  const catCount = (c) => DATA.notes.filter((n) => n.category === c).length;
+  const allTags = [...new Set(DATA.notes.flatMap((n) => n.tags || []))].sort((a, b) => a.localeCompare(b, 'ko'));
+
+  let curCat = '', curTag = '';
+  if (args[0] === 'tag') curTag = decodeURIComponent(args.slice(1).join('/') || '');
+  else if (args.length) curCat = decodeURIComponent(args.join('/'));
+  if (curCat && !cats.includes(curCat)) curCat = '';
+  if (curTag && !allTags.includes(curTag)) curTag = '';
+
+  const controls = el(`<div class="card stack">
+    <div class="chip-row" id="catRow">
+      <button class="chip" data-cat="">전체 <span>${DATA.notes.length}</span></button>
+      ${cats.map((c) => `<button class="chip" data-cat="${esc(c)}">${esc(c)} <span>${catCount(c)}</span></button>`).join('')}
+    </div>
+    <div class="row tight">
+      <input type="text" id="nq" placeholder="제목·태그·본문 검색" style="flex:2;min-width:150px" autocomplete="off">
+      <select id="ntag" style="flex:1;min-width:120px">
+        <option value="">태그 전체</option>
+        ${allTags.map((t) => `<option value="${esc(t)}">#${esc(t)}</option>`).join('')}
+      </select>
+    </div>
+  </div>`);
+  app.appendChild(controls);
   const listWrap = el(`<div id="nlist"></div>`);
   app.appendChild(listWrap);
 
-  function draw(filter) {
+  const nq = $('#nq', controls);
+  const ntag = $('#ntag', controls);
+  ntag.value = curTag;
+
+  function syncChips() {
+    controls.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c.dataset.cat === curCat));
+  }
+  function syncHash() {
+    const t = curTag ? '#/notes/tag/' + encodeURIComponent(curTag)
+      : curCat ? '#/notes/' + encodeURIComponent(curCat)
+      : '#/notes';
+    try { if (location.hash !== t) history.replaceState(null, '', t); } catch (e) { /* noop */ }
+  }
+
+  function draw() {
+    const f = nq.value.trim().toLowerCase();
+    const notes = DATA.notes.filter((n) => {
+      if (curCat && n.category !== curCat) return false;
+      if (curTag && !(n.tags || []).includes(curTag)) return false;
+      if (f && !(
+        n.title.toLowerCase().includes(f) ||
+        (n.tags || []).some((t) => t.toLowerCase().includes(f)) ||
+        n.md.toLowerCase().includes(f)
+      )) return false;
+      return true;
+    });
+
     listWrap.innerHTML = '';
-    const f = (filter || '').trim().toLowerCase();
-    const notes = DATA.notes.filter((n) => !f ||
-      n.title.toLowerCase().includes(f) ||
-      (n.tags || []).some((t) => t.toLowerCase().includes(f)) ||
-      n.md.toLowerCase().includes(f));
-    if (!notes.length) { listWrap.appendChild(el(`<p class="muted small">검색 결과 없음</p>`)); return; }
-    const cats = {};
-    notes.forEach((n) => (cats[n.category] || (cats[n.category] = [])).push(n));
-    Object.entries(cats).forEach(([cat, arr]) => {
-      listWrap.appendChild(el(`<div class="note-cat">${esc(cat)}</div>`));
+    const tags = [];
+    if (curCat) tags.push(esc(curCat));
+    if (curTag) tags.push('#' + esc(curTag));
+    if (f) tags.push('"' + esc(nq.value.trim()) + '"');
+    listWrap.appendChild(el(`<p class="small muted" style="margin:6px 2px">${notes.length}개 노트${tags.length ? ' · ' + tags.join(' · ') : ''}</p>`));
+    if (!notes.length) { listWrap.appendChild(el(`<p class="muted small">조건에 맞는 노트가 없습니다.</p>`)); return; }
+
+    const byCat = {};
+    notes.forEach((n) => (byCat[n.category] || (byCat[n.category] = [])).push(n));
+    Object.entries(byCat).forEach(([cat, arr]) => {
+      if (!curCat) listWrap.appendChild(el(`<div class="note-cat">${esc(cat)}</div>`));
       arr.forEach((n) => {
         listWrap.appendChild(el(`<a class="note-item" href="#/note/${encodeURIComponent(n.slug)}">
-          ${esc(n.title)} ${(n.tags || []).map((t) => `<span class="pill">${esc(t)}</span>`).join(' ')}
-          <span class="small muted"> · 연결 문항 ${n.questions.length}</span></a>`));
+          <span class="note-item-title">${esc(n.title)}</span>
+          <span class="note-item-meta">${(n.tags || []).slice(0, 5).map((t) => `<span class="pill">${esc(t)}</span>`).join(' ')} <span class="small muted">· 연결 ${n.questions.length}</span></span>
+        </a>`));
       });
     });
   }
-  draw('');
-  $('#nq', app).addEventListener('input', (e) => draw(e.target.value));
+
+  $('#catRow', controls).addEventListener('click', (e) => {
+    const btn = e.target.closest('.chip');
+    if (!btn) return;
+    curCat = btn.dataset.cat;
+    syncChips(); syncHash(); draw();
+  });
+  ntag.addEventListener('change', () => { curTag = ntag.value; syncHash(); draw(); });
+  nq.addEventListener('input', draw);
+
+  syncChips();
+  draw();
 });
 
 /* ============ 노트 상세 ============ */
@@ -659,8 +721,8 @@ route('note', (app, args) => {
   app.appendChild(el(`<a class="btn sm" href="#/notes">← 노트 목록</a>`));
   app.appendChild(el(`<h1>${esc(n.title)}</h1>`));
   app.appendChild(el(`<div class="row tight" style="margin-bottom:8px">
-    ${n.domain ? `<span class="pill accent">${esc(n.domain)}</span>` : ''}
-    ${(n.tags || []).map((t) => `<span class="pill">${esc(t)}</span>`).join('')}</div>`));
+    <a class="pill accent" href="#/notes/${encodeURIComponent(n.category)}">${esc(n.domain || n.category)}</a>
+    ${(n.tags || []).map((t) => `<a class="pill" href="#/notes/tag/${encodeURIComponent(t)}">${esc(t)}</a>`).join('')}</div>`));
   const md = el(`<div class="card markdown"></div>`);
   md.innerHTML = window.marked ? window.marked.parse(n.md) : `<pre>${esc(n.md)}</pre>`;
   enhanceMarkdown(md);
