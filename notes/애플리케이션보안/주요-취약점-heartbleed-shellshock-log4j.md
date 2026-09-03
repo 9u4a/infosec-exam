@@ -37,6 +37,24 @@ tags: [HeartBleed, Shellshock, Log4j, POODLE, CVE, OpenSSL]
 - 대응: **SSL 3.0 비활성화**, `TLS_FALLBACK_SCSV`
 - 관련 CBC 공격: BEAST, Lucky13
 
+## 기타 유명 취약점 (단답 대비)
+
+| 이름 | 대상 / 원리 | 대응 |
+|---|---|---|
+| **DROWN** | SSLv2를 지원하면 TLS 세션도 복호화 가능 | SSLv2 완전 비활성 |
+| **FREAK / Logjam** | export급 약한 키(RSA 512 / DH 512)로 다운그레이드 | 약한 암호군 제거 |
+| **BEAST / CRIME / BREACH** | TLS 1.0 CBC / 압축을 이용한 평문 추측 | TLS 1.2+, 압축 비활성 |
+| **EternalBlue** (MS17-010) | Windows **SMBv1** 원격 코드 실행 (WannaCry·NotPetya) | MS17-010 패치, SMBv1 비활성, 445 차단 |
+| **ProxyLogon / ProxyShell** | MS Exchange 인증우회 → 웹셸 | Exchange 누적 업데이트 |
+| **Dirty COW** (CVE-2016-5195) | 리눅스 커널 copy-on-write 경쟁 조건 → 로컬 권한 상승 | 커널 패치 |
+| **Struts2 OGNL** (CVE-2017-5638) | Content-Type 헤더의 OGNL 식 평가 → RCE (에퀴팩스 유출) | Struts 업그레이드 |
+| **Spring4Shell** (CVE-2022-22965) | Spring `ClassLoader` 바인딩 조작 → RCE | Spring 5.3.18+ |
+| **Meltdown / Spectre** | CPU 투기적 실행 → 커널 메모리 유출 | 마이크로코드·OS 패치(성능 저하) |
+| **GHOST** (CVE-2015-0235) | glibc `gethostbyname` 버퍼 오버플로 | glibc 패치 |
+
 ## 공통 대응 원칙
 
-패치 관리(테스트→배포→검증), 가상패치(WAF/IPS), 최신 CVE 모니터링, EOS 소프트웨어 교체.
+- **패치 관리 절차**: 취약점 인지 → 영향 분석 → **테스트 환경 검증** → 배포 → 적용 확인 → 롤백 계획.
+- 즉시 패치 불가 시 **가상 패치**(WAF·IPS 시그니처)로 시간 확보.
+- **CVE·보안공지 모니터링**(KISA, 벤더), 자산 인벤토리 기반 노출 파악, **EOS(지원종료) SW 교체**.
+- 인터넷 노출 최소화(불필요 포트·서비스 차단), 최소권한, 로깅·탐지.
