@@ -15,6 +15,8 @@ const DEFAULT_STATE = () => ({
   results: {},        // qid -> { attempts: [{t, g}], memo: '' }
   favorites: [],       // [qid]
   sessions: [],        // [{ id, startedAt, endedAt, scopeLabel, graded: {o,m,x} }]
+  session: null,       // 진행 중 세션 { qids, label, idx, startedAt, graded:{o,m,x}, seen:[qid] }
+  lastSummary: null,   // 마지막 제출 결과 { label, qids, seen:[qid], graded:{o,m,x} }
   settings: { alwaysShowAnswer: false, theme: 'auto' },
 });
 
@@ -268,6 +270,19 @@ route('home', (app) => {
     .sort((a, b) => b.t - a.t).slice(0, 5);
 
   app.appendChild(el(`<h1>정보보안기사 실기</h1>`));
+
+  if (SESSION && SESSION.qids && SESSION.qids.length) {
+    const rc = el(`<div class="card resume-card">
+      <div><b>이어풀기</b> <span class="muted small">${esc(SESSION.label)} · ${SESSION.idx + 1}/${SESSION.qids.length}</span></div>
+      <div class="row tight" style="margin-top:8px">
+        <button class="btn primary sm" id="resumeGo">이어서 풀기 →</button>
+        <button class="btn sm" id="resumeQuit">그만두고 제출</button>
+      </div></div>`);
+    $('#resumeGo', rc).addEventListener('click', () => navigate('#/session'));
+    $('#resumeQuit', rc).addEventListener('click', () => finishSession());
+    app.appendChild(rc);
+  }
+
   app.appendChild(el(`
     <div class="stat-grid">
       <div class="card"><div class="big">${todayCount}</div><div class="muted small">오늘 푼 문항</div></div>
@@ -294,7 +309,7 @@ route('home', (app) => {
     const box = el(`<div class="card"><h3>최근 틀린 문항</h3></div>`);
     recentWrong.forEach(({ q }) => {
       const item = el(`<div class="rank-item"><span class="pill accent">${esc(qLabel(q))}</span><span class="small muted" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.question.slice(0, 40))}</span></div>`);
-      item.addEventListener('click', () => startSession([q.qid], `${qLabel(q)} 복습`));
+      item.addEventListener('click', () => navigate('#/q/' + q.qid));
       box.appendChild(item);
     });
     app.appendChild(box);
@@ -397,8 +412,14 @@ function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.ra
 
 /* ============ 세션 진행 ============ */
 let SESSION = null;
+function saveSession() { store.state.session = SESSION; store.save(); }
+function seenAdd(qid) { if (!SESSION.seen.includes(qid)) SESSION.seen.push(qid); }
 function startSession(qids, label) {
-  SESSION = { qids, label, idx: 0, startedAt: Date.now(), graded: { o: 0, m: 0, x: 0 }, seen: new Set() };
+  if (SESSION && SESSION.qids && SESSION.qids.length) {
+    if (!confirm('진행 중인 세션이 있습니다. 새로 시작하면 현재 진행이 사라집니다. 계속할까요?')) return;
+  }
+  SESSION = { qids, label, idx: 0, startedAt: Date.now(), graded: { o: 0, m: 0, x: 0 }, seen: [] };
+  saveSession();
   navigate('#/session');
 }
 
@@ -414,21 +435,32 @@ route('session', (app) => {
   app.appendChild(el(`<div class="progress"><i style="width:${((idx + 1) / qids.length) * 100}%"></i></div>`));
 
   app.appendChild(questionCard(q, {
-    onGrade: () => { SESSION.seen.add(q.qid); },
+    onGrade: () => { seenAdd(q.qid); saveSession(); },
   }));
 
   const nav = el(`<div class="nav-row"></div>`);
   const prev = el(`<button class="btn">← 이전</button>`);
   prev.disabled = idx === 0;
-  prev.addEventListener('click', () => { SESSION.idx--; render(); });
+  prev.addEventListener('click', () => { SESSION.idx--; saveSession(); render(); });
   const isLast = idx === qids.length - 1;
   const next = el(`<button class="btn primary">${isLast ? '제출 ✓' : '다음 →'}</button>`);
   next.addEventListener('click', () => {
     if (isLast) finishSession();
-    else { SESSION.idx++; render(); }
+    else { SESSION.idx++; saveSession(); render(); }
   });
   nav.append(prev, next);
   app.appendChild(nav);
+
+  // 문항 점프 그리드 (접기)
+  const jump = el(`<details class="q-jump"><summary class="small muted">문항 이동 (${qids.length})</summary><div class="q-grid"></div></details>`);
+  const grid = $('.q-grid', jump);
+  qids.forEach((qid, i) => {
+    const g = SESSION.seen.includes(qid) ? store.lastGrade(qid) : null;
+    const b = el(`<button class="q-cell ${g ? 'g-' + g : ''} ${i === idx ? 'cur' : ''}">${i + 1}</button>`);
+    b.addEventListener('click', () => { SESSION.idx = i; saveSession(); render(); });
+    grid.appendChild(b);
+  });
+  app.appendChild(jump);
 
   const quit = el(`<button class="btn sm" style="margin-top:12px">그만두고 제출</button>`);
   quit.addEventListener('click', finishSession);
@@ -439,7 +471,7 @@ function finishSession() {
   const graded = { o: 0, m: 0, x: 0 };
   for (const qid of SESSION.qids) {
     const g = store.lastGrade(qid);
-    if (g && SESSION.seen.has(qid)) graded[g]++;
+    if (g && SESSION.seen.includes(qid)) graded[g]++;
   }
   store.addSession({
     id: SESSION.startedAt,
@@ -448,16 +480,21 @@ function finishSession() {
     scopeLabel: SESSION.label,
     graded,
   });
-  SESSION.result = graded;
+  store.state.lastSummary = { label: SESSION.label, qids: SESSION.qids.slice(), seen: SESSION.seen.slice(), graded };
+  SESSION = null;
+  store.state.session = null;
+  store.save();
   navigate('#/summary');
 }
 
 route('summary', (app) => {
-  if (!SESSION || !SESSION.result) { navigate('#/solve'); return; }
-  const g = SESSION.result;
+  const SUM = store.state.lastSummary;
+  if (!SUM) { navigate('#/solve'); return; }
+  const g = SUM.graded;
+  const seenHas = (qid) => SUM.seen.includes(qid);
   const total = g.o + g.m + g.x;
   app.appendChild(el(`<h1>제출 완료</h1>`));
-  app.appendChild(el(`<p class="muted">${esc(SESSION.label)} · 채점한 ${total}문항</p>`));
+  app.appendChild(el(`<p class="muted">${esc(SUM.label)} · 채점한 ${total}문항</p>`));
   app.appendChild(el(`
     <div class="stat-grid">
       <div class="card"><div class="big" style="color:var(--ok)">${g.o}</div><div class="muted small">맞음</div></div>
@@ -468,8 +505,8 @@ route('summary', (app) => {
 
   // 영역별 성적
   const perDom = {};
-  SESSION.qids.forEach((qid) => {
-    if (!SESSION.seen.has(qid)) return;
+  SUM.qids.forEach((qid) => {
+    if (!seenHas(qid)) return;
     const q = BY_QID.get(qid); const gr = store.lastGrade(qid);
     if (!gr) return;
     (perDom[q.domain] || (perDom[q.domain] = { o: 0, m: 0, x: 0 }))[gr]++;
@@ -482,7 +519,7 @@ route('summary', (app) => {
   }
 
   // 틀린/애매한 문항 바로가기
-  const review = SESSION.qids.filter((qid) => SESSION.seen.has(qid) && ['x', 'm'].includes(store.lastGrade(qid)));
+  const review = SUM.qids.filter((qid) => seenHas(qid) && ['x', 'm'].includes(store.lastGrade(qid)));
   if (review.length) {
     const box = el(`<div class="card"><h3>다시 볼 문항 (${review.length})</h3></div>`);
     review.forEach((qid) => {
@@ -490,11 +527,11 @@ route('summary', (app) => {
       const item = el(`<div class="rank-item"><span class="pill accent">${esc(qLabel(q))}</span>
         <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.question.slice(0, 36))}</span>
         <span class="small ${gr === 'x' ? 'rank-x' : 'muted'}">${GRADE_LABEL[gr]}</span></div>`);
-      item.addEventListener('click', () => startSession([qid], `${qLabel(q)} 복습`));
+      item.addEventListener('click', () => navigate('#/q/' + q.qid));
       box.appendChild(item);
     });
     const again = el(`<button class="btn primary wide" style="margin-top:10px">틀린·애매한 문항 다시 풀기</button>`);
-    again.addEventListener('click', () => startSession(review, `${SESSION.label} 오답복습`));
+    again.addEventListener('click', () => startSession(review, `${SUM.label} 오답복습`));
     box.appendChild(again);
     app.appendChild(box);
   }
@@ -538,7 +575,7 @@ route('stats', (app) => {
       ${x ? `<span class="small rank-x">${x}회 틀림</span>` : ''}
       ${m ? `<span class="small muted">${m}회 애매</span>` : ''}
     </div>`);
-    item.addEventListener('click', () => startSession([q.qid], `${qLabel(q)} 복습`));
+    item.addEventListener('click', () => navigate('#/q/' + q.qid));
     rank.appendChild(item);
   });
   app.appendChild(rank);
@@ -620,7 +657,7 @@ route('note', (app, args) => {
       const q = BY_QID.get(qid); if (!q) return;
       const item = el(`<div class="rank-item"><span class="pill accent">${esc(qLabel(q))}</span>
         <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.question.slice(0, 36))}</span></div>`);
-      item.addEventListener('click', () => startSession([qid], `${esc(n.title)} 관련`));
+      item.addEventListener('click', () => navigate('#/q/' + qid));
       box.appendChild(item);
     });
     const all = el(`<button class="btn primary wide" style="margin-top:10px">연결 문항 모두 풀기</button>`);
@@ -628,6 +665,164 @@ route('note', (app, args) => {
     box.appendChild(all);
     app.appendChild(box);
   }
+});
+
+/* ============ 단일 문항 (#/q/<qid>) ============ */
+route('q', (app, args) => {
+  const q = BY_QID.get(args[0]);
+  if (!q) { app.appendChild(el(`<div class="empty">문항을 찾을 수 없습니다.</div>`)); return; }
+
+  const top = el(`<div class="row tight" style="margin-bottom:6px">
+    <a class="btn sm" href="#/search">🔍 검색</a>
+    ${SESSION && SESSION.qids && SESSION.qids.length ? `<a class="btn sm" href="#/session">풀던 세션으로 →</a>` : ''}
+  </div>`);
+  app.appendChild(top);
+  app.appendChild(el(`<h1>${esc(qLabel(q))}</h1>`));
+  app.appendChild(questionCard(q));
+
+  const sameRound = QUESTIONS.filter((x) => x.round === q.round).sort((a, b) => a.no - b.no);
+  const i = sameRound.findIndex((x) => x.qid === q.qid);
+  const nav = el(`<div class="nav-row"></div>`);
+  const prev = el(`<button class="btn">← ${q.round}회 이전</button>`);
+  prev.disabled = i <= 0;
+  if (i > 0) prev.addEventListener('click', () => navigate('#/q/' + sameRound[i - 1].qid));
+  const next = el(`<button class="btn">${q.round}회 다음 →</button>`);
+  next.disabled = i >= sameRound.length - 1;
+  if (i < sameRound.length - 1) next.addEventListener('click', () => navigate('#/q/' + sameRound[i + 1].qid));
+  nav.append(prev, next);
+  app.appendChild(nav);
+
+  const whole = el(`<button class="btn sm wide" style="margin-top:10px">${q.round}회 전체 풀기 (${sameRound.length}문항) →</button>`);
+  whole.addEventListener('click', () => startSession(sameRound.map((x) => x.qid), `${q.round}회 ${sameRound.length}문항`));
+  app.appendChild(whole);
+});
+
+/* ============ 통합 검색 (#/search/<query>) ============ */
+let SEARCH_INDEX = null;
+function searchIndex() {
+  if (SEARCH_INDEX) return SEARCH_INDEX;
+  const qs = QUESTIONS.map((q) => ({
+    q,
+    full: `${q.round}회 ${q.no}번 ${q.type} ${q.domain} ${q.question} ${q.answer} ${q.explanation || ''} ${q.supplement || ''}`.toLowerCase(),
+    shallow: `${q.round}회 ${q.no}번 ${q.type} ${q.domain} ${q.question}`.toLowerCase(),
+  }));
+  const ns = DATA.notes.map((n) => ({
+    n,
+    full: `${n.title} ${(n.tags || []).join(' ')} ${n.md}`.toLowerCase(),
+  }));
+  SEARCH_INDEX = { qs, ns };
+  return SEARCH_INDEX;
+}
+
+function searchSnippet(text, toks) {
+  const src = String(text).replace(/\s+/g, ' ');
+  const low = src.toLowerCase();
+  let pos = -1, hit = '';
+  for (const t of toks) { const p = low.indexOf(t); if (p >= 0 && (pos < 0 || p < pos)) { pos = p; hit = t; } }
+  let out, lead, tail;
+  if (pos < 0) { out = src.slice(0, 90); lead = false; tail = src.length > 90; }
+  else {
+    const a = Math.max(0, pos - 40), b = Math.min(src.length, pos + hit.length + 50);
+    out = src.slice(a, b); lead = a > 0; tail = b < src.length;
+  }
+  let html = esc(out);
+  for (const t of toks) {
+    if (!t) continue;
+    const re = new RegExp('(' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    html = html.replace(re, '<mark>$1</mark>');
+  }
+  return (lead ? '…' : '') + html + (tail ? '…' : '');
+}
+
+function searchField(q, toks) {
+  const hasIn = (s) => s && toks.some((t) => String(s).toLowerCase().includes(t));
+  if (hasIn(q.question)) return { label: '문제', text: q.question };
+  if (hasIn(q.answer)) return { label: '정답', text: q.answer };
+  if (hasIn(q.explanation)) return { label: '해설', text: q.explanation };
+  if (hasIn(q.supplement)) return { label: '지문', text: q.supplement };
+  return { label: '', text: q.question };
+}
+
+route('search', (app, args) => {
+  const initial = args.length ? decodeURIComponent(args.join('/')) : '';
+  app.appendChild(el(`<h1>검색</h1>`));
+  const form = el(`<div class="card stack">
+    <label class="field"><input type="text" id="sq" placeholder="문제·정답·해설·노트 전체 검색" value="${esc(initial)}" autocomplete="off"></label>
+    <div class="row tight">
+      <select id="sdom"><option value="">전체 영역</option>${DATA.domains.map((d) => `<option value="${esc(d)}">${esc(d)}</option>`).join('')}</select>
+      <select id="stype"><option value="">전체 유형</option>${TYPES.map((t) => `<option value="${t}">${t}</option>`).join('')}</select>
+    </div>
+    <label class="row" style="align-items:center;gap:6px;margin:0">
+      <input type="checkbox" id="sdeep" checked style="width:auto"><span class="small">정답·해설 본문까지 검색</span>
+    </label>
+  </div>`);
+  app.appendChild(form);
+  const out = el(`<div id="sout"></div>`);
+  app.appendChild(out);
+
+  const idx = searchIndex();
+  const input = $('#sq', form);
+  let timer = null;
+
+  function run(pushUrl) {
+    const raw = input.value.trim();
+    if (pushUrl) {
+      const target = raw ? '#/search/' + encodeURIComponent(raw) : '#/search';
+      try { if (location.hash !== target) history.replaceState(null, '', target); } catch (e) { /* noop */ }
+    }
+    const toks = raw.toLowerCase().split(/\s+/).filter(Boolean);
+    out.innerHTML = '';
+    if (!toks.length) { out.appendChild(el(`<p class="muted small" style="padding:8px 2px">검색어를 입력하세요.</p>`)); return; }
+
+    const dom = $('#sdom', form).value;
+    const typ = $('#stype', form).value;
+    const deep = $('#sdeep', form).checked;
+
+    const qhits = idx.qs.filter(({ q, full, shallow }) => {
+      if (dom && q.domain !== dom) return false;
+      if (typ && q.type !== typ) return false;
+      const hay = deep ? full : shallow;
+      return toks.every((t) => hay.includes(t));
+    });
+    const nhits = idx.ns.filter(({ full }) => toks.every((t) => full.includes(t)));
+
+    const qbox = el(`<div class="card"><h3>문항 (${qhits.length})</h3></div>`);
+    if (!qhits.length) qbox.appendChild(el(`<p class="muted small">일치하는 문항 없음</p>`));
+    qhits.slice(0, 60).forEach(({ q }) => {
+      const mf = searchField(q, toks);
+      const item = el(`<div class="rank-item" style="display:block">
+        <div><span class="pill accent">${esc(qLabel(q))}</span> <span class="pill">${esc(q.type)}</span> <span class="pill">${esc(q.domain)}</span>${mf.label ? ` <span class="pill">${mf.label}</span>` : ''}</div>
+        <div class="small" style="margin-top:4px;line-height:1.5">${searchSnippet(mf.text, toks)}</div>
+      </div>`);
+      item.addEventListener('click', () => navigate('#/q/' + q.qid));
+      qbox.appendChild(item);
+    });
+    if (qhits.length > 60) qbox.appendChild(el(`<p class="muted small">상위 60개만 표시</p>`));
+    if (qhits.length) {
+      const b = el(`<button class="btn primary wide sm" style="margin-top:10px">이 결과 ${qhits.length}문항 풀기</button>`);
+      b.addEventListener('click', () => startSession(qhits.map((h) => h.q.qid), ('검색: ' + raw).slice(0, 40)));
+      qbox.appendChild(b);
+    }
+    out.appendChild(qbox);
+
+    const nbox = el(`<div class="card"><h3>노트 (${nhits.length})</h3></div>`);
+    if (!nhits.length) nbox.appendChild(el(`<p class="muted small">일치하는 노트 없음</p>`));
+    nhits.forEach(({ n }) => {
+      const item = el(`<a class="note-item" href="#/note/${encodeURIComponent(n.slug)}">
+        ${esc(n.title)} ${(n.tags || []).map((t) => `<span class="pill">${esc(t)}</span>`).join(' ')}
+        <span class="small muted"> · ${esc(n.category)} · 연결 ${n.questions.length}</span></a>`);
+      nbox.appendChild(item);
+    });
+    out.appendChild(nbox);
+  }
+
+  input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => run(true), 180); });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { clearTimeout(timer); run(true); } });
+  $('#sdom', form).addEventListener('change', () => run(true));
+  $('#stype', form).addEventListener('change', () => run(true));
+  $('#sdeep', form).addEventListener('change', () => run(true));
+  run(false);
+  if (!initial) setTimeout(() => { try { input.focus(); } catch (e) { /* noop */ } }, 0);
 });
 
 /* ============ 더보기 ============ */
@@ -642,7 +837,7 @@ route('more', (app) => {
       const q = BY_QID.get(qid); if (!q) return;
       const item = el(`<div class="rank-item"><span class="pill accent">${esc(qLabel(q))}</span>
         <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.question.slice(0, 36))}</span></div>`);
-      item.addEventListener('click', () => startSession([qid], `${qLabel(q)}`));
+      item.addEventListener('click', () => navigate('#/q/' + qid));
       favBox.appendChild(item);
     });
     favBox.appendChild(el(`<button class="btn sm" id="favAll" style="margin-top:8px">즐겨찾기 전체 풀기</button>`));
@@ -660,7 +855,7 @@ route('more', (app) => {
     const item = el(`<div class="rank-item" style="display:block">
       <span class="pill accent">${esc(qLabel(q))}</span>
       <div class="small" style="margin-top:4px">${esc(store.state.results[qid].memo)}</div></div>`);
-    item.addEventListener('click', () => startSession([qid], `${qLabel(q)}`));
+    item.addEventListener('click', () => navigate('#/q/' + qid));
     memoBox.appendChild(item);
   });
   app.appendChild(memoBox);
@@ -697,7 +892,7 @@ route('more', (app) => {
   $('#imp', dataBox).addEventListener('click', () => $('#impFile', dataBox).click());
   $('#impFile', dataBox).addEventListener('change', importData);
   $('#rst', dataBox).addEventListener('click', () => {
-    if (confirm('모든 학습 기록·즐겨찾기·메모를 삭제합니다. 계속할까요?')) { store.reset(); toast('초기화됨'); render(); }
+    if (confirm('모든 학습 기록·즐겨찾기·메모를 삭제합니다. 계속할까요?')) { store.reset(); SESSION = null; toast('초기화됨'); render(); }
   });
   app.appendChild(dataBox);
 
@@ -726,6 +921,8 @@ function importData(e) {
       if (!confirm('현재 기록을 가져온 파일로 덮어씁니다. 계속할까요?')) return;
       store.state = Object.assign(DEFAULT_STATE(), parsed);
       store.state.settings = Object.assign(DEFAULT_STATE().settings, parsed.settings || {});
+      SESSION = (store.state.session && Array.isArray(store.state.session.qids) && store.state.session.qids.length) ? store.state.session : null;
+      store.state.session = SESSION;
       store.save(); applyTheme(); toast('가져오기 완료'); render();
     } catch (err) { toast('가져오기 실패: ' + err.message); }
   };
@@ -735,6 +932,12 @@ function importData(e) {
 /* ============ 부팅 ============ */
 store.load();
 applyTheme();
+if (store.state.session && Array.isArray(store.state.session.qids) && store.state.session.qids.length) {
+  SESSION = store.state.session;
+  if (!Array.isArray(SESSION.seen)) SESSION.seen = [];
+} else {
+  store.state.session = null;
+}
 if (!location.hash) location.hash = '#/home';
 render();
 
