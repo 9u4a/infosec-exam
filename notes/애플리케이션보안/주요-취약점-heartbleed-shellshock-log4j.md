@@ -21,7 +21,8 @@ tags: [HeartBleed, Shellshock, Log4j, POODLE, CVE, OpenSSL]
 ## Shellshock / Bashdoor (CVE-2014-6271)
 
 - **Bash**가 환경변수에 담긴 함수 정의(`() { :;};`) **뒤에 붙은 명령까지 실행**
-- CGI(User-Agent, Referer 등)를 통해 원격 명령 실행 → 흔히 리버스 셸
+- CGI(User-Agent, Referer 등)를 통해 원격 명령 실행 → 흔히 **리버스 셸** 또는 **웹셸 파일 생성**
+  - Access 로그 예: `"GET /cgi-bin/websrc HTTP/1.1" 301 ... "() { :;}; ... b.php"` → `b.php` 웹셸 업로드 시도 (29-8)
 - 대응: Bash 패치, mod_cgi 비활성화, WAF (`() {` 패턴 차단)
 
 ## Log4Shell (CVE-2021-44228)
