@@ -7,6 +7,7 @@ const BY_QID = new Map(QUESTIONS.map((q) => [q.qid, q]));
 const NOTE_BY_SLUG = new Map(DATA.notes.map((n) => [n.slug, n]));
 const TYPES = ['단답형', '서술형', '실무형'];
 const GRADE_LABEL = { o: '맞음', m: '애매함', x: '틀림' };
+const GRADE_ICON = { o: '⭕', m: '🔺', x: '❌' };
 
 /* ============ 저장소 ============ */
 const LS_KEY = 'infosec_v1';
@@ -15,8 +16,8 @@ const DEFAULT_STATE = () => ({
   results: {},        // qid -> { attempts: [{t, g}], memo: '' }
   favorites: [],       // [qid]
   sessions: [],        // [{ id, startedAt, endedAt, scopeLabel, graded: {o,m,x} }]
-  session: null,       // 진행 중 세션 { qids, label, idx, startedAt, graded:{o,m,x}, seen:[qid] }
-  lastSummary: null,   // 마지막 제출 결과 { label, qids, seen:[qid], graded:{o,m,x} }
+  session: null,       // 진행 중 세션 { qids, label, idx, startedAt }
+  lastSummary: null,   // 마지막 제출 결과 { label, qids, startedAt, graded:{o,m,x} }
   settings: { alwaysShowAnswer: false, theme: 'auto' },
 });
 
@@ -42,6 +43,22 @@ const store = {
   grade(qid, g) {
     this.result(qid).attempts.push({ t: Date.now(), g });
     this.save();
+  },
+  // 이번 풀이(since 이후) 채점: 같은 풀이에서 다시 누르면 마지막 기록을 교체
+  gradeSince(qid, g, since) {
+    const a = this.result(qid).attempts;
+    if (a.length && a[a.length - 1].t >= since) a[a.length - 1] = { t: Date.now(), g };
+    else a.push({ t: Date.now(), g });
+    this.save();
+  },
+  // since(타임스탬프) 이후에 매긴 마지막 채점 (없으면 null)
+  lastGradeSince(qid, since) {
+    const a = this.state.results[qid] && this.state.results[qid].attempts;
+    if (!a) return null;
+    for (let i = a.length - 1; i >= 0; i--) {
+      if (a[i].t >= since) return a[i].g;
+    }
+    return null;
   },
   setMemo(qid, memo) { this.result(qid).memo = memo; this.save(); },
   isFav(qid) { return this.state.favorites.includes(qid); },
@@ -180,6 +197,8 @@ function applyTheme() {
 /* ============ 문제 카드 컴포넌트 ============ */
 function questionCard(q, opts = {}) {
   const revealed = opts.revealed ?? store.state.settings.alwaysShowAnswer;
+  // 이번 풀이 기준 시각: 세션이면 세션 시작, 아니면 카드를 연 지금 → 이전 채점은 힌트로만 표시
+  const sinceTs = opts.sessionStart || Date.now();
   const card = el(`<div class="card q-card"></div>`);
 
   const notesHtml = (q.notes || []).map((slug) => {
@@ -215,11 +234,18 @@ function questionCard(q, opts = {}) {
 
   function buildAnswer() {
     const r = store.result(q.qid);
+    const priorN = store.attemptCount(q.qid);
+    const priorLast = store.lastGrade(q.qid);
+    const priorX = store.wrongCount(q.qid);
+    const histHtml = priorN
+      ? `<div class="grade-hist small">지난 채점 ${GRADE_ICON[priorLast] || ''} <b>${GRADE_LABEL[priorLast] || '-'}</b> · ${priorN}회 풀이${priorX ? ` · 누적 오답 ${priorX}회` : ''}</div>`
+      : '';
     const wrap = el(`
       <div class="answer-wrap">
         <div class="a-body">${renderAnswer(q.answer)}</div>
         ${q.explanation ? `<div class="expl"><b>💡 해설</b><div class="expl-body markdown">${window.marked ? window.marked.parse(q.explanation) : esc(q.explanation)}</div></div>` : ''}
         ${notesHtml ? `<div class="note-links">${notesHtml}</div>` : ''}
+        ${histHtml}
         <div class="grade-row">
           <button class="btn" data-g="o"><span class="g-ico">⭕</span>맞음</button>
           <button class="btn" data-g="m"><span class="g-ico">🔺</span>애매함</button>
@@ -233,12 +259,12 @@ function questionCard(q, opts = {}) {
     `);
     const gr = $('.grade-row', wrap);
     const paint = () => {
-      const last = store.lastGrade(q.qid);
-      gr.querySelectorAll('.btn').forEach((b) => b.classList.toggle('sel', b.dataset.g === last));
+      const cur = store.lastGradeSince(q.qid, sinceTs);   // 이번 풀이에서 매긴 것만 하이라이트
+      gr.querySelectorAll('.btn').forEach((b) => b.classList.toggle('sel', b.dataset.g === cur));
     };
     paint();
     gr.querySelectorAll('.btn').forEach((b) => b.addEventListener('click', () => {
-      store.grade(q.qid, b.dataset.g);
+      store.gradeSince(q.qid, b.dataset.g, sinceTs);
       paint();
       if (opts.onGrade) opts.onGrade(b.dataset.g);
     }));
@@ -427,15 +453,16 @@ function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.ra
 /* ============ 세션 진행 ============ */
 let SESSION = null;
 function saveSession() { store.state.session = SESSION; store.save(); }
-function seenAdd(qid) { if (!SESSION.seen.includes(qid)) SESSION.seen.push(qid); }
 function startSession(qids, label) {
   if (SESSION && SESSION.qids && SESSION.qids.length) {
     if (!confirm('진행 중인 세션이 있습니다. 새로 시작하면 현재 진행이 사라집니다. 계속할까요?')) return;
   }
-  SESSION = { qids, label, idx: 0, startedAt: Date.now(), graded: { o: 0, m: 0, x: 0 }, seen: [] };
+  SESSION = { qids, label, idx: 0, startedAt: Date.now() };
   saveSession();
   navigate('#/session');
 }
+// 이번 세션에서 매긴 채점 (없으면 null)
+function sessionGrade(qid) { return SESSION ? store.lastGradeSince(qid, SESSION.startedAt) : null; }
 
 route('session', (app) => {
   if (!SESSION) { navigate('#/solve'); return; }
@@ -449,7 +476,12 @@ route('session', (app) => {
   app.appendChild(el(`<div class="progress"><i style="width:${((idx + 1) / qids.length) * 100}%"></i></div>`));
 
   app.appendChild(questionCard(q, {
-    onGrade: () => { seenAdd(q.qid); saveSession(); },
+    sessionStart: SESSION.startedAt,
+    onGrade: () => {
+      saveSession();
+      const cell = grid && grid.children[idx];
+      if (cell) cell.className = `q-cell g-${sessionGrade(q.qid)} cur`;
+    },
   }));
 
   const nav = el(`<div class="nav-row"></div>`);
@@ -469,7 +501,7 @@ route('session', (app) => {
   const jump = el(`<details class="q-jump"><summary class="small muted">문항 이동 (${qids.length})</summary><div class="q-grid"></div></details>`);
   const grid = $('.q-grid', jump);
   qids.forEach((qid, i) => {
-    const g = SESSION.seen.includes(qid) ? store.lastGrade(qid) : null;
+    const g = sessionGrade(qid);
     const b = el(`<button class="q-cell ${g ? 'g-' + g : ''} ${i === idx ? 'cur' : ''}">${i + 1}</button>`);
     b.addEventListener('click', () => { SESSION.idx = i; saveSession(); render(); });
     grid.appendChild(b);
@@ -482,19 +514,20 @@ route('session', (app) => {
 });
 
 function finishSession() {
+  const startedAt = SESSION.startedAt;
   const graded = { o: 0, m: 0, x: 0 };
   for (const qid of SESSION.qids) {
-    const g = store.lastGrade(qid);
-    if (g && SESSION.seen.includes(qid)) graded[g]++;
+    const g = store.lastGradeSince(qid, startedAt);
+    if (g) graded[g]++;
   }
   store.addSession({
-    id: SESSION.startedAt,
-    startedAt: SESSION.startedAt,
+    id: startedAt,
+    startedAt,
     endedAt: Date.now(),
     scopeLabel: SESSION.label,
     graded,
   });
-  store.state.lastSummary = { label: SESSION.label, qids: SESSION.qids.slice(), seen: SESSION.seen.slice(), graded };
+  store.state.lastSummary = { label: SESSION.label, qids: SESSION.qids.slice(), startedAt, graded };
   SESSION = null;
   store.state.session = null;
   store.save();
@@ -504,11 +537,16 @@ function finishSession() {
 route('summary', (app) => {
   const SUM = store.state.lastSummary;
   if (!SUM) { navigate('#/solve'); return; }
-  const g = SUM.graded;
-  const seenHas = (qid) => SUM.seen.includes(qid);
+  const since = SUM.startedAt || 0;
+  const gradeOf = (qid) => store.lastGradeSince(qid, since);   // 이번 세션에서 매긴 채점
+
+  const g = { o: 0, m: 0, x: 0 };
+  let ungraded = 0;
+  SUM.qids.forEach((qid) => { const x = gradeOf(qid); if (x) g[x]++; else ungraded++; });
   const total = g.o + g.m + g.x;
+
   app.appendChild(el(`<h1>제출 완료</h1>`));
-  app.appendChild(el(`<p class="muted">${esc(SUM.label)} · 채점한 ${total}문항</p>`));
+  app.appendChild(el(`<p class="muted">${esc(SUM.label)} · 채점 ${total}문항${ungraded ? ` · 미채점 ${ungraded}문항` : ''}</p>`));
   app.appendChild(el(`
     <div class="stat-grid">
       <div class="card"><div class="big" style="color:var(--ok)">${g.o}</div><div class="muted small">맞음</div></div>
@@ -521,10 +559,9 @@ route('summary', (app) => {
   const DAN_PT = 3;
   let danO = 0, danM = 0, danX = 0;
   SUM.qids.forEach((qid) => {
-    if (!seenHas(qid)) return;
     const q = BY_QID.get(qid);
     if (!q || q.type !== '단답형') return;
-    const gr = store.lastGrade(qid);
+    const gr = gradeOf(qid);
     if (gr === 'o') danO++;
     else if (gr === 'm') danM++;
     else if (gr === 'x') danX++;
@@ -551,9 +588,9 @@ route('summary', (app) => {
   // 영역별 성적
   const perDom = {};
   SUM.qids.forEach((qid) => {
-    if (!seenHas(qid)) return;
-    const q = BY_QID.get(qid); const gr = store.lastGrade(qid);
+    const gr = gradeOf(qid);
     if (!gr) return;
+    const q = BY_QID.get(qid);
     (perDom[q.domain] || (perDom[q.domain] = { o: 0, m: 0, x: 0 }))[gr]++;
   });
   if (Object.keys(perDom).length) {
@@ -564,11 +601,11 @@ route('summary', (app) => {
   }
 
   // 틀린/애매한 문항 바로가기
-  const review = SUM.qids.filter((qid) => seenHas(qid) && ['x', 'm'].includes(store.lastGrade(qid)));
+  const review = SUM.qids.filter((qid) => ['x', 'm'].includes(gradeOf(qid)));
   if (review.length) {
     const box = el(`<div class="card"><h3>다시 볼 문항 (${review.length})</h3></div>`);
     review.forEach((qid) => {
-      const q = BY_QID.get(qid); const gr = store.lastGrade(qid);
+      const q = BY_QID.get(qid); const gr = gradeOf(qid);
       const item = el(`<div class="rank-item"><span class="pill accent">${esc(qLabel(q))}</span>
         <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.question.slice(0, 36))}</span>
         <span class="small ${gr === 'x' ? 'rank-x' : 'muted'}">${GRADE_LABEL[gr]}</span></div>`);
@@ -1042,7 +1079,7 @@ store.load();
 applyTheme();
 if (store.state.session && Array.isArray(store.state.session.qids) && store.state.session.qids.length) {
   SESSION = store.state.session;
-  if (!Array.isArray(SESSION.seen)) SESSION.seen = [];
+  if (!SESSION.startedAt) SESSION.startedAt = Date.now();
 } else {
   store.state.session = null;
 }
