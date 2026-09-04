@@ -193,7 +193,13 @@ label.field > span { display: block; font-size: .85rem; font-weight: 600; color:
   border-radius: 999px; font-size: .85rem; font-weight: 600;
 }
 
-.grade-row { display: flex; gap: 8px; margin-top: 14px; }
+.grade-hist {
+  margin-top: 12px; padding: 6px 10px;
+  background: var(--surface-2); border-radius: 8px;
+  color: var(--text-dim); display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+}
+.grade-hist b { color: var(--text); }
+.grade-row { display: flex; gap: 8px; margin-top: 10px; }
 .grade-row .btn { flex: 1; flex-direction: column; gap: 2px; min-height: 56px; font-size: .8rem; }
 .grade-row .btn .g-ico { font-size: 1.3rem; }
 .grade-row .btn[data-g="o"].sel { background: var(--ok); border-color: var(--ok); color: #fff; }
