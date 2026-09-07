@@ -1627,7 +1627,9 @@ cRoute('notes', (app, rest) => {
   app.appendChild(el('<h1>CPPG 학습 노트</h1>'));
   const notes = CPPG.notes;
   if (!notes.length) { app.appendChild(el('<div class="empty">아직 노트가 없습니다.</div>')); return; }
-  const cats = CSUBJ.map((s) => s.name).filter((n) => notes.some((x) => x.subject === n));
+  const subjNames = CSUBJ.map((s) => s.name);
+  const extraCats = [...new Set(notes.map((n) => n.subject))].filter((c) => !subjNames.includes(c));
+  const cats = [...subjNames, ...extraCats].filter((n) => notes.some((x) => x.subject === n));
   const catCount = (c) => notes.filter((n) => n.subject === c).length;
   const allTags = [...new Set(notes.flatMap((n) => n.tags || []))].sort((a, b) => a.localeCompare(b, 'ko'));
 
@@ -1675,7 +1677,7 @@ cRoute('notes', (app, rest) => {
       if (!curCat) listWrap.appendChild(el(`<div class="note-cat">${esc(cat)}</div>`));
       arr.forEach((n) => listWrap.appendChild(el(`<a class="note-item" href="#/cppg/note/${encodeURIComponent(n.slug)}">
         <span class="note-item-title">${esc(n.title)}</span>
-        <span class="note-item-meta">${(n.tags || []).slice(0, 5).map((t) => `<span class="pill">${esc(t)}</span>`).join(' ')} <span class="small muted">· 문제 ${n.quiz.length}</span></span></a>`)));
+        <span class="note-item-meta">${(n.tags || []).slice(0, 5).map((t) => `<span class="pill">${esc(t)}</span>`).join(' ')} <span class="small muted">· ${n.ref ? '참고자료' : '문제 ' + n.quiz.length}</span></span></a>`)));
     });
   }
   $('#ccatRow', controls).addEventListener('click', (e) => { const b = e.target.closest('.chip'); if (!b) return; curCat = b.dataset.cat; syncChips(); syncHash(); draw(); });

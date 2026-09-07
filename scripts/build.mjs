@@ -140,12 +140,21 @@ function loadNotes(rounds) {
 }
 
 // ---------- CPPG (개인정보관리사) ----------
+const CPPG_REF_CATS = ['참고자료'];   // subjects.json 에 없어도 허용되는 노트 카테고리 (문제 연결 없이 정리용)
+
 function buildCppg() {
   if (!existsSync(CPPG_DIR)) return null;
   const cfg = JSON.parse(readFileSync(join(CPPG_DIR, 'subjects.json'), 'utf8'));
   const subjects = cfg.subjects || [];
   const byId = new Map(subjects.map((s) => [s.id, s]));
   const byName = new Map(subjects.map((s) => [s.name, s]));
+  // 노트 목록 정렬 순서: subjects.json 과목 순서 → 참고자료 카테고리 → 그 외
+  const catOrder = (c) => {
+    const i = subjects.findIndex((s) => s.name === c);
+    if (i >= 0) return i;
+    const r = CPPG_REF_CATS.indexOf(c);
+    return r >= 0 ? subjects.length + r : subjects.length + CPPG_REF_CATS.length + 1;
+  };
 
   // 노트: notes/<과목명>/<슬러그>.md
   const notes = [];
@@ -155,7 +164,8 @@ function buildCppg() {
       const rel = relative(CPPG_NOTES_DIR, file).split(sep);
       const folder = rel.length > 1 ? rel[0] : '기타';
       const slug = rel.join('/').replace(/\.md$/, '');
-      if (!byName.has(folder)) warn(`cppg/notes/${slug}: 폴더명 "${folder}" 이 subjects.json 에 없음`);
+      const isRef = CPPG_REF_CATS.includes(folder);
+      if (!byName.has(folder) && !isRef) warn(`cppg/notes/${slug}: 폴더명 "${folder}" 이 subjects.json 에 없음`);
       const { meta, body } = parseFrontmatter(readFileSync(file, 'utf8'));
       const note = {
         slug,
@@ -165,11 +175,12 @@ function buildCppg() {
         quiz: [],
         md: body.trim(),
       };
+      if (isRef) note.ref = true;
       notes.push(note);
       noteBySlug.set(slug, note);
     }
   }
-  notes.sort((a, b) => a.slug.localeCompare(b.slug, 'ko'));
+  notes.sort((a, b) => catOrder(a.subject) - catOrder(b.subject) || a.slug.localeCompare(b.slug, 'ko'));
 
   // 문제: quiz/<과목id>.json
   const quiz = [];
@@ -268,7 +279,8 @@ function main() {
   const cppg = buildCppg();
   if (cppg) {
     writeCppg(cppg);
-    console.log(`\n✔ CPPG: ${cppg.stats.subjects}과목 · 노트 ${cppg.stats.notes}개 · 문제 ${cppg.stats.quiz}문항`);
+    const refCnt = cppg.notes.filter((n) => n.ref).length;
+    console.log(`\n✔ CPPG: ${cppg.stats.subjects}과목 · 노트 ${cppg.stats.notes}개(참고자료 ${refCnt}) · 문제 ${cppg.stats.quiz}문항`);
     const linked = cppg.quiz.filter((q) => q.note).length;
     console.log(`  문제–노트 연결 ${linked}/${cppg.stats.quiz}`);
     console.log(`  과목별 문제 ${cppg.subjects.map((s) => `${s.no}:${cppg.stats.perSubject[s.id]}`).join(' ')}`);
