@@ -571,31 +571,40 @@ route('summary', (app) => {
     </div>
   `));
 
-  // 단답형 점수 (2023 배점: 단답형 문항당 3점 — 서술형·실무형은 부분점수라 제외)
-  const DAN_PT = 3;
-  let danO = 0, danM = 0, danX = 0;
+  // 자가채점 점수 (2023 배점: 단답형 3점 / 서술형 12점 / 실무형 16점)
+  // ⭕ 로 채점한 문항만 만점 가산 — 서술형·실무형도 포함(부분점수 없음). 🔺애매함·❌틀림은 0점.
+  const PT = { 단답형: 3, 서술형: 12, 실무형: 16 };
+  const byType = {};
   SUM.qids.forEach((qid) => {
     const q = BY_QID.get(qid);
-    if (!q || q.type !== '단답형') return;
+    if (!q || !PT[q.type]) return;
     const gr = gradeOf(qid);
-    if (gr === 'o') danO++;
-    else if (gr === 'm') danM++;
-    else if (gr === 'x') danX++;
+    if (!gr) return;
+    (byType[q.type] || (byType[q.type] = { o: 0, m: 0, x: 0 }))[gr]++;
   });
-  const danCnt = danO + danM + danX;
-  if (danCnt) {
-    const score = danO * DAN_PT;
-    const maxPossible = (danO + danM) * DAN_PT;
-    const full = danCnt * DAN_PT;
-    const rate = Math.round((score / full) * 100);
+  const scoredTypes = ['단답형', '서술형', '실무형'].filter((t) => byType[t]);
+  if (scoredTypes.length) {
+    let score = 0, full = 0, maxPossible = 0, oCnt = 0, mCnt = 0, xCnt = 0;
+    scoredTypes.forEach((t) => {
+      const v = byType[t];
+      score += v.o * PT[t];
+      full += (v.o + v.m + v.x) * PT[t];
+      maxPossible += (v.o + v.m) * PT[t];
+      oCnt += v.o; mCnt += v.m; xCnt += v.x;
+    });
+    const rate = full ? Math.round((score / full) * 100) : 0;
+    const breakdown = scoredTypes
+      .map((t) => `${t} ${byType[t].o}/${byType[t].o + byType[t].m + byType[t].x}×${PT[t]}점`)
+      .join(' · ');
     const card = el(`
       <div class="card score-card">
-        <h3>단답형 점수 <span class="muted small">2023 배점 · 문항당 ${DAN_PT}점</span></h3>
+        <h3>자가채점 점수 <span class="muted small">2023 배점 · 단답 3 / 서술 12 / 실무 16</span></h3>
         <div class="score-line"><b>${score}</b><span class="muted"> / ${full}점</span> <span class="pill accent">${rate}%</span></div>
         <div class="small muted" style="margin-top:6px">
-          맞음 ${danO} · 애매 ${danM} · 틀림 ${danX} (${danCnt}문항)${danM ? ` · 애매함까지 정답이면 최대 ${maxPossible}점` : ''}
+          ⭕ ${oCnt} · 🔺 ${mCnt} · ❌ ${xCnt}${mCnt ? ` · 애매함까지 정답이면 최대 ${maxPossible}점` : ''}
         </div>
-        <div class="small muted" style="margin-top:3px">서술형·실무형(문항당 12·16점)은 부분점수라 점수 계산에서 제외</div>
+        <div class="small muted" style="margin-top:3px">${esc(breakdown)}</div>
+        <div class="small muted" style="margin-top:3px">⭕ 로 채점한 문항만 만점 가산(부분점수 없음). 실무형은 실제 시험에서 2문제 중 1문제만 선택 채점.</div>
       </div>
     `);
     app.appendChild(card);
