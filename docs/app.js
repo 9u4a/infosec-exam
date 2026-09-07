@@ -6,6 +6,19 @@ const QUESTIONS = DATA.rounds.flatMap((r) => r.questions);
 const BY_QID = new Map(QUESTIONS.map((q) => [q.qid, q]));
 const NOTE_BY_SLUG = new Map(DATA.notes.map((n) => [n.slug, n]));
 const TYPES = ['단답형', '서술형', '실무형'];
+
+/* 예상문제 (기사 모의고사용) — 기출과 분리, 통계·진도에는 미포함 */
+const PREDICTED = (DATA.predicted || []).map((q) => ({ ...q, predicted: true, notes: q.notes || [] }));
+const PQ_BY_ID = new Map(PREDICTED.map((q) => [q.qid, q]));
+const anyQ = (id) => BY_QID.get(id) || PQ_BY_ID.get(id);
+// 예상문제 → 노트 역인덱스 (빌드가 note.predicted 를 채우지만 안전하게 재구성)
+DATA.notes.forEach((n) => { if (!Array.isArray(n.predicted)) n.predicted = []; });
+PREDICTED.forEach((q) => q.notes.forEach((slug) => {
+  const n = NOTE_BY_SLUG.get(slug);
+  if (n && !n.predicted.includes(q.qid)) n.predicted.push(q.qid);
+}));
+const MOCK = { total: 18, quota: { 단답형: 12, 서술형: 4, 실무형: 2 }, durationMin: 180, passScore: 60,
+  domW: { 정보보안관리및법규: 29, 네트워크보안: 26, 애플리케이션보안: 23, 시스템보안: 18, 정보보안일반: 6 } };
 const GRADE_LABEL = { o: '맞음', m: '애매함', x: '틀림' };
 const GRADE_ICON = { o: '⭕', m: '🔺', x: '❌' };
 
@@ -157,7 +170,7 @@ function enhanceMarkdown(root) {
   });
 }
 
-function qLabel(q) { return `${q.round}회 ${q.no}번`; }
+function qLabel(q) { return q.predicted ? `예상 · ${q.domain}` : `${q.round}회 ${q.no}번`; }
 
 /* 답안 텍스트에서 "정답" 접두어를 라벨로 분리 */
 function renderAnswer(ans) {
@@ -182,6 +195,7 @@ function render() {
   const view = routes[path] || routes.home;
   const app = $('#app');
   app.innerHTML = '';
+  if (STIMER) { clearInterval(STIMER); STIMER = null; }   // 세션 타이머 정리 (session 라우트가 필요 시 재생성)
   try { window.scrollTo(0, 0); } catch (e) { /* noop */ }
   view(app, args);
   const tabbar = $('#tabbar');
@@ -328,13 +342,16 @@ route('home', (app) => {
   app.appendChild(el(`<h1>정보보안기사 실기</h1>`));
 
   if (SESSION && SESSION.qids && SESSION.qids.length) {
+    const isMock = SESSION.kind === 'mock';
+    const expd = sExpiresAt();
+    const dead = expd && Date.now() >= expd;
     const rc = el(`<div class="card resume-card">
-      <div><b>이어풀기</b> <span class="muted small">${esc(SESSION.label)} · ${SESSION.idx + 1}/${SESSION.qids.length}</span></div>
+      <div><b>${isMock ? '진행 중 모의고사' : '이어풀기'}</b> <span class="muted small">${esc(SESSION.label)} · ${SESSION.idx + 1}/${SESSION.qids.length}${expd ? ' · ' + (dead ? '시간 종료' : '남은 ' + fmtClock(expd - Date.now())) : ''}</span></div>
       <div class="row tight" style="margin-top:8px">
-        <button class="btn primary sm" id="resumeGo">이어서 풀기 →</button>
+        <button class="btn primary sm" id="resumeGo">${dead ? '결과 보기' : '이어서 풀기 →'}</button>
         <button class="btn sm" id="resumeQuit">그만두고 제출</button>
       </div></div>`);
-    $('#resumeGo', rc).addEventListener('click', () => navigate('#/session'));
+    $('#resumeGo', rc).addEventListener('click', () => dead ? finishSession() : navigate('#/session'));
     $('#resumeQuit', rc).addEventListener('click', () => finishSession());
     app.appendChild(rc);
   }
@@ -349,8 +366,17 @@ route('home', (app) => {
 
   app.appendChild(el(`<div class="row" style="margin-top:14px">
     <a class="btn primary" href="#/solve">문제 풀기 →</a>
+    ${PREDICTED.length ? '<a class="btn" href="#/mock">모의고사</a>' : ''}
     <a class="btn" href="#/stats">통계 보기</a>
   </div>`));
+
+  const lastMock = store.state.sessions.find((s) => s.kind === 'mock');
+  if (lastMock) {
+    app.appendChild(el(`<div class="card"><h3>최근 모의고사</h3>
+      <div class="pass-line ${lastMock.pass ? 'ok' : 'bad'}">${lastMock.score != null ? lastMock.score + ' / 100점' : '-'} · ${lastMock.pass ? '✅ 합격' : '❌ 불합격'}</div>
+      <div class="small muted">${new Date(lastMock.startedAt).toISOString().slice(0, 10)} · <a href="#/mock">새 모의고사 →</a></div>
+    </div>`));
+  }
 
   if (weak.length) {
     const box = el(`<div class="card"><h3>약점 영역</h3></div>`);
@@ -395,6 +421,7 @@ route('solve', (app) => {
       <option value="round">회차별</option>
       <option value="domain">영역별</option>
       <option value="type">유형별</option>
+      <option value="predicted">예상문제 (모의고사용)</option>
       <option value="wrong">오답만 (마지막이 틀림)</option>
       <option value="maybe">애매함만 (마지막이 애매함)</option>
       <option value="fav">즐겨찾기만</option>
@@ -405,6 +432,10 @@ route('solve', (app) => {
   const sub = el(`<div id="sub"></div>`);
   form.appendChild(sub);
 
+  const predWrap = el(`<label class="row" id="predWrap" style="align-items:center;gap:6px;margin:0">
+    <input type="checkbox" id="incPred" style="width:auto"><span class="small">예상문제도 포함</span></label>`);
+  form.appendChild(predWrap);
+
   form.appendChild(el(`<label class="field"><span>정렬</span>
     <select id="order">
       <option value="seq">회차·번호순</option>
@@ -412,7 +443,7 @@ route('solve', (app) => {
     </select></label>`));
 
   form.appendChild(el(`<label class="field" id="limitWrap"><span>문항 수 (0 = 전체)</span>
-    <input type="number" id="limit" value="0" min="0" max="532"></label>`));
+    <input type="number" id="limit" value="0" min="0" max="${QUESTIONS.length + PREDICTED.length}"></label>`));
 
   const startBtn = el(`<button class="btn primary wide" id="start">시작</button>`);
   form.appendChild(startBtn);
@@ -422,16 +453,20 @@ route('solve', (app) => {
   function renderSub() {
     const v = scopeSel.value;
     sub.innerHTML = '';
+    // '예상문제 포함'은 회차별·즐겨찾기·예상문제 범위에는 의미 없음
+    predWrap.hidden = ['round', 'fav', 'predicted'].includes(v);
     if (v === 'round') {
       sub.appendChild(el(`<label class="field"><span>회차</span><select id="p">
         ${DATA.rounds.map((r) => `<option value="${r.round}">${r.round}회 (${r.date})</option>`).reverse().join('')}
       </select></label>`));
-    } else if (v === 'domain') {
+    } else if (v === 'domain' || v === 'predicted') {
       sub.appendChild(el(`<label class="field"><span>영역</span><select id="p">
+        <option value="">전체</option>
         ${DATA.domains.map((d) => `<option value="${esc(d)}">${esc(d)}</option>`).join('')}
       </select></label>`));
     } else if (v === 'type') {
       sub.appendChild(el(`<label class="field"><span>유형</span><select id="p">
+        <option value="">전체</option>
         ${TYPES.map((t) => `<option value="${t}">${t}</option>`).join('')}
       </select></label>`));
     }
@@ -442,19 +477,22 @@ route('solve', (app) => {
   startBtn.addEventListener('click', () => {
     const v = scopeSel.value;
     const p = $('#p', sub) ? $('#p', sub).value : null;
-    let list = QUESTIONS.slice();
+    const incPred = $('#incPred', form).checked && !predWrap.hidden;
+    let list = (v === 'predicted') ? PREDICTED.slice() : (incPred ? QUESTIONS.concat(PREDICTED) : QUESTIONS.slice());
     let label = '';
     if (v === 'round') { list = list.filter((q) => q.round === +p); label = `${p}회`; }
-    else if (v === 'domain') { list = list.filter((q) => q.domain === p); label = p; }
-    else if (v === 'type') { list = list.filter((q) => q.type === p); label = p; }
+    else if (v === 'domain') { list = p ? list.filter((q) => q.domain === p) : list; label = p || '전체 영역'; }
+    else if (v === 'predicted') { list = p ? list.filter((q) => q.domain === p) : list; label = `예상문제${p ? ' ' + p : ''}`; }
+    else if (v === 'type') { list = p ? list.filter((q) => q.type === p) : list; label = p || '전체 유형'; }
     else if (v === 'wrong') { list = list.filter((q) => store.lastGrade(q.qid) === 'x'); label = '오답'; }
     else if (v === 'maybe') { list = list.filter((q) => store.lastGrade(q.qid) === 'm'); label = '애매함'; }
-    else if (v === 'fav') { list = store.state.favorites.map((id) => BY_QID.get(id)).filter(Boolean); label = '즐겨찾기'; }
+    else if (v === 'fav') { list = store.state.favorites.map((id) => anyQ(id)).filter(Boolean); label = '즐겨찾기'; }
     else if (v === 'unseen') { list = list.filter((q) => store.attemptCount(q.qid) === 0); label = '안 푼 문항'; }
     else if (v === 'random') { label = '랜덤'; }
+    if (incPred && ['domain', 'type', 'wrong', 'maybe', 'unseen', 'random'].includes(v)) label += ' + 예상';
 
     if ($('#order', form).value === 'shuffle' || v === 'random') shuffle(list);
-    else list.sort((a, b) => a.round - b.round || a.no - b.no);
+    else list.sort((a, b) => (a.round || 9999) - (b.round || 9999) || (a.no || 0) - (b.no || 0) || String(a.qid).localeCompare(String(b.qid)));
 
     const lim = +$('#limit', form).value;
     if (lim > 0) list = list.slice(0, lim);
@@ -468,12 +506,16 @@ function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.ra
 
 /* ============ 세션 진행 ============ */
 let SESSION = null;
+let STIMER = null;
 function saveSession() { store.state.session = SESSION; store.save(); }
-function startSession(qids, label) {
+function sExpiresAt() { return SESSION && SESSION.durationMin ? SESSION.startedAt + SESSION.durationMin * 60000 : null; }
+function startSession(qids, label, opts = {}) {
   if (SESSION && SESSION.qids && SESSION.qids.length) {
     if (!confirm('진행 중인 세션이 있습니다. 새로 시작하면 현재 진행이 사라집니다. 계속할까요?')) return;
   }
   SESSION = { qids, label, idx: 0, startedAt: Date.now() };
+  if (opts.kind) SESSION.kind = opts.kind;
+  if (opts.durationMin) SESSION.durationMin = opts.durationMin;
   saveSession();
   navigate('#/session');
 }
@@ -482,8 +524,22 @@ function sessionGrade(qid) { return SESSION ? store.lastGradeSince(qid, SESSION.
 
 route('session', (app) => {
   if (!SESSION) { navigate('#/solve'); return; }
+  const expd = sExpiresAt();
+  if (expd && Date.now() >= expd) { finishSession(); return; }
   const { qids, idx } = SESSION;
-  const q = BY_QID.get(qids[idx]);
+  const q = anyQ(qids[idx]);
+
+  if (expd) {
+    const timer = el(`<div class="mock-timer"><span>모의고사</span><span id="sclock">${fmtClock(expd - Date.now())}</span></div>`);
+    app.appendChild(timer);
+    const clk = $('#sclock', timer);
+    STIMER = setInterval(() => {
+      const left = expd - Date.now();
+      clk.textContent = fmtClock(left);
+      timer.classList.toggle('warn', left < 5 * 60000);
+      if (left <= 0) { clearInterval(STIMER); STIMER = null; finishSession(); }
+    }, 1000);
+  }
 
   app.appendChild(el(`<div class="q-head" style="margin-bottom:4px">
     <span class="pill">${esc(SESSION.label)}</span>
@@ -529,21 +585,56 @@ route('session', (app) => {
   app.appendChild(quit);
 });
 
-function finishSession() {
-  const startedAt = SESSION.startedAt;
-  const graded = { o: 0, m: 0, x: 0 };
-  for (const qid of SESSION.qids) {
-    const g = store.lastGradeSince(qid, startedAt);
-    if (g) graded[g]++;
-  }
-  store.addSession({
-    id: startedAt,
-    startedAt,
-    endedAt: Date.now(),
-    scopeLabel: SESSION.label,
-    graded,
+/* 2023 배점: 단답 3 / 서술 12 / 실무 16. ⭕만 만점, 🔺·❌ 0점. 모의고사는 실무형 2문제 중 최고 등급 1개만 채점 */
+const PT = { 단답형: 3, 서술형: 12, 실무형: 16 };
+function scoreQids(qids, gradeOf, mock) {
+  const byType = {};
+  qids.forEach((qid) => {
+    const q = anyQ(qid);
+    if (!q || !PT[q.type]) return;
+    const v = byType[q.type] || (byType[q.type] = { o: 0, m: 0, x: 0, graded: 0, total: 0 });
+    v.total++;
+    const gr = gradeOf(qid);
+    if (gr) { v[gr]++; v.graded++; }
   });
-  store.state.lastSummary = { label: SESSION.label, qids: SESSION.qids.slice(), startedAt, graded };
+  let score = 0, full = 0, maxIfMaybe = 0;
+  for (const t of Object.keys(byType)) {
+    const v = byType[t];
+    if (mock && t === '실무형') {
+      // 채점한 실무형 중 최고 등급 하나만 반영 (실제 시험: 2문제 중 1개 채점)
+      const best = v.o ? 'o' : v.m ? 'm' : v.x ? 'x' : null;
+      if (best === 'o') score += PT[t];
+      if (best === 'o' || best === 'm') maxIfMaybe += PT[t];
+      full += best ? PT[t] : 0;
+    } else {
+      score += v.o * PT[t];
+      full += v.graded * PT[t];
+      maxIfMaybe += (v.o + v.m) * PT[t];
+    }
+  }
+  // 모의고사 총점은 100점 만점 고정 (미채점 문항도 편성에 포함 → 0점)
+  if (mock) full = MOCK.quota.단답형 * PT.단답형 + MOCK.quota.서술형 * PT.서술형 + PT.실무형;
+  return { byType, score, full, maxIfMaybe };
+}
+
+function finishSession() {
+  if (STIMER) { clearInterval(STIMER); STIMER = null; }
+  const startedAt = SESSION.startedAt;
+  const kind = SESSION.kind || null;
+  const qids = SESSION.qids.slice();
+  const graded = { o: 0, m: 0, x: 0 };
+  const gradeOf = (qid) => store.lastGradeSince(qid, startedAt);
+  for (const qid of qids) { const g = gradeOf(qid); if (g) graded[g]++; }
+
+  const rec = { id: startedAt, startedAt, endedAt: Date.now(), scopeLabel: SESSION.label, graded };
+  const summary = { label: SESSION.label, qids, startedAt, graded, kind };
+  if (kind === 'mock') {
+    const { score } = scoreQids(qids, gradeOf, true);
+    rec.kind = 'mock'; rec.score = score; rec.pass = score >= MOCK.passScore;
+    summary.score = score; summary.pass = score >= MOCK.passScore;
+  }
+  store.addSession(rec);
+  store.state.lastSummary = summary;
   SESSION = null;
   store.state.session = null;
   store.save();
@@ -561,8 +652,40 @@ route('summary', (app) => {
   SUM.qids.forEach((qid) => { const x = gradeOf(qid); if (x) g[x]++; else ungraded++; });
   const total = g.o + g.m + g.x;
 
-  app.appendChild(el(`<h1>제출 완료</h1>`));
+  const isMock = SUM.kind === 'mock';
+  app.appendChild(el(`<h1>${isMock ? '모의고사 결과' : '제출 완료'}</h1>`));
   app.appendChild(el(`<p class="muted">${esc(SUM.label)} · 채점 ${total}문항${ungraded ? ` · 미채점 ${ungraded}문항` : ''}</p>`));
+
+  // 자가채점 점수 (2023 배점). 모의고사는 실무형 택1 채점 + 60점 합격 판정.
+  const { byType, score, full, maxIfMaybe } = scoreQids(SUM.qids, gradeOf, isMock);
+  const scoredTypes = ['단답형', '서술형', '실무형'].filter((t) => byType[t] && (isMock || byType[t].graded));
+
+  if (isMock) {
+    const pass = score >= MOCK.passScore;
+    app.appendChild(el(`<div class="card score-card">
+      <div class="pass-line ${pass ? 'ok' : 'bad'}">${score} / ${full}점 &nbsp; ${pass ? '✅ 합격' : '❌ 불합격'}</div>
+      <div class="small muted">합격 기준 ${MOCK.passScore}점 이상${maxIfMaybe > score ? ` · 🔺 애매함까지 정답이면 ${maxIfMaybe}점` : ''}</div>
+      <div class="small muted" style="margin-top:3px">${esc(scoredTypes.map((t) => `${t} ${byType[t].o}⭕/${byType[t].total}문항`).join(' · '))}</div>
+      <div class="small muted" style="margin-top:3px">⭕ 로 채점한 문항만 가산(부분점수 없음). 실무형은 2문제 중 1문제만 채점(더 높게 채점한 쪽 반영). 자가채점이므로 실제 시험 점수와 다를 수 있습니다.</div>
+    </div>`));
+  } else if (scoredTypes.length) {
+    let oCnt = 0, mCnt = 0, xCnt = 0;
+    scoredTypes.forEach((t) => { const v = byType[t]; oCnt += v.o; mCnt += v.m; xCnt += v.x; });
+    const rate = full ? Math.round((score / full) * 100) : 0;
+    const breakdown = scoredTypes.map((t) => `${t} ${byType[t].o}/${byType[t].graded}×${PT[t]}점`).join(' · ');
+    app.appendChild(el(`
+      <div class="card score-card">
+        <h3>자가채점 점수 <span class="muted small">2023 배점 · 단답 3 / 서술 12 / 실무 16</span></h3>
+        <div class="score-line"><b>${score}</b><span class="muted"> / ${full}점</span> <span class="pill accent">${rate}%</span></div>
+        <div class="small muted" style="margin-top:6px">
+          ⭕ ${oCnt} · 🔺 ${mCnt} · ❌ ${xCnt}${mCnt ? ` · 애매함까지 정답이면 최대 ${maxIfMaybe}점` : ''}
+        </div>
+        <div class="small muted" style="margin-top:3px">${esc(breakdown)}</div>
+        <div class="small muted" style="margin-top:3px">⭕ 로 채점한 문항만 만점 가산(부분점수 없음). 실무형은 실제 시험에서 2문제 중 1문제만 선택 채점.</div>
+      </div>
+    `));
+  }
+
   app.appendChild(el(`
     <div class="stat-grid">
       <div class="card"><div class="big" style="color:var(--ok)">${g.o}</div><div class="muted small">맞음</div></div>
@@ -571,51 +694,12 @@ route('summary', (app) => {
     </div>
   `));
 
-  // 자가채점 점수 (2023 배점: 단답형 3점 / 서술형 12점 / 실무형 16점)
-  // ⭕ 로 채점한 문항만 만점 가산 — 서술형·실무형도 포함(부분점수 없음). 🔺애매함·❌틀림은 0점.
-  const PT = { 단답형: 3, 서술형: 12, 실무형: 16 };
-  const byType = {};
-  SUM.qids.forEach((qid) => {
-    const q = BY_QID.get(qid);
-    if (!q || !PT[q.type]) return;
-    const gr = gradeOf(qid);
-    if (!gr) return;
-    (byType[q.type] || (byType[q.type] = { o: 0, m: 0, x: 0 }))[gr]++;
-  });
-  const scoredTypes = ['단답형', '서술형', '실무형'].filter((t) => byType[t]);
-  if (scoredTypes.length) {
-    let score = 0, full = 0, maxPossible = 0, oCnt = 0, mCnt = 0, xCnt = 0;
-    scoredTypes.forEach((t) => {
-      const v = byType[t];
-      score += v.o * PT[t];
-      full += (v.o + v.m + v.x) * PT[t];
-      maxPossible += (v.o + v.m) * PT[t];
-      oCnt += v.o; mCnt += v.m; xCnt += v.x;
-    });
-    const rate = full ? Math.round((score / full) * 100) : 0;
-    const breakdown = scoredTypes
-      .map((t) => `${t} ${byType[t].o}/${byType[t].o + byType[t].m + byType[t].x}×${PT[t]}점`)
-      .join(' · ');
-    const card = el(`
-      <div class="card score-card">
-        <h3>자가채점 점수 <span class="muted small">2023 배점 · 단답 3 / 서술 12 / 실무 16</span></h3>
-        <div class="score-line"><b>${score}</b><span class="muted"> / ${full}점</span> <span class="pill accent">${rate}%</span></div>
-        <div class="small muted" style="margin-top:6px">
-          ⭕ ${oCnt} · 🔺 ${mCnt} · ❌ ${xCnt}${mCnt ? ` · 애매함까지 정답이면 최대 ${maxPossible}점` : ''}
-        </div>
-        <div class="small muted" style="margin-top:3px">${esc(breakdown)}</div>
-        <div class="small muted" style="margin-top:3px">⭕ 로 채점한 문항만 만점 가산(부분점수 없음). 실무형은 실제 시험에서 2문제 중 1문제만 선택 채점.</div>
-      </div>
-    `);
-    app.appendChild(card);
-  }
-
   // 영역별 성적
   const perDom = {};
   SUM.qids.forEach((qid) => {
     const gr = gradeOf(qid);
     if (!gr) return;
-    const q = BY_QID.get(qid);
+    const q = anyQ(qid);
     (perDom[q.domain] || (perDom[q.domain] = { o: 0, m: 0, x: 0 }))[gr]++;
   });
   if (Object.keys(perDom).length) {
@@ -625,25 +709,107 @@ route('summary', (app) => {
     app.appendChild(box);
   }
 
-  // 틀린/애매한 문항 바로가기
-  const review = SUM.qids.filter((qid) => ['x', 'm'].includes(gradeOf(qid)));
+  // 틀린/애매한/미채점 문항 바로가기 (모의고사는 미채점도 포함)
+  const review = SUM.qids.filter((qid) => { const gr = gradeOf(qid); return gr === 'x' || gr === 'm' || (isMock && !gr); });
   if (review.length) {
     const box = el(`<div class="card"><h3>다시 볼 문항 (${review.length})</h3></div>`);
     review.forEach((qid) => {
-      const q = BY_QID.get(qid); const gr = gradeOf(qid);
+      const q = anyQ(qid); if (!q) return; const gr = gradeOf(qid);
       const item = el(`<div class="rank-item"><span class="pill accent">${esc(qLabel(q))}</span>
         <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.question.slice(0, 36))}</span>
-        <span class="small ${gr === 'x' ? 'rank-x' : 'muted'}">${GRADE_LABEL[gr]}</span></div>`);
-      item.addEventListener('click', () => navigate('#/q/' + q.qid));
+        <span class="small ${gr === 'x' ? 'rank-x' : 'muted'}">${gr ? GRADE_LABEL[gr] : '미채점'}</span></div>`);
+      item.addEventListener('click', () => navigate('#/q/' + encodeURIComponent(q.qid)));
       box.appendChild(item);
     });
-    const again = el(`<button class="btn primary wide" style="margin-top:10px">틀린·애매한 문항 다시 풀기</button>`);
-    again.addEventListener('click', () => startSession(review, `${SUM.label} 오답복습`));
+    const again = el(`<button class="btn primary wide" style="margin-top:10px">이 문항 다시 풀기</button>`);
+    again.addEventListener('click', () => startSession(review, `${SUM.label} 복습`));
     box.appendChild(again);
     app.appendChild(box);
   }
 
-  app.appendChild(el(`<div class="nav-row"><a class="btn" href="#/solve">새 세션</a><a class="btn" href="#/stats">통계</a></div>`));
+  app.appendChild(el(`<div class="nav-row">${isMock ? '<a class="btn" href="#/mock">새 모의고사</a>' : '<a class="btn" href="#/solve">새 세션</a>'}<a class="btn" href="#/stats">통계</a></div>`));
+});
+
+/* ============ 모의고사 (예상문제 18문항 · 180분 · 60점) ============ */
+function drawMock(shuffleAll) {
+  const pick = (pool, k) => {
+    if (pool.length <= k) return shuffle(pool.slice()).map((q) => q.qid);
+    // 영역 가중 랜덤 (가중치 없는/부족한 영역은 자연스럽게 남는 풀에서 보충)
+    const bag = shuffle(pool.slice());
+    const chosen = [];
+    while (chosen.length < k && bag.length) {
+      const totW = bag.reduce((s, q) => s + (MOCK.domW[q.domain] || 5), 0);
+      let r = Math.random() * totW;
+      let idx = 0;
+      for (; idx < bag.length; idx++) { r -= (MOCK.domW[bag[idx].domain] || 5); if (r <= 0) break; }
+      chosen.push(bag.splice(Math.min(idx, bag.length - 1), 1)[0].qid);
+    }
+    return chosen;
+  };
+  const ids = [];
+  for (const [type, k] of Object.entries(MOCK.quota)) {
+    ids.push(...pick(PREDICTED.filter((q) => q.type === type), k));
+  }
+  return shuffleAll ? shuffle(ids) : ids; // 기본은 단답→서술→실무 순
+}
+
+route('mock', (app) => {
+  app.appendChild(trackSwitch('sil'));
+  app.appendChild(el(`<h1>모의고사</h1>`));
+
+  if (!PREDICTED.length) {
+    app.appendChild(el(`<div class="empty">예상문제가 아직 없습니다.<br><span class="small"><code>예상문제/</code> 폴더 작성 후 <code>node scripts/build.mjs</code></span></div>`));
+    return;
+  }
+
+  // 이어풀기 (진행 중 모의고사)
+  if (SESSION && SESSION.kind === 'mock' && SESSION.qids && SESSION.qids.length) {
+    const expd = sExpiresAt();
+    const dead = expd && Date.now() >= expd;
+    const rc = el(`<div class="card resume-card">
+      <div><b>진행 중 모의고사</b> <span class="muted small">${SESSION.idx + 1}/${SESSION.qids.length}${expd ? ' · ' + (dead ? '시간 종료' : '남은 ' + fmtClock(expd - Date.now())) : ''}</span></div>
+      <div class="row tight" style="margin-top:8px">
+        <button class="btn primary sm" id="mkResume">${dead ? '결과 보기' : '이어서 →'}</button>
+        <button class="btn sm" id="mkQuit">그만두고 제출</button>
+      </div></div>`);
+    $('#mkResume', rc).addEventListener('click', () => dead ? finishSession() : navigate('#/session'));
+    $('#mkQuit', rc).addEventListener('click', finishSession);
+    app.appendChild(rc);
+  }
+
+  const perType = {};
+  PREDICTED.forEach((q) => (perType[q.type] = (perType[q.type] || 0) + 1));
+  const short = Object.entries(MOCK.quota).filter(([t, k]) => (perType[t] || 0) < k)
+    .map(([t, k]) => `${t} ${perType[t] || 0}/${k}`);
+
+  const form = el(`<div class="card stack">
+    <p class="small muted">${MOCK.total}문항(단답 12 · 서술 4 · 실무 2) · ${MOCK.durationMin}분 · ${MOCK.passScore}점 이상 합격</p>
+    <p class="small muted">예상문제 ${PREDICTED.length}개에서 영역·유형 균형으로 매번 새로 출제합니다. 필답형이라 <b>자가채점</b>이며 실제 시험 점수와 다를 수 있습니다.</p>
+    ${short.length ? `<p class="small" style="color:var(--bad)">⚠ 문제 부족: ${short.join(', ')} — 있는 만큼만 출제</p>` : ''}
+    <label class="row" style="align-items:center;gap:6px;margin:0"><input type="checkbox" id="mkTimer" checked style="width:auto"><span class="small">타이머 (${MOCK.durationMin}분, 종료 시 자동 제출)</span></label>
+    <label class="row" style="align-items:center;gap:6px;margin:0"><input type="checkbox" id="mkShuffle" style="width:auto"><span class="small">문항 순서 섞기 (유형 순서 무시)</span></label>
+    <button class="btn primary wide" id="mkStart">모의고사 시작</button>
+  </div>`);
+  app.appendChild(form);
+
+  $('#mkStart', form).addEventListener('click', () => {
+    const ids = drawMock($('#mkShuffle', form).checked);
+    if (!ids.length) { toast('출제할 예상문제가 없습니다'); return; }
+    startSession(ids, `모의고사 ${ids.length}문항`, { kind: 'mock', durationMin: $('#mkTimer', form).checked ? MOCK.durationMin : 0 });
+  });
+
+  // 이력
+  const hist = store.state.sessions.filter((s) => s.kind === 'mock').slice(0, 10);
+  if (hist.length) {
+    const box = el(`<div class="card"><h3>모의고사 이력</h3></div>`);
+    hist.forEach((h) => box.appendChild(el(`<div class="rank-item" style="cursor:default">
+      <span class="pill accent">${new Date(h.startedAt).toISOString().slice(5, 10)}</span>
+      <span class="small" style="flex:1">${h.score != null ? h.score + '점' : '-'}</span>
+      <span class="small ${h.pass ? '' : 'rank-x'}">${h.pass ? '합격' : '불합격'}</span></div>`)));
+    const avg = Math.round(hist.reduce((s, h) => s + (h.score || 0), 0) / hist.length);
+    box.appendChild(el(`<p class="small muted" style="margin-top:6px">최근 ${hist.length}회 평균 ${avg}점</p>`));
+    app.appendChild(box);
+  }
 });
 
 /* ============ 통계 ============ */
@@ -699,6 +865,25 @@ route('stats', (app) => {
       <span class="bar-num">${v.done}/${v.total}</span></div>`));
   });
   app.appendChild(rbox);
+
+  // 예상문제 · 모의고사 (기출 통계와 별도)
+  if (PREDICTED.length) {
+    const predDone = PREDICTED.filter((q) => store.attemptCount(q.qid)).length;
+    const predG = PREDICTED.map((q) => store.lastGrade(q.qid)).filter(Boolean);
+    const predRate = predG.length ? pct(predG.filter((x) => x === 'o').length, predG.length) : 0;
+    const mocks = store.state.sessions.filter((x) => x.kind === 'mock');
+    const box = el(`<div class="card"><h3>예상문제 · 모의고사 <span class="muted small">기출 진도와 별도</span></h3>
+      <div class="bar-row"><span class="bar-label">예상문제 학습</span><span class="bar-track"><i class="o" style="width:${pct(predDone, PREDICTED.length)}%"></i></span><span class="bar-num">${predDone}/${PREDICTED.length}</span></div>
+      <div class="bar-row"><span class="bar-label">자가채점 정답률</span>${barTrack({ o: predG.filter((x) => x === 'o').length, m: predG.filter((x) => x === 'm').length, x: predG.filter((x) => x === 'x').length })}<span class="bar-num">${predG.length ? predRate + '%' : '–'}</span></div>
+    </div>`);
+    if (mocks.length) {
+      const mb = el(`<div style="margin-top:6px"></div>`);
+      mocks.slice(0, 10).reverse().forEach((m) => mb.appendChild(el(`<div class="bar-row"><span class="bar-label">${new Date(m.startedAt).toISOString().slice(5, 10)}</span>${barTrack({ o: m.score || 0, m: 0, x: 100 - (m.score || 0) })}<span class="bar-num">${m.score != null ? m.score : '-'}${m.pass ? '' : ' ✗'}</span></div>`)));
+      box.appendChild(el(`<p class="small muted" style="margin-top:8px">모의고사 총점 추이</p>`));
+      box.appendChild(mb);
+    }
+    app.appendChild(box);
+  }
 });
 
 function barBox(title, obj) {
@@ -821,25 +1006,28 @@ route('note', (app, args) => {
   enhanceMarkdown(md);
   app.appendChild(md);
 
-  if (n.questions.length) {
-    const box = el(`<div class="card"><h3>연결된 기출 문항</h3></div>`);
-    n.questions.forEach((qid) => {
-      const q = BY_QID.get(qid); if (!q) return;
+  const qBox = (title, ids, lookup, label) => {
+    if (!ids || !ids.length) return;
+    const box = el(`<div class="card"><h3>${title} (${ids.length})</h3></div>`);
+    ids.forEach((qid) => {
+      const q = lookup(qid); if (!q) return;
       const item = el(`<div class="rank-item"><span class="pill accent">${esc(qLabel(q))}</span>
         <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.question.slice(0, 36))}</span></div>`);
-      item.addEventListener('click', () => navigate('#/q/' + qid));
+      item.addEventListener('click', () => navigate('#/q/' + encodeURIComponent(qid)));
       box.appendChild(item);
     });
-    const all = el(`<button class="btn primary wide" style="margin-top:10px">연결 문항 모두 풀기</button>`);
-    all.addEventListener('click', () => startSession(n.questions.filter((id) => BY_QID.has(id)), `${n.title} 관련 ${n.questions.length}문항`));
+    const all = el(`<button class="btn primary wide" style="margin-top:10px">${label}</button>`);
+    all.addEventListener('click', () => startSession(ids.filter((id) => lookup(id)), `${n.title} ${title} ${ids.length}문항`));
     box.appendChild(all);
     app.appendChild(box);
-  }
+  };
+  qBox('연결된 기출 문항', n.questions, (id) => BY_QID.get(id), '연결 기출 모두 풀기');
+  qBox('관련 예상문제', n.predicted, (id) => PQ_BY_ID.get(id), '이 노트 예상문제 풀기');
 });
 
 /* ============ 단일 문항 (#/q/<qid>) ============ */
 route('q', (app, args) => {
-  const q = BY_QID.get(args[0]);
+  const q = anyQ(decodeURIComponent(args.join('/')));
   if (!q) { app.appendChild(el(`<div class="empty">문항을 찾을 수 없습니다.</div>`)); return; }
 
   const top = el(`<div class="row tight" style="margin-bottom:6px">
@@ -850,20 +1038,24 @@ route('q', (app, args) => {
   app.appendChild(el(`<h1>${esc(qLabel(q))}</h1>`));
   app.appendChild(questionCard(q));
 
-  const sameRound = QUESTIONS.filter((x) => x.round === q.round).sort((a, b) => a.no - b.no);
-  const i = sameRound.findIndex((x) => x.qid === q.qid);
+  // 이전/다음: 예상문제는 같은 영역, 기출은 같은 회차
+  const pool = q.predicted
+    ? PREDICTED.filter((x) => x.domain === q.domain).sort((a, b) => a.qid.localeCompare(b.qid))
+    : QUESTIONS.filter((x) => x.round === q.round).sort((a, b) => a.no - b.no);
+  const label = q.predicted ? `예상 ${q.domain}` : `${q.round}회`;
+  const i = pool.findIndex((x) => x.qid === q.qid);
   const nav = el(`<div class="nav-row"></div>`);
-  const prev = el(`<button class="btn">← ${q.round}회 이전</button>`);
+  const prev = el(`<button class="btn">← ${esc(label)} 이전</button>`);
   prev.disabled = i <= 0;
-  if (i > 0) prev.addEventListener('click', () => navigate('#/q/' + sameRound[i - 1].qid));
-  const next = el(`<button class="btn">${q.round}회 다음 →</button>`);
-  next.disabled = i >= sameRound.length - 1;
-  if (i < sameRound.length - 1) next.addEventListener('click', () => navigate('#/q/' + sameRound[i + 1].qid));
+  if (i > 0) prev.addEventListener('click', () => navigate('#/q/' + encodeURIComponent(pool[i - 1].qid)));
+  const next = el(`<button class="btn">${esc(label)} 다음 →</button>`);
+  next.disabled = i >= pool.length - 1;
+  if (i < pool.length - 1) next.addEventListener('click', () => navigate('#/q/' + encodeURIComponent(pool[i + 1].qid)));
   nav.append(prev, next);
   app.appendChild(nav);
 
-  const whole = el(`<button class="btn sm wide" style="margin-top:10px">${q.round}회 전체 풀기 (${sameRound.length}문항) →</button>`);
-  whole.addEventListener('click', () => startSession(sameRound.map((x) => x.qid), `${q.round}회 ${sameRound.length}문항`));
+  const whole = el(`<button class="btn sm wide" style="margin-top:10px">${esc(label)} 전체 풀기 (${pool.length}문항) →</button>`);
+  whole.addEventListener('click', () => startSession(pool.map((x) => x.qid), `${label} ${pool.length}문항`));
   app.appendChild(whole);
 });
 
@@ -871,10 +1063,10 @@ route('q', (app, args) => {
 let SEARCH_INDEX = null;
 function searchIndex() {
   if (SEARCH_INDEX) return SEARCH_INDEX;
-  const qs = QUESTIONS.map((q) => ({
+  const qs = QUESTIONS.concat(PREDICTED).map((q) => ({
     q,
-    full: `${q.round}회 ${q.no}번 ${q.type} ${q.domain} ${q.question} ${q.answer} ${q.explanation || ''} ${q.supplement || ''}`.toLowerCase(),
-    shallow: `${q.round}회 ${q.no}번 ${q.type} ${q.domain} ${q.question}`.toLowerCase(),
+    full: `${qLabel(q)} ${q.type} ${q.domain} ${q.question} ${q.answer} ${q.explanation || ''} ${q.supplement || ''}`.toLowerCase(),
+    shallow: `${qLabel(q)} ${q.type} ${q.domain} ${q.question}`.toLowerCase(),
   }));
   const ns = DATA.notes.map((n) => ({
     n,
@@ -964,7 +1156,7 @@ route('search', (app, args) => {
         <div><span class="pill accent">${esc(qLabel(q))}</span> <span class="pill">${esc(q.type)}</span> <span class="pill">${esc(q.domain)}</span>${mf.label ? ` <span class="pill">${mf.label}</span>` : ''}</div>
         <div class="small" style="margin-top:4px;line-height:1.5">${searchSnippet(mf.text, toks)}</div>
       </div>`);
-      item.addEventListener('click', () => navigate('#/q/' + q.qid));
+      item.addEventListener('click', () => navigate('#/q/' + encodeURIComponent(q.qid)));
       qbox.appendChild(item);
     });
     if (qhits.length > 60) qbox.appendChild(el(`<p class="muted small">상위 60개만 표시</p>`));
@@ -1004,28 +1196,28 @@ route('more', (app) => {
   if (!store.state.favorites.length) favBox.appendChild(el(`<p class="muted small">문제 카드의 ☆ 를 눌러 추가하세요.</p>`));
   else {
     store.state.favorites.forEach((qid) => {
-      const q = BY_QID.get(qid); if (!q) return;
+      const q = anyQ(qid); if (!q) return;
       const item = el(`<div class="rank-item"><span class="pill accent">${esc(qLabel(q))}</span>
         <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.question.slice(0, 36))}</span></div>`);
-      item.addEventListener('click', () => navigate('#/q/' + qid));
+      item.addEventListener('click', () => navigate('#/q/' + encodeURIComponent(qid)));
       favBox.appendChild(item);
     });
     favBox.appendChild(el(`<button class="btn sm" id="favAll" style="margin-top:8px">즐겨찾기 전체 풀기</button>`));
   }
   app.appendChild(favBox);
   if ($('#favAll', app)) $('#favAll', app).addEventListener('click', () =>
-    startSession(store.state.favorites.filter((id) => BY_QID.has(id)), `즐겨찾기 ${store.state.favorites.length}문항`));
+    startSession(store.state.favorites.filter((id) => anyQ(id)), `즐겨찾기 ${store.state.favorites.length}문항`));
 
   // 메모 모아보기
   const memoQids = Object.entries(store.state.results).filter(([, r]) => r.memo).map(([qid]) => qid);
   const memoBox = el(`<div class="card"><h3>내 메모 (${memoQids.length})</h3></div>`);
   if (!memoQids.length) memoBox.appendChild(el(`<p class="muted small">문제 풀이 중 남긴 메모가 여기 모입니다.</p>`));
   memoQids.forEach((qid) => {
-    const q = BY_QID.get(qid); if (!q) return;
+    const q = anyQ(qid); if (!q) return;
     const item = el(`<div class="rank-item" style="display:block">
       <span class="pill accent">${esc(qLabel(q))}</span>
       <div class="small" style="margin-top:4px">${esc(store.state.results[qid].memo)}</div></div>`);
-    item.addEventListener('click', () => navigate('#/q/' + qid));
+    item.addEventListener('click', () => navigate('#/q/' + encodeURIComponent(qid)));
     memoBox.appendChild(item);
   });
   app.appendChild(memoBox);

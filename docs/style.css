@@ -97,8 +97,11 @@ p { margin: .5em 0; }
 #tabbar a .ico { font-size: 1.25rem; line-height: 1; }
 #tabbar a.active { color: var(--accent); }
 @media (max-width: 400px) {
-  #tabbar a { font-size: .64rem; }
-  #tabbar a .ico { font-size: 1.15rem; }
+  #tabbar a { font-size: .62rem; }
+  #tabbar a .ico { font-size: 1.12rem; }
+}
+@media (max-width: 340px) {
+  #tabbar a { font-size: .56rem; letter-spacing: -0.02em; }
 }
 @media (min-width: 900px) {
   #tabbar {

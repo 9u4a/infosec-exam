@@ -8,6 +8,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC_DIR = join(ROOT, '실기');
 const META_DIR = join(ROOT, 'meta');
 const NOTES_DIR = join(ROOT, 'notes');
+const PRED_DIR = join(ROOT, '예상문제');   // 기사 모의고사용 신규 예상문제 (실기/ 원본과 별개)
 const OUT_FILE = join(ROOT, 'docs', 'data', 'bundle.js');
 
 const CPPG_DIR = join(ROOT, 'cppg');
@@ -16,6 +17,7 @@ const CPPG_QUIZ_DIR = join(CPPG_DIR, 'quiz');
 const CPPG_OUT_FILE = join(ROOT, 'docs', 'data', 'cppg.js');
 
 const DOMAINS = ['시스템보안', '네트워크보안', '애플리케이션보안', '정보보안일반', '정보보안관리및법규'];
+const TYPES = ['단답형', '서술형', '실무형'];
 
 const warnings = [];
 const warn = (m) => warnings.push(m);
@@ -132,11 +134,70 @@ function loadNotes(rounds) {
       domain: meta.domain || null,
       tags: meta.tags || [],
       questions: refs,
+      predicted: [],   // loadPredicted 가 채움 (예상문제 → 노트 역인덱스)
       md: body.trim(),
     });
   }
   notes.sort((a, b) => a.slug.localeCompare(b.slug, 'ko'));
   return notes;
+}
+
+// ---------- 3b. 예상문제 (기사 모의고사) ----------
+function loadPredicted(notes, rounds) {
+  const items = [];
+  if (!existsSync(PRED_DIR)) return { items, perType: {}, perDomain: {} };
+  const bySlug = new Map(notes.map((n) => [n.slug, n]));
+  const qidExists = new Set();
+  for (const r of rounds) for (const q of r.questions) qidExists.add(q.qid);
+  const seenId = new Set();
+  const perDomain = {};
+
+  for (const f of readdirSync(PRED_DIR)) {
+    if (!f.endsWith('.json')) continue;
+    const pack = JSON.parse(readFileSync(join(PRED_DIR, f), 'utf8'));
+    const fileDomain = f.replace(/\.json$/, '');
+    if (pack.domain !== fileDomain) warn(`예상문제/${f}: domain "${pack.domain}" 이 파일명과 불일치`);
+    if (!DOMAINS.includes(pack.domain)) { warn(`예상문제/${f}: domain "${pack.domain}" 미정의`); continue; }
+    for (const it of pack.items || []) {
+      if (!it.id) { warn(`예상문제/${f}: id 없는 문항`); continue; }
+      if (seenId.has(it.id)) { warn(`예상문제/${f}: id 중복 "${it.id}"`); continue; }
+      if (qidExists.has(it.id)) { warn(`예상문제/${f}: id "${it.id}" 가 기출 qid 와 충돌`); continue; }
+      seenId.add(it.id);
+      if (!TYPES.includes(it.type)) warn(`예상문제: ${it.id} type "${it.type}" 오류 (${TYPES.join('/')})`);
+      if (!it.question || !String(it.question).trim()) warn(`예상문제: ${it.id} question 비어있음`);
+      if (!it.answer || !String(it.answer).trim()) warn(`예상문제: ${it.id} answer 비어있음`);
+      const noteSlugs = [];
+      for (const s of it.notes || []) {
+        if (!bySlug.has(s)) { warn(`예상문제: ${it.id} note "${s}" 노트 없음`); continue; }
+        noteSlugs.push(s);
+        bySlug.get(s).predicted.push(it.id);
+      }
+      perDomain[pack.domain] = (perDomain[pack.domain] || 0) + 1;
+      items.push({
+        qid: it.id,
+        no: items.length + 1,
+        predicted: true,
+        round: null,
+        type: it.type,
+        question: it.question,
+        answer: it.answer,
+        domain: pack.domain,
+        explanation: it.explanation || null,
+        supplement: it.supplement || null,
+        notes: noteSlugs,
+        tags: it.tags || [],
+      });
+    }
+  }
+
+  // 모의고사 유형 배분(단답 12 / 서술 4 / 실무 2) 최소치 점검
+  const perType = {};
+  for (const it of items) perType[it.type] = (perType[it.type] || 0) + 1;
+  const need = { 단답형: 12, 서술형: 4, 실무형: 2 };
+  for (const [t, n] of Object.entries(need)) {
+    if ((perType[t] || 0) < n) warn(`예상문제: ${t} ${perType[t] || 0}개 < 모의고사 1회 편성 ${n}개`);
+  }
+  return { items, perType, perDomain };
 }
 
 // ---------- CPPG (개인정보관리사) ----------
@@ -250,6 +311,7 @@ function main() {
   const rounds = loadRounds();
   applyMeta(rounds);
   const notes = loadNotes(rounds);
+  const { items: predicted, perType: predType, perDomain: predDomain } = loadPredicted(notes, rounds);
 
   let total = 0, classified = 0, explained = 0, supplemented = 0;
   for (const r of rounds) for (const q of r.questions) {
@@ -264,7 +326,11 @@ function main() {
     domains: DOMAINS,
     rounds,
     notes,
-    stats: { total, classified, explained, supplemented, notes: notes.length },
+    predicted,
+    stats: {
+      total, classified, explained, supplemented, notes: notes.length,
+      predicted: predicted.length, predType, predDomain,
+    },
   };
 
   mkdirSync(dirname(OUT_FILE), { recursive: true });
@@ -275,6 +341,14 @@ function main() {
   console.log(`  해설 ${explained}/${total}`);
   console.log(`  보충 지문 ${supplemented}건`);
   console.log(`  노트 ${notes.length}개`);
+
+  if (predicted.length) {
+    const abbr = { 시스템보안: '시스템', 네트워크보안: '네트워크', 애플리케이션보안: '앱', 정보보안일반: '일반', 정보보안관리및법규: '법규' };
+    console.log(`\n✔ 예상문제 ${predicted.length}개 (단답 ${predType.단답형 || 0} / 서술 ${predType.서술형 || 0} / 실무 ${predType.실무형 || 0})`);
+    console.log(`  영역별 ${DOMAINS.map((d) => `${abbr[d]}:${predDomain[d] || 0}`).join(' ')}`);
+    const linked = predicted.filter((q) => q.notes.length).length;
+    console.log(`  노트 연결 ${linked}/${predicted.length}`);
+  }
 
   const cppg = buildCppg();
   if (cppg) {

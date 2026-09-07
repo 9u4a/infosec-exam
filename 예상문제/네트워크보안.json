@@ -1,0 +1,472 @@
+{
+  "domain": "네트워크보안",
+  "items": [
+    {
+      "id": "y-net-001",
+      "type": "단답형",
+      "question": "TCP 3-way handshake 과정을 플래그 순서로 쓰고, 이를 악용해 half-open 연결을 대량 생성하여 서버의 백로그 큐를 고갈시키는 공격의 명칭을 쓰시오.",
+      "answer": "정답\n핸드셰이크 순서 : SYN → SYN+ACK → ACK\n공격 명칭 : SYN Flooding (TCP SYN Flood)",
+      "explanation": "클라이언트 SYN → 서버 SYN/ACK 후 SYN_RECEIVED 상태로 백로그 큐에 대기 → 공격자가 ACK 를 보내지 않고 위조 출발지로 SYN 만 대량 전송하면 큐가 가득 차 정상 연결 불가. 대응: SYN Cookie, 백로그 큐 증대, `tcp_synack_retries` 축소, 방화벽/IPS 의 SYN proxy.",
+      "notes": [
+        "네트워크보안/tcp-ip-헤더와-라우팅",
+        "네트워크보안/DoS-DDoS-총정리"
+      ],
+      "tags": [
+        "TCP",
+        "3wayhandshake",
+        "SYNFlood"
+      ]
+    },
+    {
+      "id": "y-net-002",
+      "type": "단답형",
+      "question": "다음 DoS/DDoS 공격의 명칭을 쓰시오.\n\n* (A) : 출발지 IP 를 피해자 IP 로 위조하여 브로드캐스트 주소로 ICMP Echo Request 를 보내, 다수 호스트의 응답이 피해자에게 집중되게 하는 증폭 공격.\n* (B) : 출발지·목적지 IP 를 모두 피해자 IP 로 동일하게 설정해 자기 자신에게 무한 응답하게 만드는 공격.",
+      "answer": "정답\n(A) Smurf Attack\n(B) Land Attack",
+      "explanation": "- **Smurf**: ICMP 브로드캐스트 증폭. 대응: 라우터에서 directed broadcast 차단(`no ip directed-broadcast`), 호스트에서 broadcast ping 무시.\n- **Land**: SIP=DIP 로 루프. 대응: 방화벽에서 SIP==DIP 패킷 차단, OS 패치.\n- 유사: Fraggle(UDP 버전 Smurf), Teardrop(프래그먼트 오프셋 조작).",
+      "notes": [
+        "네트워크보안/DoS-DDoS-총정리"
+      ],
+      "tags": [
+        "Smurf",
+        "Land",
+        "DoS",
+        "증폭공격"
+      ]
+    },
+    {
+      "id": "y-net-003",
+      "type": "단답형",
+      "question": "DNS 를 악용한 DDoS 에 대한 물음이다.\n\n* 작은 질의로 큰 응답을 유발(예: ANY 질의, DNSSEC)하고 출발지를 위조해 피해자에게 대량 응답을 보내는 반사·증폭 공격을 ( A ) 라 한다.\n* 이러한 증폭 공격에서, 요청 크기 대비 응답 크기의 비율을 ( B ) 이라 한다.",
+      "answer": "정답\n(A) DNS 증폭(DNS Amplification) 공격 / DNS 반사 공격\n(B) 증폭 계수(Amplification Factor)",
+      "explanation": "UDP 기반 무상태 프로토콜(DNS 53, NTP 123, SSDP 1900, memcached 11211)이 반사·증폭에 악용. 대응: 오픈 리졸버 폐쇄(재귀 질의 제한), BCP38(출발지 IP 검증/uRPF)로 스푸핑 방지, Response Rate Limiting(RRL), Anycast·CDN.",
+      "notes": [
+        "네트워크보안/DoS-DDoS-총정리",
+        "애플리케이션보안/dns-보안"
+      ],
+      "tags": [
+        "DNS",
+        "증폭공격",
+        "반사공격",
+        "BCP38"
+      ]
+    },
+    {
+      "id": "y-net-004",
+      "type": "단답형",
+      "question": "ARP 스푸핑(ARP Cache Poisoning)에 대한 물음이다.\n\n* 공격자가 게이트웨이의 MAC 을 자신의 MAC 으로 속이는 위조 ( A ) 패킷을 지속 전송하여 피해자-게이트웨이 트래픽을 가로챈다.\n* 이 공격이 성립하는 이유는 ARP 프로토콜에 ( B ) 절차가 없기 때문이다.",
+      "answer": "정답\n(A) ARP Reply (Gratuitous ARP)\n(B) 인증(요청하지 않은 응답의 진위 확인)",
+      "explanation": "ARP 는 상태·인증이 없어 마지막 응답으로 캐시가 갱신됨. 탐지: 하나의 MAC 에 다수 IP 매핑, `arpwatch`, 스위치의 DAI(Dynamic ARP Inspection). 방어: 정적 ARP 등록, DHCP Snooping+DAI, 세그먼트 분리, 상위 계층 암호화(HTTPS)로 도청 피해 완화.",
+      "notes": [
+        "네트워크보안/arp스푸핑-스니핑탐지"
+      ],
+      "tags": [
+        "ARP스푸핑",
+        "MITM",
+        "DAI"
+      ]
+    },
+    {
+      "id": "y-net-005",
+      "type": "단답형",
+      "question": "스니핑(sniffing) 탐지 기법 중 다음에 해당하는 방법의 명칭을 쓰시오.\n\n* (A) : 존재하지 않는 가짜 MAC 주소로 ping 을 보냈을 때 응답이 오면, 해당 호스트가 무차별 모드(promiscuous)일 가능성이 있다.\n* (B) : 위조된 출발지로 대량 트래픽(ARP·ICMP)을 흘렸을 때 응답 지연이 커지는 호스트를 탐지한다.",
+      "answer": "정답\n(A) Ping(ICMP) 테스트 — 가짜 MAC + 정상 IP\n(B) Latency(지연 시간) 테스트",
+      "explanation": "무차별 모드 NIC 는 MAC 필터링을 커널이 대신 수행해 부하가 커짐. 기타 탐지: ARP 테스트(가짜 MAC 로 ARP 요청), DNS 테스트(스니퍼가 캡처한 IP 를 역질의하는지), Decoy(가짜 계정/트래픽으로 유인). 근본 대응은 스위칭 환경 + 종단 암호화.",
+      "notes": [
+        "네트워크보안/arp스푸핑-스니핑탐지"
+      ],
+      "tags": [
+        "스니핑탐지",
+        "promiscuous",
+        "ping테스트"
+      ]
+    },
+    {
+      "id": "y-net-006",
+      "type": "단답형",
+      "question": "포트 스캔 유형에 대한 물음이다. TCP 헤더 플래그 기준으로 답하시오.\n\n* SYN 만 보내고 SYN/ACK 응답을 받으면 RST 로 끊는 스텔스 스캔은 ( A ) 스캔이다.\n* FIN·URG·PSH 플래그를 모두 세워 보내는 스캔은 ( B ) 스캔이다.\n* 플래그를 전혀 세우지 않고 보내는 스캔은 ( C ) 스캔이다.",
+      "answer": "정답\n(A) TCP SYN(Half-open) 스캔\n(B) XMAS(크리스마스 트리) 스캔\n(C) NULL 스캔",
+      "explanation": "닫힌 포트는 RST 응답, 열린 포트는 무응답(FIN/XMAS/NULL 스캔). 이는 RFC 793 기준 동작이며 Windows 등은 항상 RST → 유닉스 계열 판별에 활용. FIN 스캔은 FIN 만. ACK 스캔은 방화벽 필터링(stateful/stateless) 여부 판별용. 대응: IDS/IPS, 포트 스캔 탐지 임계치, 불필요 포트 차단.",
+      "notes": [
+        "네트워크보안/포트스캔-유형"
+      ],
+      "tags": [
+        "포트스캔",
+        "SYN스캔",
+        "XMAS",
+        "NULL스캔",
+        "nmap"
+      ]
+    },
+    {
+      "id": "y-net-007",
+      "type": "단답형",
+      "question": "다음은 Cisco 라우터의 확장 ACL 설정이다. 이 정책이 차단(deny)하는 트래픽을 서비스명 기준으로 모두 쓰시오.\n\n```\nip access-list extended BLOCK_SVC\n deny tcp any any eq 23\n deny tcp any any eq 135\n deny udp any any eq 137\n deny udp any any eq 138\n deny tcp any any eq 139\n deny tcp any any eq 445\n permit ip any any\n```",
+      "answer": "정답\ntcp/23 : Telnet\ntcp/135 : MS RPC(EPMAP)\nudp/137 : NetBIOS Name Service\nudp/138 : NetBIOS Datagram Service\ntcp/139 : NetBIOS Session Service\ntcp/445 : SMB(CIFS) over TCP (Microsoft-DS)",
+      "explanation": "Telnet(평문)과 NetBIOS/SMB 계열(135·137~139·445)은 외부에서 반드시 차단해야 하는 대표 포트. SMB 445 는 WannaCry·EternalBlue 확산 통로. ACL 은 위→아래 순차 매칭, 맨 끝 암묵적 `deny any`. 마지막 `permit ip any any` 로 그 외 허용.",
+      "notes": [
+        "네트워크보안/cisco-라우터-스위치-보안설정",
+        "네트워크보안/iptables-방화벽-정책"
+      ],
+      "tags": [
+        "ACL",
+        "Cisco",
+        "NetBIOS",
+        "SMB",
+        "차단포트"
+      ]
+    },
+    {
+      "id": "y-net-008",
+      "type": "단답형",
+      "question": "iptables 에 대한 물음이다.\n\n* 외부에서 들어오는 패킷에 대한 정책을 적용하는 기본 체인은 ( A ) 이다.\n* 마지막에 명시적으로 모든 패킷을 버리는 정책을 세울 때 사용하는 타깃은 ( B ) 이며, 정책 방향은 화이트리스트(허용 목록 우선) 방식이 권장된다.\n* 이미 맺어진 연결과 그에 관련된 패킷만 허용할 때 사용하는 매치 모듈·상태는 `-m state --state ( C )` 이다.",
+      "answer": "정답\n(A) INPUT\n(B) DROP\n(C) ESTABLISHED,RELATED",
+      "explanation": "체인: INPUT(수신), OUTPUT(송신), FORWARD(경유). 정책: `iptables -P INPUT DROP` 후 필요한 서비스만 허용. `-m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT` 로 응답 트래픽 허용, `NEW` 는 서비스별 명시 허용. DROP(무응답) vs REJECT(RST/ICMP 응답).",
+      "notes": [
+        "네트워크보안/iptables-방화벽-정책"
+      ],
+      "tags": [
+        "iptables",
+        "INPUT",
+        "DROP",
+        "stateful"
+      ]
+    },
+    {
+      "id": "y-net-009",
+      "type": "단답형",
+      "question": "방화벽 구축 형태에 대한 물음이다.\n\n* 하나의 스크리닝 라우터와 배스천 호스트로 구성되며, 배스천 호스트가 내부망에 위치하는 구조는 ( A ) 이다.\n* 외부 라우터와 내부 라우터 사이에 완충 구간(스크린드 서브넷, DMZ)을 두고 그 안에 배스천 호스트를 배치하는 가장 안전한 구조는 ( B ) 이다.",
+      "answer": "정답\n(A) Screened Host Gateway\n(B) Screened Subnet Gateway",
+      "explanation": "- **Packet Filtering Router**: 3·4계층 필터만.\n- **Dual-homed Host**: NIC 2개, 라우팅 비활성.\n- **Screened Host**: 라우터+배스천 이중 방어.\n- **Screened Subnet**: 외부/내부 라우터 사이 DMZ. 외부에 공개하는 웹·메일·DNS 서버는 DMZ 에 두고, 내부망은 별도 보호. 공격자가 DMZ 를 뚫어도 내부까지 추가 관문.",
+      "notes": [
+        "네트워크보안/방화벽-구조와-유형"
+      ],
+      "tags": [
+        "방화벽구조",
+        "DMZ",
+        "ScreenedSubnet",
+        "Bastion"
+      ]
+    },
+    {
+      "id": "y-net-010",
+      "type": "단답형",
+      "question": "방화벽 세대·유형에 대한 물음이다.\n\n* 연결의 상태 정보(세션 테이블)를 유지하여 응답 패킷을 자동 허용하는 방식은 ( A ) 방화벽이다.\n* 애플리케이션 계층에서 클라이언트를 대신해 연결을 맺어주며 콘텐츠까지 검사하는 방식은 ( B ) 방화벽이다.\n* 방화벽·IPS·안티바이러스·URL 필터링·VPN 등을 하나로 통합한 장비는 ( C ) 이다. (약어)",
+      "answer": "정답\n(A) Stateful Inspection(상태 기반 검사) 방화벽\n(B) Application Gateway(Proxy) 방화벽\n(C) UTM (Unified Threat Management)",
+      "explanation": "- Packet Filter(1세대) → Application Gateway(2세대) → Stateful(3세대) → UTM/NGFW(차세대: 애플리케이션 인식·사용자 인식·IPS 통합).\n- Proxy 방식은 보안 강함·속도 느림, 서비스별 프록시 필요. Circuit Gateway 는 SOCKS 처럼 세션만 중계.",
+      "notes": [
+        "네트워크보안/방화벽-구조와-유형"
+      ],
+      "tags": [
+        "Stateful",
+        "ApplicationGateway",
+        "UTM",
+        "NGFW"
+      ]
+    },
+    {
+      "id": "y-net-011",
+      "type": "단답형",
+      "question": "IDS/IPS 에 대한 물음이다.\n\n* 알려진 공격 패턴(시그니처)과 대조해 탐지하는 방식은 ( A ) 기반(오용 탐지)이다.\n* 정상 행위의 프로파일(기준선)에서 벗어나는 활동을 탐지하는 방식은 ( B ) 기반(이상 탐지)이며, 알려지지 않은 공격(제로데이) 탐지가 가능하나 ( C ) 이 높다는 단점이 있다.",
+      "answer": "정답\n(A) 시그니처(Signature) / 지식 기반\n(B) 통계적 이상(Anomaly) / 행위 기반\n(C) 오탐률(False Positive)",
+      "explanation": "- 오용 탐지: 오탐 낮음, 미탐(신종 못 잡음).\n- 이상 탐지: 신종 탐지 가능, 오탐 높음·기준선 학습 필요.\n- FP(정상을 공격으로)·FN(공격을 정상으로). IDS 는 탐지·경보만, IPS 는 인라인으로 차단. 호스트 기반(HIDS)·네트워크 기반(NIDS).",
+      "notes": [
+        "네트워크보안/ids-ips"
+      ],
+      "tags": [
+        "IDS",
+        "IPS",
+        "시그니처",
+        "이상탐지",
+        "오탐"
+      ]
+    },
+    {
+      "id": "y-net-012",
+      "type": "단답형",
+      "question": "다음 Snort 룰의 각 요소가 의미하는 바를 쓰시오.\n\n`alert tcp any any -> $HOME_NET 80 (msg:\"WEB attack\"; content:\"/etc/passwd\"; nocase; sid:1000001;)`\n\n* content:\"/etc/passwd\" : ( A )\n* nocase : ( B )\n* sid:1000001 : ( C )",
+      "answer": "정답\n(A) 패킷 페이로드에서 문자열 `/etc/passwd` 를 탐지(매칭)\n(B) 대소문자를 구분하지 않고 매칭\n(C) Snort 룰의 고유 식별 번호(Signature ID). 1,000,000 이상은 사용자 정의 룰 영역",
+      "explanation": "룰 구조: [action] [proto] [src] [srcport] -> [dst] [dstport] (옵션). 옵션: msg(경보 메시지), content(페이로드 매칭), pcre(정규식), offset/depth/distance/within(위치), flow(방향/상태), reference, rev(개정 번호), classtype. `->` 단방향, `<>` 양방향.",
+      "notes": [
+        "네트워크보안/snort-룰-문법",
+        "네트워크보안/ids-ips"
+      ],
+      "tags": [
+        "Snort",
+        "룰",
+        "content",
+        "sid"
+      ]
+    },
+    {
+      "id": "y-net-013",
+      "type": "단답형",
+      "question": "VPN 프로토콜에 대한 물음이다.\n\n* IP 계층에서 동작하며 인증·무결성을 제공하는 프로토콜은 ( A ), 기밀성(암호화)까지 제공하는 프로토콜은 ( B ) 이다.\n* IPsec 에서 두 종단이 키를 안전하게 교환·관리하기 위해 사용하는 프로토콜은 ( C ) 이다.",
+      "answer": "정답\n(A) AH (Authentication Header)\n(B) ESP (Encapsulating Security Payload)\n(C) IKE (Internet Key Exchange)",
+      "explanation": "- **AH**: 인증·무결성·재전송 방지, 암호화 없음. NAT 통과 불가(IP 헤더 포함 인증).\n- **ESP**: 암호화+인증(선택). NAT-T 로 NAT 통과.\n- **모드**: 전송(Transport, 페이로드만)·터널(Tunnel, IP 패킷 전체 캡슐화, 게이트웨이 간).\n- IKE: ISAKMP 기반, Phase1(ISAKMP SA)·Phase2(IPsec SA). SA 는 단방향.",
+      "notes": [
+        "네트워크보안/ipsec",
+        "네트워크보안/vpn-종합"
+      ],
+      "tags": [
+        "IPsec",
+        "AH",
+        "ESP",
+        "IKE",
+        "터널모드"
+      ]
+    },
+    {
+      "id": "y-net-014",
+      "type": "단답형",
+      "question": "SSL/TLS 에 대한 물음이다.\n\n* TLS 핸드셰이크에서 실제 데이터 암호화에 쓰이는 대칭키(세션키)를 안전하게 만들기 위해, 서버 인증서의 공개키 또는 (EC)DHE 로 교환하는 값을 ( A ) 라 한다.\n* 세션키가 유출되어도 과거 통신은 복호화되지 않도록 매 세션 임시 키쌍을 쓰는 성질을 ( B ) 이라 한다. (약어 또는 용어)",
+      "answer": "정답\n(A) Pre-Master Secret (→ Master Secret → 세션키)\n(B) PFS (Perfect Forward Secrecy, 전방향 안전성)",
+      "explanation": "PFS 는 DHE/ECDHE 키 교환에서 제공(RSA 키 교환은 서버 개인키 유출 시 전체 세션 복호화 가능 → TLS 1.3 에서 RSA 키 교환 폐지). TLS 1.3 은 핸드셰이크 1-RTT, 취약 암호(RC4, 3DES, CBC, SHA-1) 제거, 0-RTT(재전송 위험 주의).",
+      "notes": [
+        "네트워크보안/vpn-종합",
+        "정보보안일반/전자서명-pki-인증서"
+      ],
+      "tags": [
+        "TLS",
+        "PFS",
+        "ECDHE",
+        "핸드셰이크"
+      ]
+    },
+    {
+      "id": "y-net-015",
+      "type": "단답형",
+      "question": "스위치 보안에 대한 물음이다.\n\n* 스위치의 MAC 주소 테이블을 가짜 MAC 으로 가득 채워 스위치가 허브처럼 모든 포트로 플러딩하게 만드는 공격은 ( A ) 이며, 대응은 포트당 학습 MAC 수를 제한하는 ( B ) 기능이다.\n* 802.1Q 태그를 이중으로 삽입해 다른 VLAN 으로 프레임을 보내는 공격은 ( C ) 이다.",
+      "answer": "정답\n(A) MAC 플러딩(MAC Flooding / CAM Table Overflow)\n(B) Port Security\n(C) VLAN 호핑(Double Tagging / Switch Spoofing)",
+      "explanation": "- **Port Security**: `switchport port-security maximum 2`, 위반 시 shutdown/restrict/protect.\n- **VLAN Hopping 대응**: 미사용 포트 shutdown+access VLAN 격리, 트렁크의 Native VLAN 을 미사용 VLAN 으로, DTP 비활성(`switchport nonegotiate`).\n- 기타: DHCP Snooping, DAI, BPDU Guard(STP 공격 방어).",
+      "notes": [
+        "네트워크보안/vlan-스위칭-nac-망분리",
+        "네트워크보안/cisco-라우터-스위치-보안설정"
+      ],
+      "tags": [
+        "MAC플러딩",
+        "PortSecurity",
+        "VLAN호핑",
+        "스위치보안"
+      ]
+    },
+    {
+      "id": "y-net-016",
+      "type": "단답형",
+      "question": "무선랜(Wi-Fi) 보안 규격에 대한 물음이다.\n\n* RC4 스트림 암호와 24비트 IV 를 사용해 IV 재사용·약한 키로 쉽게 크랙되는 초기 규격은 ( A ) 이다.\n* AES-CCMP 를 사용하는 규격은 ( B ) 이며, 개인용에서 4-way handshake 의 오프라인 사전 공격을 막기 위해 SAE(Dragonfly) 를 도입한 최신 규격은 ( C ) 이다.",
+      "answer": "정답\n(A) WEP\n(B) WPA2\n(C) WPA3",
+      "explanation": "- WEP: RC4+CRC-32, IV 40/104비트 → FMS/PTW 공격으로 수분 내 크랙.\n- WPA: TKIP(RC4 임시키), 과도기.\n- WPA2: CCMP(AES-128). KRACK(키 재설치) 취약.\n- WPA3-Personal: SAE 로 PSK 오프라인 크랙 방지·PFS, WPA3-Enterprise 192비트. Enterprise 모드는 802.1X/EAP+RADIUS 인증.",
+      "notes": [
+        "네트워크보안/무선랜-보안"
+      ],
+      "tags": [
+        "WEP",
+        "WPA2",
+        "WPA3",
+        "SAE",
+        "KRACK"
+      ]
+    },
+    {
+      "id": "y-net-017",
+      "type": "단답형",
+      "question": "네트워크 접근제어(NAC)와 망분리에 대한 물음이다.\n\n* 단말이 네트워크에 접속할 때 보안 정책(백신·패치·자산 등록 여부) 준수 상태를 점검하고, 미준수 단말을 격리망(치료망)으로 보내는 솔루션은 ( A ) 이다.\n* 업무망과 인터넷망을 물리적으로 분리하지 않고, 서버 기반 가상화(VDI)나 CBC 방식으로 논리적으로 분리하는 방식을 ( B ) 이라 한다.",
+      "answer": "정답\n(A) NAC (Network Access Control)\n(B) 논리적 망분리",
+      "explanation": "- NAC: 802.1X·DHCP·ARP·인라인 방식. 인증(사용자)+무결성 점검(단말)+정책 적용(격리).\n- 망분리: 물리적(PC 2대/망전환장치) vs 논리적(SBC-서버기반, CBC-클라이언트기반, VDI). 자료 전송은 망연계 솔루션(단방향·승인).\n- 개인정보보호법상 인터넷망 차단(망분리) 대상: 고시 제6조의2 — 이용자 일일평균 100만명 이상 처리자의 다운로드·파기/접근권한 설정 취급자.",
+      "notes": [
+        "네트워크보안/vlan-스위칭-nac-망분리",
+        "정보보안관리및법규/개인정보-안전성확보조치"
+      ],
+      "tags": [
+        "NAC",
+        "망분리",
+        "VDI",
+        "802.1X"
+      ]
+    },
+    {
+      "id": "y-net-018",
+      "type": "서술형",
+      "question": "DDoS 공격을 대역폭 공격(Volumetric), 프로토콜 공격, 애플리케이션 계층 공격으로 분류하고 각각의 예와 특징을 설명한 뒤, 애플리케이션 계층 DDoS 가 탐지·방어하기 어려운 이유를 서술하시오.",
+      "answer": "정답\n[대역폭 공격] UDP Flood, ICMP Flood, DNS/NTP 증폭. 회선 대역폭 자체를 소진. 트래픽 규모(Gbps/Mpps)가 크며 ISP/클린존·Anycast 로 상단에서 흡수.\n\n[프로토콜 공격] SYN Flood, ACK Flood, Ping of Death, 세션 고갈. 서버·방화벽·로드밸런서의 연결 테이블·자원을 고갈. SYN Cookie, 상태 테이블 확장, IPS 로 대응.\n\n[애플리케이션 계층 공격] HTTP GET/POST Flood, Slowloris(느린 헤더), RUDY(느린 POST), 캐시 미스 유발 검색 요청. 적은 트래픽으로 웹서버 스레드·DB 를 고갈.\n\n[탐지·방어가 어려운 이유]\n- 정상 요청과 형식이 동일해(정상 HTTP 요청) 시그니처·임계치로 구분이 어렵다.\n- 트래픽 양이 작아 대역폭 모니터링에 걸리지 않고, 완전한 3-way handshake 를 거쳐 IP 위조 탐지도 안 된다.\n- 봇넷·프록시로 출발지가 분산되어 IP 차단이 비효율적이다.\n- 대응: 행위 분석(요청 빈도·URL 패턴·User-Agent), CAPTCHA·JS 챌린지, WAF·CDN, Rate Limiting, 세션당 연결 제한(Slowloris 는 타임아웃 축소).",
+      "explanation": "채점 포인트: 3분류 + 각 예 1개 이상 + 앱계층 난이도 이유(정상 요청과 유사·저트래픽·정상 핸드셰이크·분산 출발지) 중 2개 이상 + 대응(행위분석·CAPTCHA·WAF/CDN).",
+      "notes": [
+        "네트워크보안/DoS-DDoS-총정리"
+      ],
+      "tags": [
+        "DDoS",
+        "Slowloris",
+        "HTTPFlood",
+        "WAF"
+      ]
+    },
+    {
+      "id": "y-net-019",
+      "type": "서술형",
+      "question": "IPsec VPN 의 '전송 모드(Transport Mode)'와 '터널 모드(Tunnel Mode)'의 차이를 캡슐화 관점에서 설명하고, 각각이 적합한 사용 시나리오를 제시하시오.",
+      "answer": "정답\n[전송 모드]\n- 원래 IP 패킷의 페이로드(상위 계층 데이터)만 보호하고, 원본 IP 헤더는 그대로 유지한다(ESP 헤더가 IP 헤더와 페이로드 사이에 삽입).\n- 종단(호스트) 대 종단 통신에 적합하다. 예: 서버-서버 직접 보안 통신, 원격 관리.\n- 오버헤드가 작지만 실제 종단 IP 가 노출된다.\n\n[터널 모드]\n- 원래 IP 패킷 '전체'(헤더 포함)를 암호화·인증하고, 그 앞에 새로운 IP 헤더(게이트웨이 주소)를 붙인다.\n- 게이트웨이 대 게이트웨이(사이트 간 VPN)나 원격 사용자-게이트웨이(Remote Access VPN)에 적합하다. 내부 토폴로지·실제 종단 IP 가 은닉된다.\n- 오버헤드가 크지만 사설망 대 사설망 연결에 표준적으로 사용된다.\n\n일반적으로 사이트 간 VPN·원격접속 VPN 은 터널 모드, 두 호스트가 직접 IPsec 을 맺는 경우는 전송 모드를 쓴다.",
+      "explanation": "채점 포인트: 전송=페이로드만 보호·원본 IP 헤더 유지·호스트간 / 터널=IP 패킷 전체 캡슐화·새 IP 헤더·게이트웨이간·토폴로지 은닉. 시나리오(사이트간/원격접속=터널, 서버간=전송).",
+      "notes": [
+        "네트워크보안/ipsec",
+        "네트워크보안/vpn-종합"
+      ],
+      "tags": [
+        "IPsec",
+        "전송모드",
+        "터널모드",
+        "VPN"
+      ]
+    },
+    {
+      "id": "y-net-020",
+      "type": "서술형",
+      "question": "포트 스캔에서 '열린 포트'와 '닫힌 포트'가 스캔 유형별로 어떻게 응답하는지 표로 설명하고(TCP Connect, SYN, FIN, ACK 스캔), 각 스캔의 탐지 난이도와 용도를 서술하시오.",
+      "answer": "정답\n| 스캔 | 열린 포트 | 닫힌 포트 | 필터링 |\n|---|---|---|---|\n| TCP Connect | 3-way handshake 완성(SYN/ACK→ACK) | RST | 무응답 |\n| SYN(Half-open) | SYN/ACK 수신(즉시 RST 로 종료) | RST | 무응답 |\n| FIN/NULL/XMAS | 무응답 | RST | 무응답 |\n| ACK | RST(포트 상태와 무관) | RST | 무응답 또는 ICMP unreachable |\n\n[탐지 난이도·용도]\n- TCP Connect: 연결을 완성하므로 로그·IDS 에 가장 잘 남는다. 권한 불필요, 가장 확실.\n- SYN 스캔: 연결 미완성으로 애플리케이션 로그에 안 남아 '스텔스'. 관리자 권한(raw socket) 필요. nmap 기본.\n- FIN/NULL/XMAS: RFC 793 만 따르는 유닉스 계열에서만 유효(Windows 는 항상 RST). 일부 방화벽 우회. 은밀하나 신뢰도 낮음.\n- ACK 스캔: 포트 열림/닫힘 판별용이 아니라, 방화벽이 상태 기반(stateful)인지 단순 필터인지, 특정 포트가 필터링되는지 파악하는 용도.",
+      "explanation": "채점 포인트: 스캔별 열림/닫힘 응답 표(SYN·FIN 계열 핵심) + SYN=스텔스·권한필요, FIN계열=OS 의존·우회, ACK=방화벽 정책 파악. Connect 는 로그에 잘 남음.",
+      "notes": [
+        "네트워크보안/포트스캔-유형"
+      ],
+      "tags": [
+        "포트스캔",
+        "nmap",
+        "SYN스캔",
+        "ACK스캔"
+      ]
+    },
+    {
+      "id": "y-net-021",
+      "type": "서술형",
+      "question": "APT(지능형 지속 위협) 공격의 일반적인 단계(사이버 킬체인)를 순서대로 설명하고, 각 단계에서 방어자가 적용할 수 있는 통제 수단을 1가지씩 제시하시오.",
+      "answer": "정답\n1. 정찰(Reconnaissance): 공개 정보·이메일 수집. 방어 — OSINT 노출 최소화, 도메인/임직원 정보 관리.\n2. 무기화(Weaponization): 익스플로잇+백도어 결합(악성 문서 등). 방어 — 위협 인텔리전스로 캠페인 지표 확보.\n3. 유포(Delivery): 스피어피싱 메일·워터링홀·USB. 방어 — 메일 보안(SPF/DKIM/DMARC, 첨부 샌드박스), 웹 필터링.\n4. 취약점 이용(Exploitation): 수신자가 첨부 실행 → 코드 실행. 방어 — 패치 관리, EMET/Exploit Guard, 매크로 차단.\n5. 설치(Installation): 백도어·RAT 설치, 지속성 확보. 방어 — EDR, 애플리케이션 화이트리스트, 무결성 감시.\n6. 명령제어(C2): 외부 C2 서버와 통신. 방어 — 아웃바운드 프록시·DNS 싱크홀, 비정상 비커닝 탐지.\n7. 목적 달성(Actions on Objectives): 내부 이동(lateral movement)·권한 상승·데이터 반출. 방어 — 망분리·세그먼테이션, 최소권한·PAM, DLP, 비정상 대용량 전송 탐지.\n\n방어는 어느 한 단계에서 끊으면(kill) 공격 실패로 이어진다는 것이 킬체인의 핵심이다.",
+      "explanation": "채점 포인트: 7단계 순서 + 대표 예 + 단계별 통제(메일보안-유포, 패치-이용, EDR-설치, 프록시/DNS-C2, 망분리/DLP-목적달성). '하나만 끊으면 무력화' 개념.",
+      "notes": [
+        "네트워크보안/apt-킬체인-악성코드"
+      ],
+      "tags": [
+        "APT",
+        "킬체인",
+        "스피어피싱",
+        "C2",
+        "lateralmovement"
+      ]
+    },
+    {
+      "id": "y-net-022",
+      "type": "서술형",
+      "question": "SNMP 를 이용한 네트워크 관리에서 보안상 유의사항을 서술하시오. SNMP v1/v2c 의 문제점과 v3 에서 개선된 점을 포함하시오.",
+      "answer": "정답\n[v1/v2c 문제점]\n- 커뮤니티 스트링(community string)이 평문으로 전송되어 스니핑으로 노출된다. 기본값 `public`(읽기)·`private`(읽기쓰기)를 그대로 두는 경우가 많다.\n- 인증·암호화가 없어 위조·도청·재전송에 취약하고, SNMP write 로 장비 설정 변경(공격)도 가능하다.\n- UDP 161/162 로 반사·증폭 DDoS 에도 악용된다.\n\n[v3 개선점 — USM(User-based Security Model)]\n- 인증(HMAC-MD5/SHA)으로 메시지 무결성·발신자 인증.\n- 암호화(DES/AES)로 기밀성(privAuth 수준).\n- 타임라인 윈도우로 재전송 공격 방지.\n- VACM(View-based Access Control Model)으로 사용자별 접근 범위(MIB view) 제한.\n\n[유의사항]\n- 부득이 v2c 사용 시 커뮤니티 스트링을 추측 불가한 값으로, 읽기 전용으로, ACL 로 관리 서버 IP 만 허용.\n- 불필요하면 SNMP 비활성화, 관리망(OOB)에서만 운용, 162 트랩 수신 제한.",
+      "explanation": "채점 포인트: v1/2c=평문 커뮤니티·인증암호화 없음·기본값 문제 / v3=인증·암호화·재전송방지·VACM. 유의사항(RO·ACL·관리망 한정·미사용 시 비활성).",
+      "notes": [
+        "네트워크보안/snmp-네트워크관리"
+      ],
+      "tags": [
+        "SNMP",
+        "커뮤니티스트링",
+        "SNMPv3",
+        "USM"
+      ]
+    },
+    {
+      "id": "y-net-023",
+      "type": "실무형",
+      "question": "아래는 웹서버 앞단 IPS 에서 수집한 접속 로그의 일부다.\n\n```\n[10:22:01] 198.51.100.20  GET  /index.php?id=1                     200\n[10:22:02] 198.51.100.20  GET  /index.php?id=1'                    500\n[10:22:03] 198.51.100.20  GET  /index.php?id=1+AND+1=1             200\n[10:22:04] 198.51.100.20  GET  /index.php?id=1+AND+1=2             200(빈 결과)\n[10:22:07] 198.51.100.20  GET  /index.php?id=1+UNION+SELECT+null,table_name+FROM+information_schema.tables  200\n[10:22:15] 198.51.100.20  GET  /index.php?id=1;DROP+TABLE+users--  200\n```\n\n(a) 공격 유형과 세부 기법(2단계 이상)을 설명하시오.\n(b) `id=1'` 요청에 500 이 반환된 것이 공격자에게 주는 정보를 쓰시오.\n(c) 이 공격을 근본적으로 차단하기 위한 개발·운영 대응책을 4가지 이상 제시하시오.",
+      "answer": "정답\n(a) SQL 인젝션. 단계: ①오류 기반 탐지(`id=1'` 로 SQL 구문 오류 유발) → ②논리 기반 확인(`AND 1=1` / `AND 1=2` 로 참·거짓 응답 차이 = 인젝션 성립) → ③UNION 기반 데이터 추출(information_schema 로 테이블명 열거) → ④파괴적 시도(`DROP TABLE`).\n\n(b) `id=1'` 에 500(내부 서버 오류)이 반환되면, 입력값이 필터링 없이 SQL 질의에 삽입되고 있으며(오류 메시지 노출 가능성), DBMS 종류·쿼리 구조를 추정할 단서를 준다 → 인젝션 취약점 존재 확정.\n\n(c)\n1. 파라미터 바인딩(Prepared Statement)/저장 프로시저 사용 — 쿼리와 데이터 분리(가장 근본적).\n2. 입력값 검증(허용 목록 기반: id 는 정수만), 타입 캐스팅, 특수문자 이스케이프(보조 수단).\n3. DB 계정 최소 권한 — 웹 애플리케이션 계정에 DDL(DROP)·다중 쿼리 권한 제거.\n4. 오류 메시지 표준화 — 상세 오류를 사용자에게 노출하지 않고 로그로만.\n5. WAF 로 SQLi 패턴 탐지·차단(방어 심층), 취약점 진단 정기 수행.\n6. ORM 사용 시에도 raw query 검토, 다중 쿼리 실행 비활성.",
+      "explanation": "채점 포인트: (a) SQLi + 오류기반→불린기반→UNION→파괴 단계 (b) 필터링 없이 삽입됨을 확인·DB 정보 노출 (c) Prepared Statement(필수) + 입력검증 + DB 최소권한 + 오류 표준화 + WAF 중 4개. 'DROP' 성공 여부는 로그만으로 단정 불가하나 권한 있으면 치명적.",
+      "notes": [
+        "애플리케이션보안/sql-injection",
+        "애플리케이션보안/웹취약점-진단도구와-테스트기법"
+      ],
+      "tags": [
+        "SQLi",
+        "로그분석",
+        "PreparedStatement",
+        "WAF"
+      ]
+    },
+    {
+      "id": "y-net-024",
+      "type": "실무형",
+      "question": "회사 네트워크에서 특정 시간대에 인터넷이 매우 느려지는 현상이 반복되어 조사한 결과 다음을 확인했다.\n\n- 스위치 특정 포트에서 초당 수만 개의 ARP 패킷 발생\n- 해당 포트에 연결된 PC 의 ARP 테이블에 게이트웨이(192.168.10.1)의 MAC 이 정상과 다름\n- Wireshark 캡처: `192.168.10.1 is-at aa:bb:cc:11:22:33` 패킷이 브로드캐스트로 대량 관측 (정상 GW MAC 은 00:11:22:aa:bb:cc)\n\n(a) 발생한 공격을 쓰고, 공격자의 목적을 2가지 쓰시오.\n(b) 어느 PC 가 공격자인지 특정하는 방법을 쓰시오.\n(c) 재발 방지를 위한 스위치·단말 측 대응책을 각각 제시하시오.",
+      "answer": "정답\n(a) ARP 스푸핑(ARP Cache Poisoning). 목적: ① 피해자-게이트웨이 트래픽을 중간에서 가로채 도청/자격증명 탈취(MITM), ② 트래픽을 변조하거나 특정 사이트로 리다이렉트(파밍), 또는 전달하지 않아 DoS 유발.\n\n(b) 대량의 위조 ARP Reply(`192.168.10.1 is-at aa:bb:cc:11:22:33`)의 실제 송신 MAC(프레임의 Source MAC)을 확인하고, 스위치의 MAC 주소 테이블에서 그 MAC 이 학습된 포트를 조회하면 해당 포트에 연결된 단말이 공격자다. (또는 각 포트별 ARP 패킷 발생량으로 특정)\n\n(c)\n[스위치 측]\n- DHCP Snooping 활성화 후 Dynamic ARP Inspection(DAI) 적용 — 스누핑 바인딩 테이블과 불일치하는 ARP 패킷 차단.\n- 포트당 ARP 패킷 rate limit, Port Security 로 포트당 MAC 수 제한.\n- 관리 VLAN 분리, 미사용 포트 shutdown.\n\n[단말 측]\n- 게이트웨이 MAC 을 정적 ARP 로 등록(`arp -s`).\n- 백신/EDR 로 ARP 스푸핑 툴 탐지, arpwatch 로 MAC 변경 모니터링.\n- 상위 계층 암호화(HTTPS, VPN)로 도청 피해 최소화.\n\n공격 PC 는 즉시 네트워크에서 격리하고 악성코드 감염 여부를 조사한다.",
+      "explanation": "채점 포인트: (a) ARP 스푸핑 + MITM 도청·변조/파밍/DoS 중 2개 (b) 위조 ARP 의 Source MAC → 스위치 MAC 테이블에서 포트 역추적 (c) 스위치=DHCP Snooping+DAI·rate limit, 단말=정적 ARP·arpwatch·HTTPS.",
+      "notes": [
+        "네트워크보안/arp스푸핑-스니핑탐지",
+        "네트워크보안/vlan-스위칭-nac-망분리"
+      ],
+      "tags": [
+        "ARP스푸핑",
+        "DAI",
+        "MITM",
+        "트래픽분석"
+      ]
+    },
+    {
+      "id": "y-net-025",
+      "type": "실무형",
+      "question": "다음은 리눅스 서버의 iptables 현재 정책이다.\n\n```\n# iptables -L -n -v --line-numbers\nChain INPUT (policy ACCEPT)\nnum  target  prot  source        destination\n1    ACCEPT  all   0.0.0.0/0     0.0.0.0/0    state RELATED,ESTABLISHED\n2    ACCEPT  tcp   0.0.0.0/0     0.0.0.0/0    tcp dpt:22\n3    ACCEPT  tcp   0.0.0.0/0     0.0.0.0/0    tcp dpt:80\n4    ACCEPT  tcp   0.0.0.0/0     0.0.0.0/0    tcp dpt:3306\n```\n\n이 서버는 외부 공개 웹서버(80)이며 DB(3306)는 같은 내부망(192.168.20.0/24)의 앱서버만 접근한다. SSH(22)는 관리자 사무실(203.0.113.10)에서만 접속한다.\n\n(a) 현재 정책의 보안 문제점을 3가지 지적하시오.\n(b) 요구사항에 맞게 정책을 재작성하시오(체인 기본 정책 포함, 명령 또는 규칙 나열).",
+      "answer": "정답\n(a) 문제점\n1. 기본 정책이 `policy ACCEPT` — 명시적으로 허용되지 않은 모든 포트가 열려 있다(화이트리스트 원칙 위반).\n2. SSH(22)가 전 세계(0.0.0.0/0)에 개방 — 무차별 대입 대상. 관리자 IP 로 제한해야 한다.\n3. DB(3306)가 전 세계에 개방 — 내부망 앱서버(192.168.20.0/24)로만 제한해야 한다. DB 를 외부에 노출하면 안 된다.\n4. (추가) 루프백(lo) 허용 규칙 부재, 로깅 규칙 없음.\n\n(b) 재작성\n```\niptables -F\niptables -P INPUT DROP\niptables -P FORWARD DROP\niptables -P OUTPUT ACCEPT\niptables -A INPUT -i lo -j ACCEPT\niptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT\niptables -A INPUT -p tcp -s 203.0.113.10 --dport 22 -j ACCEPT\niptables -A INPUT -p tcp --dport 80 -j ACCEPT\niptables -A INPUT -p tcp -s 192.168.20.0/24 --dport 3306 -j ACCEPT\niptables -A INPUT -p icmp --icmp-type echo-request -m limit --limit 1/s -j ACCEPT\niptables -A INPUT -j LOG --log-prefix \"iptables-drop: \"\niptables -A INPUT -j DROP\n```",
+      "explanation": "채점 포인트: (a) 기본정책 ACCEPT / SSH 전체개방 / DB 전체개방 중 3개 (b) `-P INPUT DROP` + lo + ESTABLISHED,RELATED + SSH 는 -s 관리자IP + 80 전체 + 3306 은 -s 내부망 + 로깅/DROP. OUTPUT 은 상황에 따라 제한 가능.",
+      "notes": [
+        "네트워크보안/iptables-방화벽-정책",
+        "네트워크보안/방화벽-구조와-유형"
+      ],
+      "tags": [
+        "iptables",
+        "정책검수",
+        "최소개방",
+        "DB노출"
+      ]
+    },
+    {
+      "id": "y-net-026",
+      "type": "단답형",
+      "question": "다음 설명에 해당하는 네트워크 계층별 보안 프로토콜을 쓰시오.\n\n* 2계층에서 포트 기반 네트워크 접근제어를 수행하며, EAP 를 사용해 인증 서버(RADIUS)와 연동하는 표준은 ( A ) 이다.\n* 응용 계층에서 전자우편 전송 구간을 보호하기 위해 STARTTLS 를 사용하는 프로토콜 조합은 SMTP + ( B ) 이다.\n* SSH 가 동작하는 기본 포트는 ( C ) 이다.",
+      "answer": "정답\n(A) IEEE 802.1X\n(B) TLS (SMTPS/STARTTLS, TCP 587 submission + STARTTLS)\n(C) 22",
+      "explanation": "802.1X 구성요소: Supplicant(단말)·Authenticator(스위치/AP)·Authentication Server(RADIUS). EAP 방식: EAP-TLS(양방향 인증서), PEAP, EAP-TTLS. 메일 포트: 25(SMTP), 587(제출+STARTTLS), 465(SMTPS), 110/995(POP3/S), 143/993(IMAP/S).",
+      "notes": [
+        "네트워크보안/무선랜-보안",
+        "네트워크보안/프로토콜-계층별-보안-총정리",
+        "애플리케이션보안/메일보안-spf-dkim-dmarc"
+      ],
+      "tags": [
+        "802.1X",
+        "EAP",
+        "RADIUS",
+        "포트번호"
+      ]
+    },
+    {
+      "id": "y-net-027",
+      "type": "단답형",
+      "question": "다음 설명에 해당하는 공격 명칭을 쓰시오.\n\n* (A) : 라우팅 프로토콜(OSPF, BGP)이나 ICMP Redirect 를 악용해 특정 트래픽 경로를 공격자 경유로 변경.\n* (B) : DHCP 응답을 위조하거나 서버를 고갈시켜(DHCP Starvation) 피해자에게 잘못된 게이트웨이·DNS 를 할당.\n* (C) : 스위치가 STP 최상위(root) 브리지가 되도록 위조 BPDU 를 보내 트래픽을 공격자 스위치로 우회.",
+      "answer": "정답\n(A) 라우팅 테이블 조작 / ICMP Redirect 공격\n(B) Rogue DHCP(DHCP 스푸핑) 공격\n(C) STP 공격(Root Bridge 탈취)",
+      "explanation": "대응: (A) 라우팅 프로토콜 인증(MD5/키체인), ICMP Redirect 수신 비활성. (B) DHCP Snooping — 신뢰 포트에서만 DHCP 서버 응답 허용. (C) BPDU Guard(엣지 포트에서 BPDU 수신 시 err-disable), Root Guard.",
+      "notes": [
+        "네트워크보안/cisco-라우터-스위치-보안설정",
+        "네트워크보안/tcp-ip-헤더와-라우팅"
+      ],
+      "tags": [
+        "라우팅공격",
+        "RogueDHCP",
+        "STP공격",
+        "DHCPSnooping"
+      ]
+    },
+    {
+      "id": "y-net-028",
+      "type": "단답형",
+      "question": "TCP/IP 헤더 필드를 악용한 공격에 대한 물음이다.\n\n* IP 프래그먼트의 offset 값을 겹치게 조작해 재조합 시 시스템을 다운시키는 공격은 ( A ) 이다.\n* 최대 크기(65,535바이트)를 초과하는 ICMP 패킷을 프래그먼트로 보내 재조합 버퍼를 오버플로우시키는 공격은 ( B ) 이다.\n* TCP 세션 도중 시퀀스 번호를 예측해 위조 패킷을 삽입, 정상 연결을 탈취하는 공격은 ( C ) 이다.",
+      "answer": "정답\n(A) Teardrop 공격\n(B) Ping of Death\n(C) TCP 세션 하이재킹(Session Hijacking)",
+      "explanation": "- Teardrop: fragment offset 조작 → 커널 재조합 로직 오류. 현대 OS 는 패치됨.\n- Ping of Death: 오버사이즈 ICMP → 버퍼 오버플로우.\n- Session Hijacking: 시퀀스 번호 추측(예전엔 예측 가능) + ARP 스푸핑 병행. 대응: 난수 ISN, 암호화(SSH/TLS), 타임스탬프 옵션.",
+      "notes": [
+        "네트워크보안/tcp-ip-헤더와-라우팅",
+        "네트워크보안/DoS-DDoS-총정리"
+      ],
+      "tags": [
+        "Teardrop",
+        "PingOfDeath",
+        "세션하이재킹",
+        "프래그먼트"
+      ]
+    }
+  ]
+}
