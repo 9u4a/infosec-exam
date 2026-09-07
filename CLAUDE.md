@@ -22,7 +22,8 @@
 실기/N회(YYYY-MM-DD)/N.json   원본. { title, data: [{ id, type, question, answer }] }
 meta/N.json                   메타 레이어. 아래 스키마
 notes/<영역>/<슬러그>.md        학습 노트. 프론트매터 + 마크다운
-scripts/build.mjs             실기 + meta + notes → docs/data/bundle.js
+cppg/                         CPPG(개인정보관리사) 트랙 — 아래 별도 섹션
+scripts/build.mjs             실기+meta+notes → bundle.js · cppg/ → cppg.js
 docs/                         GitHub Pages 발행 루트 (Settings→Pages→/docs)
 ```
 
@@ -65,6 +66,38 @@ tags: [로그, lastlog, btmp]
 - `questions:` 를 빌드가 역인덱싱해 각 기출 문항에 "관련 노트" 링크를 자동 생성.
   연결은 **노트 쪽에서만** 관리한다.
 
+## CPPG 트랙 (개인정보관리사)
+
+같은 사이트 안에 경로로 분리된 두 번째 시험 트랙. 5지선다 객관식 100문항 자동채점.
+홈 상단 `[정보보안기사 실기 | CPPG]` 스위처로 전환. 라우트는 전부 `#/cppg/...`,
+학습기록은 `localStorage` 의 `cppg` 서브트리에 **완전 분리** 저장.
+
+```
+cppg/subjects.json           과목 정의(단일 출처). count/durationMin/passTotal/passPerSubjectPct.
+                             시행처 공고와 다르면 이 파일만 고치면 앱 전체 반영.
+cppg/notes/<과목명>/<슬러그>.md  학습 노트. 프론트매터 title/subject/tags. (기사 노트와 동일 규칙)
+cppg/quiz/<과목id>.json       5지선다 문제. { subject, items: [...] }
+```
+
+문제 스키마 (`items[]`):
+```json
+{ "id": "s3-012", "stem": "...", "choices": ["...", "..."], "answer": 3,
+  "explain": "마크다운 가능. 오답 선택지가 왜 틀린지까지.",
+  "note": "개인정보 라이프사이클 관리/개인정보-파기", "tags": ["파기"], "difficulty": 2 }
+```
+- `answer` 는 **1-based**. `choices` 2~5개. `id` 는 `<과목id>-NNN`, 전역 유일.
+- `note` 는 CPPG 노트 슬러그(폴더명/파일명). **문제→노트 연결은 문제 쪽에서만** 관리
+  (기사 트랙은 노트→문항. CPPG는 문제 수가 많아 반대 방향). 빌드가 존재를 검증하고
+  노트에 역인덱스(`note.quiz`)를 만든다.
+- 과목명 = `cppg/notes/` 하위 폴더명 = `subjects.json` 의 `name`. 빌드가 일치 검증.
+
+빌드 산출물 `docs/data/cppg.js` (`window.CPPG_DATA`) 도 **커밋한다**. `cppg/` 를 고치면
+`node scripts/build.mjs` 재실행 → `cppg.js` 함께 커밋. 앱 셸 파일 변경 시 `docs/sw.js` 의
+`CACHE` 버전도 올린다 (현재 v10).
+
+⚠ 개인정보보호법은 개정이 잦다. 노트에 조문 번호와 기준 시점(`2026-09 기준`)을 명시하고,
+자주 바뀌는 수치(과징금 상한·통지 기한 등)는 한 노트에 모아 갱신 추적이 되게 한다.
+
 ## 빌드 & 로컬 확인
 
 ```bash
@@ -87,3 +120,7 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 - **문항 직링크** `#/q/<qid>`: 통계·즐겨찾기·노트·검색의 단일 문항 클릭은 세션을 건드리지 않고 이 라우트로 이동. 같은 회차 이전/다음 이동.
 - **통합 검색** `#/search/<query>`: 문제·정답·해설·보충지문·노트 전체를 AND 부분일치로 검색. 결과에서 바로 세션 시작 가능. 입력은 `history.replaceState` 로 URL 동기화.
 - 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동.
+- **CPPG 트랙**: `#/cppg` 홈에서 연습문제(과목/노트/태그/오답/랜덤 범위, 즉시 공개 토글) ·
+  모의고사(과목별 배분 100문항 + 120분 타이머 + 총점 60·과목별 40% 과락 판정) · 통계 ·
+  노트. 연습·모의 세션 모두 `cppg.session` 에 영속(타이머 포함 복원). 마지막 트랙을
+  `settings.track` 에 저장해 다음 실행 시 그 트랙 홈으로 부팅.

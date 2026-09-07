@@ -10,6 +10,11 @@ const META_DIR = join(ROOT, 'meta');
 const NOTES_DIR = join(ROOT, 'notes');
 const OUT_FILE = join(ROOT, 'docs', 'data', 'bundle.js');
 
+const CPPG_DIR = join(ROOT, 'cppg');
+const CPPG_NOTES_DIR = join(CPPG_DIR, 'notes');
+const CPPG_QUIZ_DIR = join(CPPG_DIR, 'quiz');
+const CPPG_OUT_FILE = join(ROOT, 'docs', 'data', 'cppg.js');
+
 const DOMAINS = ['시스템보안', '네트워크보안', '애플리케이션보안', '정보보안일반', '정보보안관리및법규'];
 
 const warnings = [];
@@ -134,6 +139,101 @@ function loadNotes(rounds) {
   return notes;
 }
 
+// ---------- CPPG (개인정보관리사) ----------
+function buildCppg() {
+  if (!existsSync(CPPG_DIR)) return null;
+  const cfg = JSON.parse(readFileSync(join(CPPG_DIR, 'subjects.json'), 'utf8'));
+  const subjects = cfg.subjects || [];
+  const byId = new Map(subjects.map((s) => [s.id, s]));
+  const byName = new Map(subjects.map((s) => [s.name, s]));
+
+  // 노트: notes/<과목명>/<슬러그>.md
+  const notes = [];
+  const noteBySlug = new Map();
+  if (existsSync(CPPG_NOTES_DIR)) {
+    for (const file of walk(CPPG_NOTES_DIR)) {
+      const rel = relative(CPPG_NOTES_DIR, file).split(sep);
+      const folder = rel.length > 1 ? rel[0] : '기타';
+      const slug = rel.join('/').replace(/\.md$/, '');
+      if (!byName.has(folder)) warn(`cppg/notes/${slug}: 폴더명 "${folder}" 이 subjects.json 에 없음`);
+      const { meta, body } = parseFrontmatter(readFileSync(file, 'utf8'));
+      const note = {
+        slug,
+        subject: meta.subject || folder,
+        title: meta.title || basename(slug),
+        tags: meta.tags || [],
+        quiz: [],
+        md: body.trim(),
+      };
+      notes.push(note);
+      noteBySlug.set(slug, note);
+    }
+  }
+  notes.sort((a, b) => a.slug.localeCompare(b.slug, 'ko'));
+
+  // 문제: quiz/<과목id>.json
+  const quiz = [];
+  const seenId = new Set();
+  if (existsSync(CPPG_QUIZ_DIR)) {
+    for (const f of readdirSync(CPPG_QUIZ_DIR)) {
+      if (!f.endsWith('.json')) continue;
+      const pack = JSON.parse(readFileSync(join(CPPG_QUIZ_DIR, f), 'utf8'));
+      const fileSubj = f.replace(/\.json$/, '');
+      if (pack.subject !== fileSubj) warn(`cppg/quiz/${f}: subject "${pack.subject}" 가 파일명과 불일치`);
+      if (!byId.has(pack.subject)) warn(`cppg/quiz/${f}: subject "${pack.subject}" 미정의`);
+      for (const it of pack.items || []) {
+        if (!it.id) { warn(`cppg/quiz/${f}: id 없는 문항`); continue; }
+        if (seenId.has(it.id)) { warn(`cppg/quiz/${f}: id 중복 "${it.id}"`); continue; }
+        seenId.add(it.id);
+        const choices = it.choices || [];
+        if (!it.stem || !String(it.stem).trim()) warn(`cppg/quiz: ${it.id} stem 비어있음`);
+        if (choices.length < 2) warn(`cppg/quiz: ${it.id} 선택지 ${choices.length}개 (2개 이상 필요)`);
+        if (!(it.answer >= 1 && it.answer <= choices.length)) warn(`cppg/quiz: ${it.id} answer(${it.answer}) 범위 밖 (1~${choices.length})`);
+        let noteSlug = it.note || null;
+        if (noteSlug) {
+          if (!noteBySlug.has(noteSlug)) { warn(`cppg/quiz: ${it.id} note "${noteSlug}" 노트 없음`); noteSlug = null; }
+          else noteBySlug.get(noteSlug).quiz.push(it.id);
+        }
+        quiz.push({
+          id: it.id,
+          subject: pack.subject,
+          stem: it.stem,
+          choices,
+          answer: it.answer,
+          explain: it.explain || null,
+          note: noteSlug,
+          tags: it.tags || [],
+          difficulty: it.difficulty || null,
+        });
+      }
+    }
+  }
+
+  // 과목별 문제 수 vs 모의고사 배분
+  const perSubject = {};
+  for (const s of subjects) perSubject[s.id] = 0;
+  for (const q of quiz) if (perSubject[q.subject] != null) perSubject[q.subject]++;
+  for (const s of subjects) {
+    if (perSubject[s.id] < s.count) {
+      warn(`cppg: ${s.no}과목(${s.name}) 문제 ${perSubject[s.id]}개 < 모의고사 배분 ${s.count}개`);
+    }
+  }
+
+  return {
+    builtAt: new Date().toISOString(),
+    config: cfg,
+    subjects,
+    notes,
+    quiz,
+    stats: { subjects: subjects.length, notes: notes.length, quiz: quiz.length, perSubject },
+  };
+}
+
+function writeCppg(cppg) {
+  mkdirSync(dirname(CPPG_OUT_FILE), { recursive: true });
+  writeFileSync(CPPG_OUT_FILE, `// 자동 생성물 — scripts/build.mjs 가 생성. 직접 수정 금지.\nwindow.CPPG_DATA = ${JSON.stringify(cppg)};\n`, 'utf8');
+}
+
 // ---------- 4. 출력 ----------
 function main() {
   const rounds = loadRounds();
@@ -164,6 +264,17 @@ function main() {
   console.log(`  해설 ${explained}/${total}`);
   console.log(`  보충 지문 ${supplemented}건`);
   console.log(`  노트 ${notes.length}개`);
+
+  const cppg = buildCppg();
+  if (cppg) {
+    writeCppg(cppg);
+    console.log(`\n✔ CPPG: ${cppg.stats.subjects}과목 · 노트 ${cppg.stats.notes}개 · 문제 ${cppg.stats.quiz}문항`);
+    const linked = cppg.quiz.filter((q) => q.note).length;
+    console.log(`  문제–노트 연결 ${linked}/${cppg.stats.quiz}`);
+    console.log(`  과목별 문제 ${cppg.subjects.map((s) => `${s.no}:${cppg.stats.perSubject[s.id]}`).join(' ')}`);
+    console.log(`  → ${relative(ROOT, CPPG_OUT_FILE)}`);
+  }
+
   if (warnings.length) {
     console.log(`\n⚠ 경고 ${warnings.length}건:`);
     for (const w of warnings) console.log(`  - ${w}`);

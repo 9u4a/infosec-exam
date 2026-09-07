@@ -18,7 +18,9 @@ const DEFAULT_STATE = () => ({
   sessions: [],        // [{ id, startedAt, endedAt, scopeLabel, graded: {o,m,x} }]
   session: null,       // 진행 중 세션 { qids, label, idx, startedAt }
   lastSummary: null,   // 마지막 제출 결과 { label, qids, startedAt, graded:{o,m,x} }
-  settings: { alwaysShowAnswer: false, theme: 'auto' },
+  settings: { alwaysShowAnswer: false, theme: 'auto', track: 'sil' },
+  // CPPG(개인정보관리사) 트랙 — 학습기록 완전 분리
+  cppg: { results: {}, favorites: [], sessions: [], session: null, lastSummary: null },
 });
 
 const store = {
@@ -30,6 +32,7 @@ const store = {
         const parsed = JSON.parse(raw);
         this.state = Object.assign(DEFAULT_STATE(), parsed);
         this.state.settings = Object.assign(DEFAULT_STATE().settings, parsed.settings || {});
+        this.state.cppg = Object.assign(DEFAULT_STATE().cppg, parsed.cppg || {});
       }
     } catch (e) { console.warn('상태 불러오기 실패', e); }
   },
@@ -183,7 +186,11 @@ function render() {
   view(app, args);
   const tabbar = $('#tabbar');
   tabbar.hidden = false;
-  tabbar.querySelectorAll('a').forEach((a) => a.classList.toggle('active', a.dataset.tab === path));
+  const track = path === 'cppg' ? 'cppg' : 'sil';
+  if (store.state.settings.track !== track) { store.state.settings.track = track; store.save(); }
+  tabbar.querySelectorAll('.tabs').forEach((g) => { g.hidden = g.dataset.track !== track; });
+  const activeTab = track === 'cppg' ? (args[0] || '') : path;
+  tabbar.querySelectorAll(`.tabs[data-track="${track}"] a`).forEach((a) => a.classList.toggle('active', a.dataset.tab === activeTab));
 }
 window.addEventListener('hashchange', render);
 
@@ -292,8 +299,17 @@ function questionCard(q, opts = {}) {
   return card;
 }
 
+/* 트랙 전환 스위처 (홈 상단) */
+function trackSwitch(cur) {
+  return el(`<div class="track-switch">
+    <a href="#/home" class="${cur === 'sil' ? 'on' : ''}">정보보안기사 실기</a>
+    <a href="#/cppg" class="${cur === 'cppg' ? 'on' : ''}">CPPG 개인정보관리사</a>
+  </div>`);
+}
+
 /* ============ 홈 ============ */
 route('home', (app) => {
+  app.appendChild(trackSwitch('sil'));
   const s = computeStats();
   const today = new Date().toISOString().slice(0, 10);
   const todayCount = s.dayMap[today] || 0;
@@ -1037,7 +1053,7 @@ route('more', (app) => {
   $('#imp', dataBox).addEventListener('click', () => $('#impFile', dataBox).click());
   $('#impFile', dataBox).addEventListener('change', importData);
   $('#rst', dataBox).addEventListener('click', () => {
-    if (confirm('모든 학습 기록·즐겨찾기·메모를 삭제합니다. 계속할까요?')) { store.reset(); SESSION = null; toast('초기화됨'); render(); }
+    if (confirm('모든 학습 기록·즐겨찾기·메모를 삭제합니다. 계속할까요?')) { store.reset(); SESSION = null; CSESSION = null; toast('초기화됨'); render(); }
   });
   app.appendChild(dataBox);
 
@@ -1066,13 +1082,681 @@ function importData(e) {
       if (!confirm('현재 기록을 가져온 파일로 덮어씁니다. 계속할까요?')) return;
       store.state = Object.assign(DEFAULT_STATE(), parsed);
       store.state.settings = Object.assign(DEFAULT_STATE().settings, parsed.settings || {});
+      store.state.cppg = Object.assign(DEFAULT_STATE().cppg, parsed.cppg || {});
       SESSION = (store.state.session && Array.isArray(store.state.session.qids) && store.state.session.qids.length) ? store.state.session : null;
       store.state.session = SESSION;
+      CSESSION = (store.state.cppg.session && Array.isArray(store.state.cppg.session.ids) && store.state.cppg.session.ids.length) ? store.state.cppg.session : null;
+      store.state.cppg.session = CSESSION;
       store.save(); applyTheme(); toast('가져오기 완료'); render();
     } catch (err) { toast('가져오기 실패: ' + err.message); }
   };
   reader.readAsText(file);
 }
+
+/* ==================================================================
+   CPPG (개인정보관리사) 트랙 — 5지선다 객관식 · 자동채점 · 모의고사
+   ================================================================== */
+const CPPG = window.CPPG_DATA || null;
+const CQ = CPPG ? CPPG.quiz : [];
+const CQ_BY_ID = new Map(CQ.map((q) => [q.id, q]));
+const CSUBJ = CPPG ? CPPG.subjects : [];
+const CSUBJ_BY_ID = new Map(CSUBJ.map((s) => [s.id, s]));
+const CNOTE_BY_SLUG = new Map(CPPG ? CPPG.notes.map((n) => [n.slug, n]) : []);
+const CCFG = (CPPG && CPPG.config) || { passTotal: 60, passPerSubjectPct: 40, durationMin: 120, totalQuestions: 100 };
+const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
+const subjNo = (sid) => { const s = CSUBJ_BY_ID.get(sid); return s ? s.no + '과목' : sid; };
+const subjName = (sid) => { const s = CSUBJ_BY_ID.get(sid); return s ? s.name : sid; };
+
+const cstore = {
+  s() { return store.state.cppg; },
+  result(id) { const r = this.s().results; return r[id] || (r[id] = { attempts: [], memo: '' }); },
+  answer(id, pick, since) {
+    const it = CQ_BY_ID.get(id);
+    const ok = it ? pick === it.answer : false;
+    const a = this.result(id).attempts;
+    if (a.length && a[a.length - 1].t >= since) a[a.length - 1] = { t: Date.now(), pick, ok };
+    else a.push({ t: Date.now(), pick, ok });
+    store.save();
+    return ok;
+  },
+  lastAnswerSince(id, since) {
+    const a = this.s().results[id] && this.s().results[id].attempts;
+    if (!a) return null;
+    for (let i = a.length - 1; i >= 0; i--) if (a[i].t >= since) return a[i];
+    return null;
+  },
+  lastAttempt(id) {
+    const a = this.s().results[id] && this.s().results[id].attempts;
+    return a && a.length ? a[a.length - 1] : null;
+  },
+  attemptCount(id) { const r = this.s().results[id]; return r ? r.attempts.length : 0; },
+  wrongCount(id) { const r = this.s().results[id]; return r ? r.attempts.filter((x) => !x.ok).length : 0; },
+  setMemo(id, m) { this.result(id).memo = m; store.save(); },
+  isFav(id) { return this.s().favorites.includes(id); },
+  toggleFav(id) { const f = this.s().favorites; const i = f.indexOf(id); if (i >= 0) f.splice(i, 1); else f.unshift(id); store.save(); },
+  addSession(x) { this.s().sessions.unshift(x); if (this.s().sessions.length > 50) this.s().sessions.length = 50; store.save(); },
+};
+
+/* ---- 객관식 카드 ---- */
+function cppgCard(item, opts = {}) {
+  const sinceTs = opts.sessionStart || Date.now();
+  const reveal = opts.reveal !== false;
+  const card = el('<div class="card q-card"></div>');
+  const note = item.note ? CNOTE_BY_SLUG.get(item.note) : null;
+  const priorN = cstore.attemptCount(item.id);
+  const prior = cstore.lastAttempt(item.id);
+  const histHtml = priorN
+    ? `<div class="grade-hist small">지난 풀이 ${prior && prior.ok ? '⭕' : '❌'} <b>${prior && prior.ok ? '정답' : '오답'}</b> · ${priorN}회</div>`
+    : '';
+
+  card.innerHTML = `
+    <div class="q-head">
+      <span class="pill accent">${esc(subjNo(item.subject))}</span>
+      ${(item.tags || []).slice(0, 2).map((t) => `<span class="pill">${esc(t)}</span>`).join('')}
+      ${item.difficulty ? `<span class="pill">난이도 ${'★'.repeat(item.difficulty)}</span>` : ''}
+      <button class="star ${cstore.isFav(item.id) ? 'on' : ''}" aria-label="즐겨찾기">${cstore.isFav(item.id) ? '★' : '☆'}</button>
+    </div>
+    <div class="q-body">${esc(item.stem)}</div>
+    <div class="choice-list"></div>
+    <div class="verdict-slot"></div>
+  `;
+
+  const star = $('.star', card);
+  star.addEventListener('click', () => {
+    cstore.toggleFav(item.id);
+    const on = cstore.isFav(item.id);
+    star.classList.toggle('on', on); star.textContent = on ? '★' : '☆';
+  });
+
+  const list = $('.choice-list', card);
+  const vslot = $('.verdict-slot', card);
+  let picked = null;
+
+  function paint() {
+    [...list.children].forEach((b, i) => {
+      const n = i + 1;
+      b.className = 'choice';
+      if (picked === n) b.classList.add('picked');
+      if (reveal && picked != null) {
+        if (n === item.answer) b.classList.add('correct');
+        else if (picked === n) b.classList.add('wrong');
+      }
+      b.disabled = reveal && picked != null;
+    });
+  }
+  function renderVerdict() {
+    vslot.innerHTML = '';
+    if (picked == null) { if (histHtml) vslot.appendChild(el(histHtml)); return; }
+    if (!reveal) return;
+    const ok = picked === item.answer;
+    vslot.appendChild(el(`<div class="verdict ${ok ? 'ok' : 'bad'}">${ok ? '⭕ 정답' : '❌ 오답 · 정답 ' + CIRCLED[item.answer - 1]}</div>`));
+    if (item.explain) {
+      const ex = el(`<div class="expl"><b>💡 해설</b><div class="expl-body markdown">${window.marked ? window.marked.parse(item.explain) : esc(item.explain)}</div></div>`);
+      vslot.appendChild(ex); enhanceMarkdown(ex);
+    }
+    if (note) vslot.appendChild(el(`<div class="note-links"><a href="#/cppg/note/${encodeURIComponent(note.slug)}">📎 ${esc(note.title)}</a></div>`));
+    if (histHtml) vslot.appendChild(el(histHtml));
+  }
+
+  item.choices.forEach((c, i) => {
+    const b = el(`<button class="choice"><span class="cnum">${CIRCLED[i] || (i + 1)}</span><span class="ctext">${esc(c)}</span></button>`);
+    b.addEventListener('click', () => {
+      picked = i + 1;
+      cstore.answer(item.id, picked, sinceTs);
+      paint(); renderVerdict();
+      if (opts.onAnswer) opts.onAnswer(picked, picked === item.answer);
+    });
+    list.appendChild(b);
+  });
+
+  const cur = cstore.lastAnswerSince(item.id, sinceTs);
+  if (cur) picked = cur.pick;
+  paint(); renderVerdict();
+  return card;
+}
+
+/* ---- 세션 ---- */
+let CSESSION = null;
+let CTIMER = null;
+function csave() { store.state.cppg.session = CSESSION; store.save(); }
+function cExpiresAt() { return CSESSION && CSESSION.durationMin ? CSESSION.startedAt + CSESSION.durationMin * 60000 : null; }
+function fmtClock(ms) {
+  if (ms < 0) ms = 0;
+  const s = Math.floor(ms / 1000);
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+}
+function cStart(ids, label, opts = {}) {
+  if (!ids.length) { toast('해당 조건의 문제가 없습니다'); return; }
+  if (CSESSION && CSESSION.ids && CSESSION.ids.length) {
+    if (!confirm('진행 중인 CPPG 세션이 있습니다. 새로 시작하면 현재 진행이 사라집니다. 계속할까요?')) return;
+  }
+  CSESSION = {
+    ids, label, idx: 0, startedAt: Date.now(),
+    kind: opts.kind || 'practice', reveal: opts.reveal !== false,
+  };
+  if (opts.durationMin) CSESSION.durationMin = opts.durationMin;
+  csave();
+  navigate('#/cppg/run');
+}
+function cCell(id, since, kind) {
+  const a = cstore.lastAnswerSince(id, since);
+  if (!a) return 'g-none';
+  if (kind === 'mock') return 'g-picked';
+  return a.ok ? 'g-ok' : 'g-bad';
+}
+function cFinish() {
+  if (!CSESSION) { navigate('#/cppg'); return; }
+  clearInterval(CTIMER); CTIMER = null;
+  const since = CSESSION.startedAt;
+  const ids = CSESSION.ids.slice();
+  const kind = CSESSION.kind;
+  const label = CSESSION.label;
+  let correct = 0, answered = 0;
+  const per = {};
+  ids.forEach((id) => {
+    const it = CQ_BY_ID.get(id); if (!it) return;
+    const p = per[it.subject] || (per[it.subject] = { o: 0, n: 0 });
+    p.n++;
+    const a = cstore.lastAnswerSince(id, since);
+    if (a) { answered++; if (a.ok) { correct++; p.o++; } }
+  });
+  const summary = { kind, label, ids, startedAt: since, endedAt: Date.now(), total: ids.length, answered, correct, per };
+  store.state.cppg.lastSummary = summary;
+  const { ids: _omit, ...lean } = summary;
+  cstore.addSession({ id: since, ...lean });
+  CSESSION = null; store.state.cppg.session = null; store.save();
+  navigate('#/cppg/result');
+}
+function cPass(summary) {
+  const totalPct = summary.total ? (summary.correct / summary.total) * 100 : 0;
+  const failed = [];
+  CSUBJ.forEach((s) => {
+    const p = summary.per[s.id];
+    if (!p || !p.n) return;
+    if ((p.o / p.n) * 100 < CCFG.passPerSubjectPct) failed.push(s);
+  });
+  return { pass: summary.correct >= CCFG.passTotal && failed.length === 0, totalPct, failed };
+}
+
+/* ---- 라우트 ---- */
+const CPPG_ROUTES = {};
+function cRoute(name, fn) { CPPG_ROUTES[name] = fn; }
+
+route('cppg', (app, args) => {
+  clearInterval(CTIMER); CTIMER = null;
+  app.appendChild(trackSwitch('cppg'));
+  if (!CPPG) {
+    app.appendChild(el('<div class="empty">CPPG 데이터가 아직 없습니다.<br><span class="small"><code>cppg/</code> 폴더 작성 후 <code>node scripts/build.mjs</code></span></div>'));
+    return;
+  }
+  const sub = args[0] || 'home';
+  (CPPG_ROUTES[sub] || CPPG_ROUTES.home)(app, args.slice(1));
+});
+
+cRoute('home', (app) => {
+  app.appendChild(el('<h1>CPPG 개인정보관리사</h1>'));
+
+  // 이어풀기
+  if (CSESSION && CSESSION.ids && CSESSION.ids.length) {
+    const expd = cExpiresAt();
+    const dead = expd && Date.now() >= expd;
+    const rc = el(`<div class="card resume-card">
+      <div><b>${CSESSION.kind === 'mock' ? '모의고사' : '이어풀기'}</b> <span class="muted small">${esc(CSESSION.label)} · ${CSESSION.idx + 1}/${CSESSION.ids.length}${expd ? ' · ' + (dead ? '시간 종료' : '남은 ' + fmtClock(expd - Date.now())) : ''}</span></div>
+      <div class="row tight" style="margin-top:8px">
+        <button class="btn primary sm" id="cResume">${dead ? '결과 보기' : '이어서 →'}</button>
+        <button class="btn sm" id="cQuit">그만두고 제출</button>
+      </div></div>`);
+    $('#cResume', rc).addEventListener('click', () => dead ? cFinish() : navigate('#/cppg/run'));
+    $('#cQuit', rc).addEventListener('click', cFinish);
+    app.appendChild(rc);
+  }
+
+  const st = store.state.cppg;
+  const done = Object.keys(st.results).filter((id) => CQ_BY_ID.has(id) && st.results[id].attempts.length).length;
+  const graded = CQ.map((q) => cstore.lastAttempt(q.id)).filter(Boolean);
+  const rate = graded.length ? pct(graded.filter((a) => a.ok).length, graded.length) : 0;
+  app.appendChild(el(`<div class="stat-grid">
+    <div class="card"><div class="big">${done}<span class="muted" style="font-size:1rem">/${CQ.length}</span></div><div class="muted small">푼 문제</div></div>
+    <div class="card"><div class="big">${rate}%</div><div class="muted small">정답률</div></div>
+    <div class="card"><div class="big">${st.sessions.filter((s) => s.kind === 'mock').length}</div><div class="muted small">모의고사</div></div>
+  </div>`));
+
+  app.appendChild(el(`<div class="row" style="margin-top:14px">
+    <a class="btn primary" href="#/cppg/quiz">문제 풀기 →</a>
+    <a class="btn" href="#/cppg/mock">모의고사</a>
+  </div>`));
+
+  // 약점 과목
+  const per = {};
+  CQ.forEach((q) => { const a = cstore.lastAttempt(q.id); if (!a) return; const p = per[q.subject] || (per[q.subject] = { o: 0, n: 0 }); p.n++; if (a.ok) p.o++; });
+  const weak = CSUBJ.map((s) => ({ s, p: per[s.id] })).filter((x) => x.p && x.p.n >= 3)
+    .sort((a, b) => (a.p.o / a.p.n) - (b.p.o / b.p.n)).slice(0, 3);
+  if (weak.length) {
+    const box = el('<div class="card"><h3>약점 과목</h3></div>');
+    weak.forEach(({ s, p }) => box.appendChild(el(
+      `<div class="bar-row"><span class="bar-label">${esc(s.no + '. ' + s.name)}</span>${barTrack({ o: p.o, m: 0, x: p.n - p.o })}<span class="bar-num">${pct(p.o, p.n)}%</span></div>`)));
+    app.appendChild(box);
+  }
+
+  const lastMock = store.state.cppg.sessions.find((s) => s.kind === 'mock');
+  if (lastMock) {
+    const pr = cPass(lastMock);
+    app.appendChild(el(`<div class="card"><h3>최근 모의고사</h3>
+      <div class="pass-line ${pr.pass ? 'ok' : 'bad'}">${lastMock.correct} / ${lastMock.total}점 · ${pr.pass ? '✅ 합격' : '❌ 불합격'}</div>
+      <div class="small muted">${new Date(lastMock.startedAt).toISOString().slice(0, 10)}${pr.failed.length ? ' · 과락 ' + pr.failed.map((s) => s.no + '과목').join(', ') : ''}</div>
+    </div>`));
+  }
+
+  app.appendChild(el(`<p class="small muted center" style="margin-top:24px">데이터 생성 ${CPPG.builtAt.slice(0, 10)} · 문제 ${CQ.length} · 노트 ${CPPG.notes.length}</p>`));
+});
+
+cRoute('quiz', (app) => {
+  app.appendChild(el('<h1>CPPG 문제 풀기</h1>'));
+  const allTags = [...new Set(CQ.flatMap((q) => q.tags || []))].sort((a, b) => a.localeCompare(b, 'ko'));
+  const form = el(`<div class="card stack">
+    <label class="field"><span>범위</span>
+      <select id="cscope">
+        <option value="subject">과목별</option>
+        <option value="note">노트별</option>
+        <option value="tag">태그별</option>
+        <option value="wrong">틀린 문제만</option>
+        <option value="fav">즐겨찾기만</option>
+        <option value="unseen">안 푼 문제</option>
+        <option value="random">랜덤</option>
+      </select></label>
+    <div id="csub"></div>
+    <label class="field"><span>정렬</span>
+      <select id="corder"><option value="seq">순서대로</option><option value="shuffle">무작위</option></select></label>
+    <label class="field"><span>문항 수 (0 = 전체)</span>
+      <input type="number" id="climit" value="20" min="0" max="${CQ.length}"></label>
+    <label class="row" style="align-items:center;gap:6px;margin:0">
+      <input type="checkbox" id="creveal" checked style="width:auto"><span class="small">답 고르면 바로 정답·해설 공개</span>
+    </label>
+    <button class="btn primary wide" id="cstart">시작</button>
+  </div>`);
+  app.appendChild(form);
+  const scope = $('#cscope', form), csub = $('#csub', form);
+  function drawSub() {
+    csub.innerHTML = '';
+    if (scope.value === 'subject') {
+      csub.appendChild(el(`<label class="field"><span>과목</span><select id="cp">${CSUBJ.map((s) => `<option value="${s.id}">${s.no}. ${esc(s.name)}</option>`).join('')}</select></label>`));
+    } else if (scope.value === 'note') {
+      const notes = CPPG.notes.filter((n) => n.quiz.length);
+      csub.appendChild(el(`<label class="field"><span>노트</span><select id="cp">${notes.map((n) => `<option value="${esc(n.slug)}">${esc(n.title)} (${n.quiz.length})</option>`).join('')}</select></label>`));
+    } else if (scope.value === 'tag') {
+      csub.appendChild(el(`<label class="field"><span>태그</span><select id="cp">${allTags.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join('')}</select></label>`));
+    }
+  }
+  scope.addEventListener('change', drawSub); drawSub();
+
+  $('#cstart', form).addEventListener('click', () => {
+    const v = scope.value;
+    const p = $('#cp', csub) ? $('#cp', csub).value : null;
+    let list = CQ.slice(); let label = '';
+    if (v === 'subject') { list = list.filter((q) => q.subject === p); label = subjName(p); }
+    else if (v === 'note') { const n = CNOTE_BY_SLUG.get(p); list = (n ? n.quiz : []).map((id) => CQ_BY_ID.get(id)).filter(Boolean); label = n ? n.title : '노트'; }
+    else if (v === 'tag') { list = list.filter((q) => (q.tags || []).includes(p)); label = '#' + p; }
+    else if (v === 'wrong') { list = list.filter((q) => { const a = cstore.lastAttempt(q.id); return a && !a.ok; }); label = '틀린 문제'; }
+    else if (v === 'fav') { list = store.state.cppg.favorites.map((id) => CQ_BY_ID.get(id)).filter(Boolean); label = '즐겨찾기'; }
+    else if (v === 'unseen') { list = list.filter((q) => !cstore.attemptCount(q.id)); label = '안 푼 문제'; }
+    else { label = '랜덤'; }
+
+    if ($('#corder', form).value === 'shuffle' || v === 'random') shuffle(list);
+    else list.sort((a, b) => a.subject.localeCompare(b.subject) || a.id.localeCompare(b.id));
+    const lim = +$('#climit', form).value;
+    if (lim > 0) list = list.slice(0, lim);
+    cStart(list.map((q) => q.id), `${label} ${list.length}문항`, { reveal: $('#creveal', form).checked });
+  });
+});
+
+cRoute('mock', (app) => {
+  app.appendChild(el('<h1>CPPG 모의고사</h1>'));
+  const short = [];
+  CSUBJ.forEach((s) => { const have = CQ.filter((q) => q.subject === s.id).length; if (have < s.count) short.push(`${s.no}과목 ${have}/${s.count}`); });
+  const form = el(`<div class="card stack">
+    <p class="small muted">${CCFG.totalQuestions}문항 · ${CCFG.durationMin}분 · 합격 ${CCFG.passTotal}점 이상 + 과목별 ${CCFG.passPerSubjectPct}% 이상</p>
+    ${short.length ? `<p class="small" style="color:var(--bad)">⚠ 문제 부족: ${short.join(', ')} — 있는 만큼만 출제됩니다</p>` : ''}
+    <label class="row" style="align-items:center;gap:6px;margin:0"><input type="checkbox" id="mtimer" checked style="width:auto"><span class="small">타이머 (${CCFG.durationMin}분)</span></label>
+    <label class="row" style="align-items:center;gap:6px;margin:0"><input type="checkbox" id="mshuffle" style="width:auto"><span class="small">문제 순서 섞기 (과목 순서 무시)</span></label>
+    <button class="btn primary wide" id="mstart">모의고사 시작</button>
+  </div>`);
+  app.appendChild(form);
+
+  const hist = store.state.cppg.sessions.filter((s) => s.kind === 'mock').slice(0, 8);
+  if (hist.length) {
+    const box = el('<div class="card"><h3>모의고사 이력</h3></div>');
+    hist.forEach((h) => {
+      const pr = cPass(h);
+      box.appendChild(el(`<div class="rank-item" style="cursor:default">
+        <span class="pill accent">${new Date(h.startedAt).toISOString().slice(5, 10)}</span>
+        <span class="small" style="flex:1">${h.correct}/${h.total}점</span>
+        <span class="small ${pr.pass ? '' : 'rank-x'}">${pr.pass ? '합격' : '불합격' + (pr.failed.length ? ' (과락)' : '')}</span></div>`));
+    });
+    app.appendChild(box);
+  }
+
+  $('#mstart', form).addEventListener('click', () => {
+    const ids = [];
+    CSUBJ.forEach((s) => { const pool = shuffle(CQ.filter((q) => q.subject === s.id)); ids.push(...pool.slice(0, s.count).map((q) => q.id)); });
+    if ($('#mshuffle', form).checked) shuffle(ids);
+    if (!ids.length) { toast('출제할 문제가 없습니다'); return; }
+    cStart(ids, `모의고사 ${ids.length}문항`, { kind: 'mock', reveal: false, durationMin: $('#mtimer', form).checked ? CCFG.durationMin : 0 });
+  });
+});
+
+cRoute('run', (app) => {
+  if (!CSESSION) { navigate('#/cppg/quiz'); return; }
+  const expd = cExpiresAt();
+  if (expd && Date.now() >= expd) { cFinish(); return; }
+  const { ids, idx, kind } = CSESSION;
+  const it = CQ_BY_ID.get(ids[idx]);
+
+  if (expd) {
+    const timer = el(`<div class="mock-timer"><span>모의고사</span><span id="mclock">${fmtClock(expd - Date.now())}</span></div>`);
+    app.appendChild(timer);
+    const clk = $('#mclock', timer);
+    CTIMER = setInterval(() => {
+      const left = expd - Date.now();
+      clk.textContent = fmtClock(left);
+      timer.classList.toggle('warn', left < 5 * 60000);
+      if (left <= 0) { clearInterval(CTIMER); CTIMER = null; cFinish(); }
+    }, 1000);
+  }
+
+  app.appendChild(el(`<div class="q-head" style="margin-bottom:4px">
+    <span class="pill">${esc(CSESSION.label)}</span>
+    <span class="muted small" style="margin-left:auto">${idx + 1} / ${ids.length}</span></div>`));
+  app.appendChild(el(`<div class="progress"><i style="width:${((idx + 1) / ids.length) * 100}%"></i></div>`));
+
+  app.appendChild(cppgCard(it, {
+    sessionStart: CSESSION.startedAt,
+    reveal: CSESSION.reveal,
+    onAnswer: () => {
+      csave();
+      const cell = grid && grid.children[idx];
+      if (cell) cell.className = `q-cell ${cCell(it.id, CSESSION.startedAt, kind)} cur`;
+      if (nextBtn && !CSESSION.reveal && idx < ids.length - 1) nextBtn.focus();
+    },
+  }));
+
+  const nav = el('<div class="nav-row"></div>');
+  const prev = el('<button class="btn">← 이전</button>');
+  prev.disabled = idx === 0;
+  prev.addEventListener('click', () => { CSESSION.idx--; csave(); render(); });
+  const isLast = idx === ids.length - 1;
+  const nextBtn = el(`<button class="btn primary">${isLast ? '제출 ✓' : '다음 →'}</button>`);
+  nextBtn.addEventListener('click', () => { if (isLast) cFinish(); else { CSESSION.idx++; csave(); render(); } });
+  nav.append(prev, nextBtn);
+  app.appendChild(nav);
+
+  const jump = el(`<details class="q-jump"><summary class="small muted">문항 이동 (${ids.length})</summary><div class="q-grid"></div></details>`);
+  const grid = $('.q-grid', jump);
+  ids.forEach((id, i) => {
+    const b = el(`<button class="q-cell ${cCell(id, CSESSION.startedAt, kind)} ${i === idx ? 'cur' : ''}">${i + 1}</button>`);
+    b.addEventListener('click', () => { CSESSION.idx = i; csave(); render(); });
+    grid.appendChild(b);
+  });
+  app.appendChild(jump);
+
+  const quit = el('<button class="btn sm" style="margin-top:12px">그만두고 제출</button>');
+  quit.addEventListener('click', cFinish);
+  app.appendChild(quit);
+});
+
+cRoute('result', (app) => {
+  const SUM = store.state.cppg.lastSummary;
+  if (!SUM) { navigate('#/cppg/quiz'); return; }
+  const isMock = SUM.kind === 'mock';
+  const pr = cPass(SUM);
+  app.appendChild(el('<h1>제출 완료</h1>'));
+  app.appendChild(el(`<p class="muted">${esc(SUM.label)} · ${SUM.answered}/${SUM.total}문항 응답</p>`));
+
+  if (isMock) {
+    app.appendChild(el(`<div class="card score-card">
+      <div class="pass-line ${pr.pass ? 'ok' : 'bad'}">${SUM.correct} / ${SUM.total}점 &nbsp; ${pr.pass ? '✅ 합격' : '❌ 불합격'}</div>
+      <div class="small muted">합격 기준: ${CCFG.passTotal}점 이상 + 모든 과목 ${CCFG.passPerSubjectPct}% 이상${pr.failed.length ? ` · <b style="color:var(--bad)">과락: ${pr.failed.map((s) => s.no + '과목').join(', ')}</b>` : ''}</div>
+    </div>`));
+  } else {
+    app.appendChild(el(`<div class="stat-grid">
+      <div class="card"><div class="big" style="color:var(--ok)">${SUM.correct}</div><div class="muted small">정답</div></div>
+      <div class="card"><div class="big" style="color:var(--bad)">${SUM.answered - SUM.correct}</div><div class="muted small">오답</div></div>
+      <div class="card"><div class="big">${SUM.answered ? pct(SUM.correct, SUM.answered) : 0}%</div><div class="muted small">정답률</div></div>
+    </div>`));
+  }
+
+  const sBox = el('<div class="card"><h3>과목별</h3></div>');
+  CSUBJ.forEach((s) => {
+    const p = SUM.per[s.id]; if (!p || !p.n) return;
+    const r = pct(p.o, p.n);
+    const fail = isMock && r < CCFG.passPerSubjectPct;
+    sBox.appendChild(el(`<div class="bar-row subject-score ${fail ? 'fail' : ''}">
+      <span class="bar-label">${esc(s.no + '. ' + s.name)}</span>
+      ${barTrack({ o: p.o, m: 0, x: p.n - p.o })}
+      <span class="bar-num">${p.o}/${p.n} ${r}%${fail ? '<span class="fail-badge">과락</span>' : ''}</span></div>`));
+  });
+  app.appendChild(sBox);
+
+  const review = SUM.ids.filter((id) => { const a = cstore.lastAnswerSince(id, SUM.startedAt); return !a || !a.ok; });
+  if (review.length) {
+    const box = el(`<div class="card"><h3>다시 볼 문제 (${review.length})</h3></div>`);
+    review.slice(0, 40).forEach((id) => {
+      const it = CQ_BY_ID.get(id); if (!it) return;
+      const a = cstore.lastAnswerSince(id, SUM.startedAt);
+      const item = el(`<div class="rank-item"><span class="pill accent">${esc(subjNo(it.subject))}</span>
+        <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.stem.slice(0, 40))}</span>
+        <span class="small ${a ? 'rank-x' : 'muted'}">${a ? '오답' : '미응답'}</span></div>`);
+      item.addEventListener('click', () => navigate('#/cppg/q/' + encodeURIComponent(id)));
+      box.appendChild(item);
+    });
+    const again = el(`<button class="btn primary wide" style="margin-top:10px">틀린·미응답 ${review.length}문항 다시 풀기</button>`);
+    again.addEventListener('click', () => cStart(review, `${SUM.label} 복습`, { reveal: true }));
+    box.appendChild(again);
+    app.appendChild(box);
+  }
+  app.appendChild(el('<div class="nav-row"><a class="btn" href="#/cppg/quiz">새 문제</a><a class="btn" href="#/cppg/stats">통계</a></div>'));
+});
+
+cRoute('stats', (app) => {
+  app.appendChild(el('<h1>CPPG 통계</h1>'));
+  const st = store.state.cppg;
+  const graded = CQ.map((q) => ({ q, a: cstore.lastAttempt(q.id) })).filter((x) => x.a);
+  const done = graded.length;
+  const corr = graded.filter((x) => x.a.ok).length;
+  app.appendChild(el(`<div class="stat-grid">
+    <div class="card"><div class="big">${pct(done, CQ.length)}%</div><div class="muted small">진도 (${done}/${CQ.length})</div></div>
+    <div class="card"><div class="big">${done ? pct(corr, done) : 0}%</div><div class="muted small">정답률</div></div>
+    <div class="card"><div class="big">${st.sessions.length}</div><div class="muted small">세션</div></div>
+  </div>`));
+
+  // 14일 학습량
+  const dayMap = {};
+  Object.values(st.results).forEach((r) => r.attempts.forEach((a) => { const k = new Date(a.t).toISOString().slice(0, 10); dayMap[k] = (dayMap[k] || 0) + 1; }));
+  const heat = el('<div class="card"><h3>최근 14일 학습량</h3><div class="heat"></div></div>');
+  const hc = $('.heat', heat);
+  const days = [];
+  for (let i = 13; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(d.toISOString().slice(0, 10)); }
+  const mx = Math.max(1, ...days.map((d) => dayMap[d] || 0));
+  days.forEach((d) => { const n = dayMap[d] || 0; hc.appendChild(el(`<i class="${n ? 'has' : ''}" style="height:${Math.max(3, (n / mx) * 100)}%" title="${d}: ${n}"></i>`)); });
+  app.appendChild(heat);
+
+  // 과목별 정답률
+  const per = {};
+  graded.forEach(({ q, a }) => { const p = per[q.subject] || (per[q.subject] = { o: 0, n: 0 }); p.n++; if (a.ok) p.o++; });
+  const sBox = el('<div class="card"><h3>과목별 정답률</h3></div>');
+  CSUBJ.forEach((s) => {
+    const p = per[s.id] || { o: 0, n: 0 };
+    sBox.appendChild(el(`<div class="bar-row"><span class="bar-label">${esc(s.no + '. ' + s.name)}</span>${barTrack({ o: p.o, m: 0, x: p.n - p.o })}<span class="bar-num">${p.n ? pct(p.o, p.n) + '%' : '–'}</span></div>`));
+  });
+  app.appendChild(sBox);
+
+  // 오답 랭킹
+  const rank = CQ.map((q) => ({ q, x: cstore.wrongCount(q.id) })).filter((r) => r.x > 0).sort((a, b) => b.x - a.x).slice(0, 30);
+  const rBox = el('<div class="card"><h3>오답 랭킹</h3></div>');
+  if (!rank.length) rBox.appendChild(el('<p class="muted small">아직 틀린 문제가 없습니다.</p>'));
+  rank.forEach(({ q, x }) => {
+    const item = el(`<div class="rank-item"><span class="pill accent">${esc(subjNo(q.subject))}</span>
+      <span class="small muted" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.stem.slice(0, 34))}</span>
+      <span class="small rank-x">${x}회</span></div>`);
+    item.addEventListener('click', () => navigate('#/cppg/q/' + encodeURIComponent(q.id)));
+    rBox.appendChild(item);
+  });
+  app.appendChild(rBox);
+
+  const mocks = st.sessions.filter((s) => s.kind === 'mock');
+  if (mocks.length) {
+    const box = el('<div class="card"><h3>모의고사 총점 추이</h3></div>');
+    mocks.slice(0, 12).reverse().forEach((m) => {
+      const pr = cPass(m);
+      box.appendChild(el(`<div class="bar-row"><span class="bar-label">${new Date(m.startedAt).toISOString().slice(5, 10)}</span>
+        ${barTrack({ o: m.correct, m: 0, x: m.total - m.correct })}<span class="bar-num">${m.correct}${pr.pass ? '' : ' ✗'}</span></div>`));
+    });
+    app.appendChild(box);
+  }
+});
+
+cRoute('notes', (app, rest) => {
+  app.appendChild(el('<h1>CPPG 학습 노트</h1>'));
+  const notes = CPPG.notes;
+  if (!notes.length) { app.appendChild(el('<div class="empty">아직 노트가 없습니다.</div>')); return; }
+  const cats = CSUBJ.map((s) => s.name).filter((n) => notes.some((x) => x.subject === n));
+  const catCount = (c) => notes.filter((n) => n.subject === c).length;
+  const allTags = [...new Set(notes.flatMap((n) => n.tags || []))].sort((a, b) => a.localeCompare(b, 'ko'));
+
+  let curCat = '', curTag = '';
+  if (rest[0] === 'tag') curTag = decodeURIComponent(rest.slice(1).join('/') || '');
+  else if (rest.length) curCat = decodeURIComponent(rest.join('/'));
+  if (curCat && !cats.includes(curCat)) curCat = '';
+  if (curTag && !allTags.includes(curTag)) curTag = '';
+
+  const controls = el(`<div class="card stack">
+    <div class="chip-row" id="ccatRow">
+      <button class="chip" data-cat="">전체 <span>${notes.length}</span></button>
+      ${cats.map((c) => `<button class="chip" data-cat="${esc(c)}">${esc(c)} <span>${catCount(c)}</span></button>`).join('')}
+    </div>
+    <div class="row tight">
+      <input type="text" id="cnq" placeholder="제목·태그·본문 검색" style="flex:2;min-width:150px" autocomplete="off">
+      <select id="cntag" style="flex:1;min-width:120px"><option value="">태그 전체</option>${allTags.map((t) => `<option value="${esc(t)}">#${esc(t)}</option>`).join('')}</select>
+    </div>
+  </div>`);
+  app.appendChild(controls);
+  const listWrap = el('<div id="cnlist"></div>');
+  app.appendChild(listWrap);
+  const nq = $('#cnq', controls), ntag = $('#cntag', controls);
+  ntag.value = curTag;
+
+  function syncChips() { controls.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c.dataset.cat === curCat)); }
+  function syncHash() {
+    const t = curTag ? '#/cppg/notes/tag/' + encodeURIComponent(curTag) : curCat ? '#/cppg/notes/' + encodeURIComponent(curCat) : '#/cppg/notes';
+    try { if (location.hash !== t) history.replaceState(null, '', t); } catch (e) { /* noop */ }
+  }
+  function draw() {
+    const f = nq.value.trim().toLowerCase();
+    const filtered = notes.filter((n) => {
+      if (curCat && n.subject !== curCat) return false;
+      if (curTag && !(n.tags || []).includes(curTag)) return false;
+      if (f && !(n.title.toLowerCase().includes(f) || (n.tags || []).some((t) => t.toLowerCase().includes(f)) || n.md.toLowerCase().includes(f))) return false;
+      return true;
+    });
+    listWrap.innerHTML = '';
+    listWrap.appendChild(el(`<p class="small muted" style="margin:6px 2px">${filtered.length}개 노트</p>`));
+    if (!filtered.length) { listWrap.appendChild(el('<p class="muted small">조건에 맞는 노트가 없습니다.</p>')); return; }
+    const byCat = {};
+    filtered.forEach((n) => (byCat[n.subject] || (byCat[n.subject] = [])).push(n));
+    Object.entries(byCat).forEach(([cat, arr]) => {
+      if (!curCat) listWrap.appendChild(el(`<div class="note-cat">${esc(cat)}</div>`));
+      arr.forEach((n) => listWrap.appendChild(el(`<a class="note-item" href="#/cppg/note/${encodeURIComponent(n.slug)}">
+        <span class="note-item-title">${esc(n.title)}</span>
+        <span class="note-item-meta">${(n.tags || []).slice(0, 5).map((t) => `<span class="pill">${esc(t)}</span>`).join(' ')} <span class="small muted">· 문제 ${n.quiz.length}</span></span></a>`)));
+    });
+  }
+  $('#ccatRow', controls).addEventListener('click', (e) => { const b = e.target.closest('.chip'); if (!b) return; curCat = b.dataset.cat; syncChips(); syncHash(); draw(); });
+  ntag.addEventListener('change', () => { curTag = ntag.value; syncHash(); draw(); });
+  nq.addEventListener('input', draw);
+  syncChips(); draw();
+});
+
+cRoute('note', (app, rest) => {
+  const slug = decodeURIComponent(rest.join('/'));
+  const n = CNOTE_BY_SLUG.get(slug);
+  if (!n) { app.appendChild(el('<div class="empty">노트를 찾을 수 없습니다.</div>')); return; }
+  app.appendChild(el('<a class="btn sm" href="#/cppg/notes">← 노트 목록</a>'));
+  app.appendChild(el(`<h1>${esc(n.title)}</h1>`));
+  app.appendChild(el(`<div class="row tight" style="margin-bottom:8px">
+    <a class="pill accent" href="#/cppg/notes/${encodeURIComponent(n.subject)}">${esc(n.subject)}</a>
+    ${(n.tags || []).map((t) => `<a class="pill" href="#/cppg/notes/tag/${encodeURIComponent(t)}">${esc(t)}</a>`).join('')}</div>`));
+  const md = el('<div class="card markdown"></div>');
+  md.innerHTML = window.marked ? window.marked.parse(n.md) : `<pre>${esc(n.md)}</pre>`;
+  enhanceMarkdown(md);
+  app.appendChild(md);
+  if (n.quiz.length) {
+    const box = el(`<div class="card"><h3>이 노트 연습문제 (${n.quiz.length})</h3></div>`);
+    n.quiz.forEach((id) => {
+      const it = CQ_BY_ID.get(id); if (!it) return;
+      const item = el(`<div class="rank-item"><span class="pill accent">${esc(subjNo(it.subject))}</span>
+        <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.stem.slice(0, 40))}</span></div>`);
+      item.addEventListener('click', () => navigate('#/cppg/q/' + encodeURIComponent(id)));
+      box.appendChild(item);
+    });
+    const all = el(`<button class="btn primary wide" style="margin-top:10px">이 노트 ${n.quiz.length}문항 풀기</button>`);
+    all.addEventListener('click', () => cStart(n.quiz.slice(), `${n.title} ${n.quiz.length}문항`, { reveal: true }));
+    box.appendChild(all);
+    app.appendChild(box);
+  }
+});
+
+cRoute('q', (app, rest) => {
+  const id = decodeURIComponent(rest.join('/'));
+  const it = CQ_BY_ID.get(id);
+  if (!it) { app.appendChild(el('<div class="empty">문제를 찾을 수 없습니다.</div>')); return; }
+  app.appendChild(el(`<div class="row tight" style="margin-bottom:6px">
+    <a class="btn sm" href="#/cppg/quiz">← 문제</a>
+    ${CSESSION && CSESSION.ids && CSESSION.ids.length ? '<a class="btn sm" href="#/cppg/run">풀던 세션으로 →</a>' : ''}</div>`));
+  app.appendChild(el(`<h1>${esc(subjNo(it.subject))} 문제</h1>`));
+  app.appendChild(cppgCard(it, { reveal: true }));
+
+  const pool = CQ.filter((q) => q.subject === it.subject).sort((a, b) => a.id.localeCompare(b.id));
+  const i = pool.findIndex((q) => q.id === it.id);
+  const nav = el('<div class="nav-row"></div>');
+  const prev = el(`<button class="btn">← 이전</button>`);
+  prev.disabled = i <= 0;
+  if (i > 0) prev.addEventListener('click', () => navigate('#/cppg/q/' + encodeURIComponent(pool[i - 1].id)));
+  const next = el('<button class="btn">다음 →</button>');
+  next.disabled = i >= pool.length - 1;
+  if (i < pool.length - 1) next.addEventListener('click', () => navigate('#/cppg/q/' + encodeURIComponent(pool[i + 1].id)));
+  nav.append(prev, next);
+  app.appendChild(nav);
+});
+
+cRoute('more', (app) => {
+  app.appendChild(el('<h1>CPPG 더보기</h1>'));
+  const st = store.state.cppg;
+  const favBox = el(`<div class="card"><h3>즐겨찾기 (${st.favorites.length})</h3></div>`);
+  if (!st.favorites.length) favBox.appendChild(el('<p class="muted small">문제 카드의 ☆ 를 눌러 추가하세요.</p>'));
+  else {
+    st.favorites.forEach((id) => {
+      const it = CQ_BY_ID.get(id); if (!it) return;
+      const item = el(`<div class="rank-item"><span class="pill accent">${esc(subjNo(it.subject))}</span>
+        <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.stem.slice(0, 40))}</span></div>`);
+      item.addEventListener('click', () => navigate('#/cppg/q/' + encodeURIComponent(id)));
+      favBox.appendChild(item);
+    });
+    const b = el('<button class="btn sm" style="margin-top:8px">즐겨찾기 전체 풀기</button>');
+    b.addEventListener('click', () => cStart(st.favorites.filter((id) => CQ_BY_ID.has(id)), `즐겨찾기 ${st.favorites.length}문항`, { reveal: true }));
+    favBox.appendChild(b);
+  }
+  app.appendChild(favBox);
+
+  const rBox = el('<div class="card stack"><h3>데이터</h3><p class="small muted">CPPG 학습기록만 초기화합니다. 정보보안기사 기록은 그대로 유지됩니다.</p>'
+    + '<button class="btn sm" id="cppgReset" style="color:var(--bad)">CPPG 학습기록 초기화</button></div>');
+  $('#cppgReset', rBox).addEventListener('click', () => {
+    if (confirm('CPPG 학습기록·즐겨찾기·세션을 삭제합니다. 계속할까요?')) {
+      store.state.cppg = { results: {}, favorites: [], sessions: [], session: null, lastSummary: null };
+      CSESSION = null; store.save(); toast('CPPG 기록 초기화됨'); render();
+    }
+  });
+  app.appendChild(rBox);
+  app.appendChild(el(`<p class="small muted center" style="margin-top:20px">세션 ${st.sessions.length}회 · 데이터 ${CPPG.builtAt.slice(0, 10)}</p>`));
+});
 
 /* ============ 부팅 ============ */
 store.load();
@@ -1083,7 +1767,13 @@ if (store.state.session && Array.isArray(store.state.session.qids) && store.stat
 } else {
   store.state.session = null;
 }
-if (!location.hash) location.hash = '#/home';
+if (store.state.cppg.session && Array.isArray(store.state.cppg.session.ids) && store.state.cppg.session.ids.length) {
+  CSESSION = store.state.cppg.session;
+  if (!CSESSION.startedAt) CSESSION.startedAt = Date.now();
+} else {
+  store.state.cppg.session = null;
+}
+if (!location.hash) location.hash = store.state.settings.track === 'cppg' ? '#/cppg' : '#/home';
 render();
 
 /* 서비스 워커 — 새 버전 감지 시 1회 자동 새로고침 */

@@ -1,5 +1,5 @@
 /* 오프라인 지원. 앱 셸을 바꾸면 CACHE 버전을 올리세요 (data/bundle.js 는 네트워크 우선이라 무관). */
-const CACHE = 'infosec-sil-v9';
+const CACHE = 'infosec-sil-v10';
 const SHELL = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const SHELL = [
   './app.js',
   './vendor/marked.min.js',
   './data/bundle.js',
+  './data/cppg.js',
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-192.png',
@@ -30,8 +31,8 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(request.url);
   if (url.origin !== location.origin) return;
 
-  // 데이터 번들: 네트워크 우선 (온라인이면 최신, 오프라인이면 캐시)
-  if (url.pathname.endsWith('/data/bundle.js')) {
+  // 데이터 번들(bundle.js · cppg.js): 네트워크 우선 (온라인이면 최신, 오프라인이면 캐시)
+  if (url.pathname.includes('/data/') && url.pathname.endsWith('.js')) {
     e.respondWith(
       fetch(request).then((res) => {
         const copy = res.clone();

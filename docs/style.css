@@ -339,6 +339,68 @@ a.pill:active { transform: translateY(1px); }
 .markdown tbody tr:nth-child(2n) { background: rgba(128,128,128,.06); }
 .markdown tbody td:first-child { font-weight: 600; color: var(--text); }
 
+/* ============ CPPG 트랙 ============ */
+#tabbar .tabs { display: contents; }
+.track-switch { display: flex; gap: 6px; margin: 0 0 12px; }
+.track-switch a {
+  flex: 1; text-align: center; padding: 8px 10px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-dim); font-weight: 700; font-size: .9rem;
+}
+.track-switch a.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.choice-list { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 4px; }
+.choice {
+  display: flex; gap: 10px; align-items: flex-start; text-align: left;
+  width: 100%; padding: 12px 13px; min-height: 44px;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface); color: var(--text);
+  font: inherit; line-height: 1.6; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.choice:active { transform: translateY(1px); }
+.choice .cnum {
+  flex: none; font-weight: 800; color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.choice.picked { border-color: var(--accent); background: var(--accent-weak); }
+.choice.correct { border-color: var(--ok); background: rgba(22,163,74,.12); }
+.choice.correct .cnum { color: var(--ok); }
+.choice.wrong { border-color: var(--bad); background: rgba(220,38,38,.1); }
+.choice.wrong .cnum { color: var(--bad); }
+.choice[disabled] { cursor: default; }
+.choice[disabled]:active { transform: none; }
+.choice .cmark { margin-left: auto; flex: none; font-weight: 700; }
+
+.verdict { margin-top: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.verdict.ok { color: var(--ok); }
+.verdict.bad { color: var(--bad); }
+
+.mock-timer {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 8px 12px; margin-bottom: 10px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.mock-timer.warn { border-color: var(--bad); color: var(--bad); }
+
+.subject-score { margin: 6px 0; }
+.subject-score .bar-label { width: 120px; }
+.subject-score.fail .bar-label { color: var(--bad); font-weight: 700; }
+.fail-badge {
+  display: inline-block; background: var(--bad); color: #fff;
+  font-size: .72rem; font-weight: 700; padding: 1px 7px; border-radius: 5px; margin-left: 6px;
+}
+.pass-line { font-size: 1.15rem; font-weight: 800; margin: 4px 0 2px; display: flex; align-items: center; gap: 8px; }
+.pass-line.ok { color: var(--ok); }
+.pass-line.bad { color: var(--bad); }
+
+.q-cell.g-none { background: var(--surface-2); }
+.q-cell.g-ok { background: var(--ok); border-color: var(--ok); color: #fff; }
+.q-cell.g-bad { background: var(--bad); border-color: var(--bad); color: #fff; }
+.q-cell.g-picked { background: var(--accent); border-color: var(--accent); color: #fff; }
+
 /* ============ 유틸 ============ */
 .center { text-align: center; }
 .stack > * + * { margin-top: 10px; }
