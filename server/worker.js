@@ -36,6 +36,11 @@ export default {
     const url = new URL(request.url);
 
     try {
+      // ---- GET / , /health : 상태 확인 (인증 불필요) ----
+      if ((url.pathname === '/' || url.pathname === '/health') && request.method === 'GET') {
+        return json({ ok: true, service: 'my-sync', configured: !!(env.PASSPHRASE && env.TOKEN_SECRET) });
+      }
+
       if (!env.PASSPHRASE || !env.TOKEN_SECRET) return json({ error: 'server_not_configured' }, 500);
 
       // ---- POST /login ----
