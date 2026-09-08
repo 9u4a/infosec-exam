@@ -183,7 +183,7 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 ## Git / 커밋 규칙
 
 - **공개 저장소다.** 커밋 메시지·본문·파일에 개인 식별·인프라 정보를 넣지 않는다:
-  - `Claude-Session:` 트레일러나 `claude.ai/code/session_...` 링크 **넣지 않는다**.
+  - AI 세션 링크·`Claude-Session` 트레일러 등 도구 메타데이터 **넣지 않는다**.
   - 개인 배포값(Cloudflare Worker URL·계정 서브도메인, KV 네임스페이스 id, 토큰·암호, 이메일 등) 커밋 금지.
 - `server/wrangler.toml` 은 **git 무시**(`server/wrangler.toml.example` 만 추적). 실제 값은 각자 로컬에만.
 - `.wrangler/`, `.dev.vars` 도 무시(계정 캐시·시크릿).
