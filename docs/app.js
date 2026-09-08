@@ -427,8 +427,7 @@ route('solve', (app) => {
       <option value="wrong">오답만 (마지막이 틀림)</option>
       <option value="maybe">애매함만 (마지막이 애매함)</option>
       <option value="fav">즐겨찾기만</option>
-      <option value="seen">푼 문항만 (1회+)</option>
-      <option value="unseen">안 푼 문항만</option>
+      <option value="unseen">안 푼 문항</option>
       <option value="random">랜덤</option>
     </select></label>`));
 
@@ -490,10 +489,9 @@ route('solve', (app) => {
     else if (v === 'wrong') { list = list.filter((q) => store.lastGrade(q.qid) === 'x'); label = '오답'; }
     else if (v === 'maybe') { list = list.filter((q) => store.lastGrade(q.qid) === 'm'); label = '애매함'; }
     else if (v === 'fav') { list = store.state.favorites.map((id) => anyQ(id)).filter(Boolean); label = '즐겨찾기'; }
-    else if (v === 'seen') { list = list.filter((q) => store.attemptCount(q.qid) > 0); label = '푼 문항'; }
     else if (v === 'unseen') { list = list.filter((q) => store.attemptCount(q.qid) === 0); label = '안 푼 문항'; }
     else if (v === 'random') { label = '랜덤'; }
-    if (incPred && ['domain', 'type', 'wrong', 'maybe', 'seen', 'unseen', 'random'].includes(v)) label += ' + 예상';
+    if (incPred && ['domain', 'type', 'wrong', 'maybe', 'unseen', 'random'].includes(v)) label += ' + 예상';
 
     if ($('#order', form).value === 'shuffle' || v === 'random') shuffle(list);
     else list.sort((a, b) => (a.round || 9999) - (b.round || 9999) || (a.no || 0) - (b.no || 0) || String(a.qid).localeCompare(String(b.qid)));
@@ -776,11 +774,15 @@ route('history', (app) => {
 });
 
 /* ============ 모의고사 (예상문제 18문항 · 180분 · 60점) ============ */
-function drawMock(shuffleAll) {
-  const pick = (pool, k) => {
-    if (pool.length <= k) return shuffle(pool.slice()).map((q) => q.qid);
+const mockSeen = (q) => store.attemptCount(q.qid) > 0;   // 예상문제 풀이 이력 유무
+
+// opts.pool: 'all' | 'unseen'(안 푼 문항 우선) | 'seen'(푼 문항만 · 복습)
+function drawMock(opts = {}) {
+  const { shuffleAll = false, pool = 'all' } = opts;
+  const pick = (list, k) => {
+    if (list.length <= k) return shuffle(list.slice()).map((q) => q.qid);
     // 영역 가중 랜덤 (가중치 없는/부족한 영역은 자연스럽게 남는 풀에서 보충)
-    const bag = shuffle(pool.slice());
+    const bag = shuffle(list.slice());
     const chosen = [];
     while (chosen.length < k && bag.length) {
       const totW = bag.reduce((s, q) => s + (MOCK.domW[q.domain] || 5), 0);
@@ -793,7 +795,14 @@ function drawMock(shuffleAll) {
   };
   const ids = [];
   for (const [type, k] of Object.entries(MOCK.quota)) {
-    ids.push(...pick(PREDICTED.filter((q) => q.type === type), k));
+    let cand = PREDICTED.filter((q) => q.type === type);
+    if (pool === 'seen') cand = cand.filter(mockSeen);
+    else if (pool === 'unseen') {
+      const fresh = cand.filter((q) => !mockSeen(q));
+      // 안 푼 문항 우선, 유형별 정원에 못 미치면 푼 문항으로 채움
+      cand = fresh.length >= k ? fresh : fresh.concat(shuffle(cand.filter(mockSeen)));
+    }
+    ids.push(...pick(cand, k));
   }
   return shuffleAll ? shuffle(ids) : ids; // 기본은 단답→서술→실무 순
 }
@@ -826,21 +835,39 @@ route('mock', (app) => {
   PREDICTED.forEach((q) => (perType[q.type] = (perType[q.type] || 0) + 1));
   const short = Object.entries(MOCK.quota).filter(([t, k]) => (perType[t] || 0) < k)
     .map(([t, k]) => `${t} ${perType[t] || 0}/${k}`);
+  const freshN = PREDICTED.filter((q) => !mockSeen(q)).length;
+  const seenN = PREDICTED.length - freshN;
 
   const form = el(`<div class="card stack">
     <p class="small muted">${MOCK.total}문항(단답 12 · 서술 4 · 실무 2) · ${MOCK.durationMin}분 · ${MOCK.passScore}점 이상 합격</p>
     <p class="small muted">예상문제 ${PREDICTED.length}개에서 영역·유형 균형으로 매번 새로 출제합니다. 필답형이라 <b>자가채점</b>이며 실제 시험 점수와 다를 수 있습니다.</p>
     ${short.length ? `<p class="small" style="color:var(--bad)">⚠ 문제 부족: ${short.join(', ')} — 있는 만큼만 출제</p>` : ''}
+    <label class="field"><span>출제 범위</span>
+      <select id="mkPool">
+        <option value="all">전체 예상문제 (${PREDICTED.length})</option>
+        <option value="unseen">안 푼 문항 우선 (${freshN})</option>
+        <option value="seen">푼 문항만 · 복습 (${seenN})</option>
+      </select></label>
+    <p class="small muted" id="mkPoolHint">한 번이라도 풀어 본 예상문제 ${seenN}개 · 아직 안 푼 예상문제 ${freshN}개</p>
     <label class="row" style="align-items:center;gap:6px;margin:0"><input type="checkbox" id="mkTimer" checked style="width:auto"><span class="small">타이머 (${MOCK.durationMin}분, 종료 시 자동 제출)</span></label>
     <label class="row" style="align-items:center;gap:6px;margin:0"><input type="checkbox" id="mkShuffle" style="width:auto"><span class="small">문항 순서 섞기 (유형 순서 무시)</span></label>
     <button class="btn primary wide" id="mkStart">모의고사 시작</button>
   </div>`);
   app.appendChild(form);
 
+  const poolHints = {
+    all: `한 번이라도 풀어 본 예상문제 ${seenN}개 · 아직 안 푼 예상문제 ${freshN}개`,
+    unseen: `안 푼 문항을 먼저 출제하고, 유형별 정원(단답 12·서술 4·실무 2)에 모자라면 푼 문항으로 채웁니다.`,
+    seen: seenN >= MOCK.total ? `이미 푼 예상문제 ${seenN}개 안에서만 복습 편성합니다.` : `⚠ 푼 예상문제가 ${seenN}개뿐이라 18문항을 못 채울 수 있습니다.`,
+  };
+  $('#mkPool', form).addEventListener('change', (e) => { $('#mkPoolHint', form).textContent = poolHints[e.target.value]; });
+
   $('#mkStart', form).addEventListener('click', () => {
-    const ids = drawMock($('#mkShuffle', form).checked);
-    if (!ids.length) { toast('출제할 예상문제가 없습니다'); return; }
-    startSession(ids, `모의고사 ${ids.length}문항`, { kind: 'mock', durationMin: $('#mkTimer', form).checked ? MOCK.durationMin : 0 });
+    const pool = $('#mkPool', form).value;
+    const ids = drawMock({ shuffleAll: $('#mkShuffle', form).checked, pool });
+    if (!ids.length) { toast(pool === 'seen' ? '복습할(이미 푼) 예상문제가 없습니다' : '출제할 예상문제가 없습니다'); return; }
+    const tag = pool === 'unseen' ? ' · 새 문항' : pool === 'seen' ? ' · 복습' : '';
+    startSession(ids, `모의고사 ${ids.length}문항${tag}`, { kind: 'mock', durationMin: $('#mkTimer', form).checked ? MOCK.durationMin : 0 });
   });
 
   // 이력
