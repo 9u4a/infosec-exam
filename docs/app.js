@@ -143,9 +143,15 @@ const SYNC = {
     try { localStorage.removeItem(SYNC_LS); } catch (e) { /* noop */ }
     updateSyncUI();
   },
-  async _req(path, opts) {
+  async _req(path, opts, _retried) {
     const r = await fetch(this.cfg.url + path, Object.assign({}, opts, { headers: Object.assign({}, opts && opts.headers, { Authorization: 'Bearer ' + this.cfg.token }) }));
-    if (r.status === 401) { this.logout(); toast('세션이 만료되었습니다. 다시 로그인하세요'); throw new Error('unauthorized'); }
+    if (r.status === 401) {
+      // 시크릿(TOKEN_SECRET) 전파 지연일 수 있음 → 한 번 재시도 후 포기 (401 은 서버에서 쓰기 전에 거부하므로 재시도 안전)
+      if (!_retried) { await new Promise((s) => setTimeout(s, 2500)); return this._req(path, opts, true); }
+      this.logout();
+      toast('서버 인증이 거부되었습니다. 잠시 후 다시 로그인하거나, 서버의 암호·TOKEN_SECRET 설정을 확인하세요');
+      throw new Error('unauthorized');
+    }
     return r;
   },
   async pull() {
