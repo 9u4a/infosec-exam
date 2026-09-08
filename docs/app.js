@@ -371,12 +371,15 @@ route('home', (app) => {
     ${store.state.sessions.length ? '<a class="btn" href="#/history">지난 기록</a>' : ''}
   </div>`));
 
-  const lastMock = store.state.sessions.find((s) => s.kind === 'mock');
+  const mockHist = store.state.sessions.filter((s) => s.kind === 'mock');
+  const lastMock = mockHist[0];
   if (lastMock) {
     const canOpen = Array.isArray(lastMock.qids) && lastMock.qids.length;
-    app.appendChild(el(`<div class="card"><h3>최근 모의고사</h3>
+    const prev = mockHist.slice(1, 5).map((m) => `${m.score != null ? m.score : '-'}점`).join(', ');
+    app.appendChild(el(`<div class="card"><h3>최근 모의고사 <span class="muted small">${mockHist.length}회 응시</span></h3>
       <div class="pass-line ${lastMock.pass ? 'ok' : 'bad'}">${lastMock.score != null ? lastMock.score + ' / 100점' : '-'} · ${lastMock.pass ? '✅ 합격' : '❌ 불합격'}</div>
-      <div class="small muted">${new Date(lastMock.startedAt).toISOString().slice(0, 10)} · ${canOpen ? `<a href="#/summary/${encodeURIComponent(lastMock.id)}">결과 다시보기</a> · ` : ''}<a href="#/mock">새 모의고사 →</a></div>
+      <div class="small muted">${fmtWhen(lastMock.startedAt)}${prev ? ` · 이전: ${prev}` : ''}</div>
+      <div class="small muted" style="margin-top:4px">${canOpen ? `<a href="#/summary/${encodeURIComponent(lastMock.id)}">결과 다시보기</a> · ` : ''}<a href="#/history">전체 기록</a> · <a href="#/mock">새 모의고사 →</a></div>
     </div>`));
   }
 
@@ -513,8 +516,18 @@ function saveSession() { store.state.session = SESSION; store.save(); }
 function sExpiresAt() { return SESSION && SESSION.durationMin ? SESSION.startedAt + SESSION.durationMin * 60000 : null; }
 function startSession(qids, label, opts = {}) {
   if (SESSION && SESSION.qids && SESSION.qids.length) {
-    if (!confirm('진행 중인 세션이 있습니다. 새로 시작하면 현재 진행이 사라집니다. 계속할까요?')) return;
+    const wasMock = SESSION.kind === 'mock';
+    const hadProgress = sessionHasProgress();
+    const msg = wasMock
+      ? '진행 중인 모의고사가 있습니다. 새로 시작하면 지금까지 채점한 내용으로 제출 처리되어 기록에 남습니다. 계속할까요?'
+      : hadProgress
+        ? '진행 중인 세션이 있습니다. 새로 시작하면 지금까지 채점한 내용으로 제출 처리됩니다. 계속할까요?'
+        : '진행 중인 세션이 있습니다. 새로 시작하면 현재 진행이 사라집니다. 계속할까요?';
+    if (!confirm(msg)) return;
+    // 모의고사이거나 채점 흔적이 있으면 버리지 않고 세션 기록으로 남긴다 (홈 '최근 모의고사'·지난 기록에 표시)
+    if (wasMock || hadProgress) store.addSession(recordCurrentSession());
   }
+  if (STIMER) { clearInterval(STIMER); STIMER = null; }
   SESSION = { qids, label, idx: 0, startedAt: Date.now() };
   if (opts.kind) SESSION.kind = opts.kind;
   if (opts.durationMin) SESSION.durationMin = opts.durationMin;
@@ -619,25 +632,37 @@ function scoreQids(qids, gradeOf, mock) {
   return { byType, score, full, maxIfMaybe };
 }
 
-function finishSession() {
+// 현재 SESSION 을 세션 레코드로 만든다 (저장/네비게이션은 하지 않음)
+function recordCurrentSession() {
   if (STIMER) { clearInterval(STIMER); STIMER = null; }
   const startedAt = SESSION.startedAt;
   const kind = SESSION.kind || null;
   const qids = SESSION.qids.slice();
   const graded = { o: 0, m: 0, x: 0 };
   const grades = {};   // qid -> 'o'|'m'|'x' 스냅샷 (나중에 재채점해도 이 세션 점수창은 고정)
-  const gradeOf = (qid) => store.lastGradeSince(qid, startedAt);
-  for (const qid of qids) { const g = gradeOf(qid); if (g) { graded[g]++; grades[qid] = g; } }
-
+  for (const qid of qids) { const g = store.lastGradeSince(qid, startedAt); if (g) { graded[g]++; grades[qid] = g; } }
   const rec = { id: startedAt, startedAt, endedAt: Date.now(), scopeLabel: SESSION.label, graded, qids, grades };
-  const summary = { label: SESSION.label, qids, startedAt, graded, grades, kind };
   if (kind === 'mock') {
     const { score } = scoreQids(qids, (qid) => grades[qid] || null, true);
     rec.kind = 'mock'; rec.score = score; rec.pass = score >= MOCK.passScore;
-    summary.score = score; summary.pass = score >= MOCK.passScore;
   }
+  return rec;
+}
+
+// 세션 진행 중 여부 + 채점 흔적 유무
+function sessionHasProgress() {
+  return !!(SESSION && SESSION.qids && SESSION.qids.length &&
+    SESSION.qids.some((qid) => store.lastGradeSince(qid, SESSION.startedAt)));
+}
+
+function finishSession() {
+  const rec = recordCurrentSession();
   store.addSession(rec);
-  store.state.lastSummary = summary;
+  store.state.lastSummary = {
+    label: rec.scopeLabel, qids: rec.qids, startedAt: rec.startedAt,
+    graded: rec.graded, grades: rec.grades, kind: rec.kind || null,
+    score: rec.score, pass: rec.pass,
+  };
   SESSION = null;
   store.state.session = null;
   store.save();
@@ -763,7 +788,7 @@ route('history', (app) => {
       ? `<span class="small ${h.pass ? '' : 'rank-x'}">${h.score != null ? h.score + '점 · ' + (h.pass ? '합격' : '불합격') : '-'}</span>`
       : `<span class="small muted">⭕${g.o} 🔺${g.m} ❌${g.x}</span>`;
     const item = el(`<div class="rank-item"${openable ? '' : ' style="cursor:default;opacity:.55"'}>
-      <span class="pill accent">${new Date(h.startedAt).toISOString().slice(5, 10)}</span>
+      <span class="pill accent">${fmtDay(h.startedAt)}</span>
       <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${isMock ? '📝 ' : ''}${esc(h.scopeLabel || '세션')}</span>
       ${right}</div>`);
     if (openable) item.addEventListener('click', () => navigate('#/summary/' + encodeURIComponent(h.id)));
@@ -891,7 +916,7 @@ route('mock', (app) => {
     hist.forEach((h) => {
       const openable = Array.isArray(h.qids) && h.qids.length;
       const row = el(`<div class="rank-item"${openable ? '' : ' style="cursor:default"'}>
-        <span class="pill accent">${new Date(h.startedAt).toISOString().slice(5, 10)}</span>
+        <span class="pill accent">${fmtDay(h.startedAt)}</span>
         <span class="small" style="flex:1">${h.score != null ? h.score + '점' : '-'}</span>
         <span class="small ${h.pass ? '' : 'rank-x'}">${h.pass ? '합격' : '불합격'}</span></div>`);
       if (openable) row.addEventListener('click', () => navigate('#/summary/' + encodeURIComponent(h.id)));
@@ -969,7 +994,7 @@ route('stats', (app) => {
     </div>`);
     if (mocks.length) {
       const mb = el(`<div style="margin-top:6px"></div>`);
-      mocks.slice(0, 10).reverse().forEach((m) => mb.appendChild(el(`<div class="bar-row"><span class="bar-label">${new Date(m.startedAt).toISOString().slice(5, 10)}</span>${barTrack({ o: m.score || 0, m: 0, x: 100 - (m.score || 0) })}<span class="bar-num">${m.score != null ? m.score : '-'}${m.pass ? '' : ' ✗'}</span></div>`)));
+      mocks.slice(0, 10).reverse().forEach((m) => mb.appendChild(el(`<div class="bar-row"><span class="bar-label">${fmtDay(m.startedAt)}</span>${barTrack({ o: m.score || 0, m: 0, x: 100 - (m.score || 0) })}<span class="bar-num">${m.score != null ? m.score : '-'}${m.pass ? '' : ' ✗'}</span></div>`)));
       box.appendChild(el(`<p class="small muted" style="margin-top:8px">모의고사 총점 추이</p>`));
       box.appendChild(mb);
     }
@@ -1517,6 +1542,20 @@ function fmtClock(ms) {
   const s = Math.floor(ms / 1000);
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 }
+// 로컬 시간 기준 날짜/상대시간 (toISOString 은 UTC 라 밤 시간대에 하루 어긋남)
+function fmtDay(ts) {
+  const d = new Date(ts), p = (n) => String(n).padStart(2, '0');
+  return `${p(d.getMonth() + 1)}.${p(d.getDate())}`;
+}
+function fmtWhen(ts) {
+  const d = new Date(ts), diff = Date.now() - ts, p = (n) => String(n).padStart(2, '0');
+  if (diff < 60000) return '방금 전';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}분 전`;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  if (ts >= today.getTime()) return `오늘 ${p(d.getHours())}:${p(d.getMinutes())}`;
+  if (ts >= today.getTime() - 86400000) return `어제 ${p(d.getHours())}:${p(d.getMinutes())}`;
+  return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`;
+}
 function cStart(ids, label, opts = {}) {
   if (!ids.length) { toast('해당 조건의 문제가 없습니다'); return; }
   if (CSESSION && CSESSION.ids && CSESSION.ids.length) {
@@ -1635,7 +1674,7 @@ cRoute('home', (app) => {
     const pr = cPass(lastMock);
     app.appendChild(el(`<div class="card"><h3>최근 모의고사</h3>
       <div class="pass-line ${pr.pass ? 'ok' : 'bad'}">${lastMock.correct} / ${lastMock.total}점 · ${pr.pass ? '✅ 합격' : '❌ 불합격'}</div>
-      <div class="small muted">${new Date(lastMock.startedAt).toISOString().slice(0, 10)}${pr.failed.length ? ' · 과락 ' + pr.failed.map((s) => s.no + '과목').join(', ') : ''}</div>
+      <div class="small muted">${fmtWhen(lastMock.startedAt)}${pr.failed.length ? ' · 과락 ' + pr.failed.map((s) => s.no + '과목').join(', ') : ''}</div>
     </div>`));
   }
 
@@ -1720,7 +1759,7 @@ cRoute('mock', (app) => {
     hist.forEach((h) => {
       const pr = cPass(h);
       box.appendChild(el(`<div class="rank-item" style="cursor:default">
-        <span class="pill accent">${new Date(h.startedAt).toISOString().slice(5, 10)}</span>
+        <span class="pill accent">${fmtDay(h.startedAt)}</span>
         <span class="small" style="flex:1">${h.correct}/${h.total}점</span>
         <span class="small ${pr.pass ? '' : 'rank-x'}">${pr.pass ? '합격' : '불합격' + (pr.failed.length ? ' (과락)' : '')}</span></div>`));
     });
@@ -1899,7 +1938,7 @@ cRoute('stats', (app) => {
     const box = el('<div class="card"><h3>모의고사 총점 추이</h3></div>');
     mocks.slice(0, 12).reverse().forEach((m) => {
       const pr = cPass(m);
-      box.appendChild(el(`<div class="bar-row"><span class="bar-label">${new Date(m.startedAt).toISOString().slice(5, 10)}</span>
+      box.appendChild(el(`<div class="bar-row"><span class="bar-label">${fmtDay(m.startedAt)}</span>
         ${barTrack({ o: m.correct, m: 0, x: m.total - m.correct })}<span class="bar-num">${m.correct}${pr.pass ? '' : ' ✗'}</span></div>`));
     });
     app.appendChild(box);
