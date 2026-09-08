@@ -367,14 +367,16 @@ route('home', (app) => {
   app.appendChild(el(`<div class="row" style="margin-top:14px">
     <a class="btn primary" href="#/solve">문제 풀기 →</a>
     ${PREDICTED.length ? '<a class="btn" href="#/mock">모의고사</a>' : ''}
-    <a class="btn" href="#/stats">통계 보기</a>
+    <a class="btn" href="#/stats">통계</a>
+    ${store.state.sessions.length ? '<a class="btn" href="#/history">지난 기록</a>' : ''}
   </div>`));
 
   const lastMock = store.state.sessions.find((s) => s.kind === 'mock');
   if (lastMock) {
+    const canOpen = Array.isArray(lastMock.qids) && lastMock.qids.length;
     app.appendChild(el(`<div class="card"><h3>최근 모의고사</h3>
       <div class="pass-line ${lastMock.pass ? 'ok' : 'bad'}">${lastMock.score != null ? lastMock.score + ' / 100점' : '-'} · ${lastMock.pass ? '✅ 합격' : '❌ 불합격'}</div>
-      <div class="small muted">${new Date(lastMock.startedAt).toISOString().slice(0, 10)} · <a href="#/mock">새 모의고사 →</a></div>
+      <div class="small muted">${new Date(lastMock.startedAt).toISOString().slice(0, 10)} · ${canOpen ? `<a href="#/summary/${encodeURIComponent(lastMock.id)}">결과 다시보기</a> · ` : ''}<a href="#/mock">새 모의고사 →</a></div>
     </div>`));
   }
 
@@ -623,13 +625,14 @@ function finishSession() {
   const kind = SESSION.kind || null;
   const qids = SESSION.qids.slice();
   const graded = { o: 0, m: 0, x: 0 };
+  const grades = {};   // qid -> 'o'|'m'|'x' 스냅샷 (나중에 재채점해도 이 세션 점수창은 고정)
   const gradeOf = (qid) => store.lastGradeSince(qid, startedAt);
-  for (const qid of qids) { const g = gradeOf(qid); if (g) graded[g]++; }
+  for (const qid of qids) { const g = gradeOf(qid); if (g) { graded[g]++; grades[qid] = g; } }
 
-  const rec = { id: startedAt, startedAt, endedAt: Date.now(), scopeLabel: SESSION.label, graded };
-  const summary = { label: SESSION.label, qids, startedAt, graded, kind };
+  const rec = { id: startedAt, startedAt, endedAt: Date.now(), scopeLabel: SESSION.label, graded, qids, grades };
+  const summary = { label: SESSION.label, qids, startedAt, graded, grades, kind };
   if (kind === 'mock') {
-    const { score } = scoreQids(qids, gradeOf, true);
+    const { score } = scoreQids(qids, (qid) => grades[qid] || null, true);
     rec.kind = 'mock'; rec.score = score; rec.pass = score >= MOCK.passScore;
     summary.score = score; summary.pass = score >= MOCK.passScore;
   }
@@ -641,11 +644,24 @@ function finishSession() {
   navigate('#/summary');
 }
 
-route('summary', (app) => {
-  const SUM = store.state.lastSummary;
-  if (!SUM) { navigate('#/solve'); return; }
+route('summary', (app, args) => {
+  const sid = args && args.length ? decodeURIComponent(args.join('/')) : '';
+  let SUM, past = false;
+  if (sid) {   // 지난 세션의 점수창 다시보기 (#/summary/<id>)
+    const rec = store.state.sessions.find((s) => String(s.id) === sid);
+    if (!rec || !Array.isArray(rec.qids)) { navigate('#/history'); return; }
+    SUM = { label: rec.scopeLabel, qids: rec.qids, startedAt: rec.startedAt, endedAt: rec.endedAt,
+            kind: rec.kind || null, grades: rec.grades || {}, score: rec.score, pass: rec.pass };
+    past = true;
+  } else {
+    SUM = store.state.lastSummary;
+    if (!SUM) { navigate('#/solve'); return; }
+  }
   const since = SUM.startedAt || 0;
-  const gradeOf = (qid) => store.lastGradeSince(qid, since);   // 이번 세션에서 매긴 채점
+  // 스냅샷(grades)이 있으면 그걸로, 없으면(구버전 기록) 세션 시작 이후 마지막 채점
+  const gradeOf = SUM.grades
+    ? (qid) => SUM.grades[qid] || null
+    : (qid) => store.lastGradeSince(qid, since);
 
   const g = { o: 0, m: 0, x: 0 };
   let ungraded = 0;
@@ -653,8 +669,8 @@ route('summary', (app) => {
   const total = g.o + g.m + g.x;
 
   const isMock = SUM.kind === 'mock';
-  app.appendChild(el(`<h1>${isMock ? '모의고사 결과' : '제출 완료'}</h1>`));
-  app.appendChild(el(`<p class="muted">${esc(SUM.label)} · 채점 ${total}문항${ungraded ? ` · 미채점 ${ungraded}문항` : ''}</p>`));
+  app.appendChild(el(`<h1>${isMock ? '모의고사 결과' : past ? '지난 점수창' : '제출 완료'}</h1>`));
+  app.appendChild(el(`<p class="muted">${esc(SUM.label)} · 채점 ${total}문항${ungraded ? ` · 미채점 ${ungraded}문항` : ''}${past ? ` · ${new Date(SUM.startedAt).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' })} 제출` : ''}</p>`));
 
   // 자가채점 점수 (2023 배점). 모의고사는 실무형 택1 채점 + 60점 합격 판정.
   const { byType, score, full, maxIfMaybe } = scoreQids(SUM.qids, gradeOf, isMock);
@@ -727,7 +743,34 @@ route('summary', (app) => {
     app.appendChild(box);
   }
 
-  app.appendChild(el(`<div class="nav-row">${isMock ? '<a class="btn" href="#/mock">새 모의고사</a>' : '<a class="btn" href="#/solve">새 세션</a>'}<a class="btn" href="#/stats">통계</a></div>`));
+  app.appendChild(el(`<div class="nav-row">${isMock ? '<a class="btn" href="#/mock">새 모의고사</a>' : '<a class="btn" href="#/solve">새 세션</a>'}<a class="btn" href="#/history">지난 기록</a><a class="btn" href="#/stats">통계</a></div>`));
+});
+
+/* ============ 지난 풀이 기록 (점수창 다시보기) ============ */
+route('history', (app) => {
+  app.appendChild(el(`<h1>지난 풀이 기록</h1>`));
+  const sess = store.state.sessions;
+  if (!sess.length) {
+    app.appendChild(el(`<div class="empty">아직 제출한 세션이 없습니다.<br><span class="small">문제를 풀고 제출하면 점수창이 여기에 보관됩니다.</span></div>`));
+    return;
+  }
+  const box = el(`<div class="card"><h3>최근 ${sess.length}회 <span class="muted small">누르면 그때 점수창</span></h3></div>`);
+  sess.forEach((h) => {
+    const g = h.graded || { o: 0, m: 0, x: 0 };
+    const openable = Array.isArray(h.qids) && h.qids.length;
+    const isMock = h.kind === 'mock';
+    const right = isMock
+      ? `<span class="small ${h.pass ? '' : 'rank-x'}">${h.score != null ? h.score + '점 · ' + (h.pass ? '합격' : '불합격') : '-'}</span>`
+      : `<span class="small muted">⭕${g.o} 🔺${g.m} ❌${g.x}</span>`;
+    const item = el(`<div class="rank-item"${openable ? '' : ' style="cursor:default;opacity:.55"'}>
+      <span class="pill accent">${new Date(h.startedAt).toISOString().slice(5, 10)}</span>
+      <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${isMock ? '📝 ' : ''}${esc(h.scopeLabel || '세션')}</span>
+      ${right}</div>`);
+    if (openable) item.addEventListener('click', () => navigate('#/summary/' + encodeURIComponent(h.id)));
+    box.appendChild(item);
+  });
+  app.appendChild(box);
+  app.appendChild(el(`<p class="small muted center" style="margin-top:14px">문항 정보가 없는 옛 기록은 점수만 표시되고 열 수 없습니다.</p>`));
 });
 
 /* ============ 모의고사 (예상문제 18문항 · 180분 · 60점) ============ */
@@ -801,11 +844,16 @@ route('mock', (app) => {
   // 이력
   const hist = store.state.sessions.filter((s) => s.kind === 'mock').slice(0, 10);
   if (hist.length) {
-    const box = el(`<div class="card"><h3>모의고사 이력</h3></div>`);
-    hist.forEach((h) => box.appendChild(el(`<div class="rank-item" style="cursor:default">
-      <span class="pill accent">${new Date(h.startedAt).toISOString().slice(5, 10)}</span>
-      <span class="small" style="flex:1">${h.score != null ? h.score + '점' : '-'}</span>
-      <span class="small ${h.pass ? '' : 'rank-x'}">${h.pass ? '합격' : '불합격'}</span></div>`)));
+    const box = el(`<div class="card"><h3>모의고사 이력 <span class="muted small">누르면 점수창</span></h3></div>`);
+    hist.forEach((h) => {
+      const openable = Array.isArray(h.qids) && h.qids.length;
+      const row = el(`<div class="rank-item"${openable ? '' : ' style="cursor:default"'}>
+        <span class="pill accent">${new Date(h.startedAt).toISOString().slice(5, 10)}</span>
+        <span class="small" style="flex:1">${h.score != null ? h.score + '점' : '-'}</span>
+        <span class="small ${h.pass ? '' : 'rank-x'}">${h.pass ? '합격' : '불합격'}</span></div>`);
+      if (openable) row.addEventListener('click', () => navigate('#/summary/' + encodeURIComponent(h.id)));
+      box.appendChild(row);
+    });
     const avg = Math.round(hist.reduce((s, h) => s + (h.score || 0), 0) / hist.length);
     box.appendChild(el(`<p class="small muted" style="margin-top:6px">최근 ${hist.length}회 평균 ${avg}점</p>`));
     app.appendChild(box);
@@ -1259,7 +1307,7 @@ route('more', (app) => {
   app.appendChild(dataBox);
 
   app.appendChild(el(`<p class="small muted center" style="margin-top:20px">
-    최근 세션 ${store.state.sessions.length}회 · 데이터 ${DATA.builtAt.slice(0, 10)}</p>`));
+    <a href="#/history">지난 풀이 기록 ${store.state.sessions.length}회 ›</a> · 데이터 ${DATA.builtAt.slice(0, 10)}</p>`));
 });
 
 function exportData() {
