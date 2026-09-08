@@ -779,17 +779,31 @@ const mockSeen = (q) => store.attemptCount(q.qid) > 0;   // 예상문제 풀이 
 // opts.pool: 'all' | 'unseen'(안 푼 문항 우선) | 'seen'(푼 문항만 · 복습)
 function drawMock(opts = {}) {
   const { shuffleAll = false, pool = 'all' } = opts;
+  // 이번 회차에 이미 뽑힌 문항의 태그 집합 — 비슷한 주제가 한 회차에 겹치지 않게
+  const picked = [];
+  const tooSimilar = (q) => {
+    const tags = q.tags || [];
+    if (tags.length < 2) return false;
+    return picked.some((pt) => {
+      let n = 0; for (const t of tags) if (pt.has(t)) n++;
+      return n >= 2;   // 태그 2개 이상 공유 → 유사 주제
+    });
+  };
+  const takeWeighted = (arr) => {
+    const totW = arr.reduce((s, q) => s + (MOCK.domW[q.domain] || 5), 0);
+    let r = Math.random() * totW, idx = 0;
+    for (; idx < arr.length; idx++) { r -= (MOCK.domW[arr[idx].domain] || 5); if (r <= 0) break; }
+    return arr.splice(Math.min(idx, arr.length - 1), 1)[0];
+  };
   const pick = (list, k) => {
-    if (list.length <= k) return shuffle(list.slice()).map((q) => q.qid);
-    // 영역 가중 랜덤 (가중치 없는/부족한 영역은 자연스럽게 남는 풀에서 보충)
     const bag = shuffle(list.slice());
+    const deferred = [];   // 유사하다고 미뤄둔 문항 (모자라면 여기서 채움)
     const chosen = [];
-    while (chosen.length < k && bag.length) {
-      const totW = bag.reduce((s, q) => s + (MOCK.domW[q.domain] || 5), 0);
-      let r = Math.random() * totW;
-      let idx = 0;
-      for (; idx < bag.length; idx++) { r -= (MOCK.domW[bag[idx].domain] || 5); if (r <= 0) break; }
-      chosen.push(bag.splice(Math.min(idx, bag.length - 1), 1)[0].qid);
+    while (chosen.length < k && (bag.length || deferred.length)) {
+      const q = bag.length ? takeWeighted(bag) : takeWeighted(deferred);
+      if (bag.length && tooSimilar(q)) { deferred.push(q); continue; }
+      chosen.push(q.qid);
+      picked.push(new Set(q.tags || []));
     }
     return chosen;
   };

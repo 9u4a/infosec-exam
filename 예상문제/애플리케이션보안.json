@@ -419,189 +419,215 @@
     {
       "id": "y-app-026",
       "type": "단답형",
-      "question": "SQL 인젝션 공격 유형에 대한 설명이다. 각 설명에 해당하는 명칭을 쓰시오.\n\n* (A) : `UNION SELECT` 구문을 삽입해 다른 테이블의 데이터를 조회 결과에 합쳐서 한 번에 빼내는 기법\n* (B) : 화면에 데이터가 직접 표시되지 않아, 참/거짓을 유발하는 조건을 넣고 응답 차이(내용·에러 유무)로 한 글자씩 추론하는 기법\n* (C) : 응답 내용 차이도 없어, `SLEEP()`·`WAITFOR DELAY` 등으로 응답 지연 여부를 관찰해 추론하는 기법",
-      "answer": "정답\n(A) Union-based SQL Injection\n(B) Blind SQL Injection (Boolean-based)\n(C) Time-based Blind SQL Injection",
-      "explanation": "그 밖에 Error-based(DB 오류 메시지에 데이터 노출), Out-of-band(DNS/HTTP 로 데이터 유출).\n- 근본 대응: 파라미터 바인딩(Prepared Statement)/저장 프로시저, 입력값 검증(화이트리스트), 최소권한 DB 계정, 오류메시지 숨김, WAF.\n- ORM 사용해도 동적 쿼리 연결 시 취약할 수 있음.",
+      "question": "웹 응답 보안 헤더에 대한 물음이다. 각 설명에 해당하는 HTTP 응답 헤더를 쓰시오.\n\n(A) 이후 일정 기간 동안 해당 도메인을 반드시 HTTPS 로만 접속하도록 브라우저에 강제(SSL 스트립 방지)\n(B) 페이지가 iframe 등으로 다른 사이트에 삽입되는 것을 제한(클릭재킹 방지)\n(C) 브라우저가 Content-Type 을 무시하고 MIME 스니핑하는 것을 금지\n(D) 스크립트·스타일·이미지 등 리소스의 허용 출처를 지정(XSS·데이터 유출 완화)",
+      "answer": "정답\n(A) Strict-Transport-Security (HSTS)\n(B) X-Frame-Options (DENY / SAMEORIGIN) — 또는 CSP 의 frame-ancestors\n(C) X-Content-Type-Options: nosniff\n(D) Content-Security-Policy (CSP)",
+      "explanation": "그 밖에: `Referrer-Policy`(리퍼러 노출 제어), `Permissions-Policy`(카메라·위치 등 기능 제한), `Cache-Control: no-store`(민감정보), `Set-Cookie` 의 Secure/HttpOnly/SameSite.\n- HSTS 는 최초 1회 HTTP 접속 시점의 취약을 없애려면 preload 등록.",
       "notes": [
-        "애플리케이션보안/sql-injection"
+        "애플리케이션보안/owasp-top10과-시큐어-sdlc"
       ],
       "tags": [
-        "SQLi",
-        "Blind",
-        "Union"
+        "보안헤더",
+        "HSTS",
+        "XFrameOptions",
+        "CSP"
       ]
     },
     {
       "id": "y-app-027",
       "type": "단답형",
-      "question": "XSS(Cross-Site Scripting) 유형에 대한 설명이다. 빈칸을 채우시오.\n\n* (A) : 악성 스크립트가 게시판·댓글 등에 저장되어, 그 페이지를 보는 모든 사용자에게 지속적으로 실행되는 유형\n* (B) : 악성 스크립트가 요청 파라미터(검색어·URL)에 담겨 서버 응답에 그대로 반사되어 실행되는 유형. 주로 피싱 링크로 전달\n* (C) : 서버를 거치지 않고, 클라이언트 측 JavaScript 가 `location`·`innerHTML` 등에 신뢰할 수 없는 값을 사용하면서 브라우저 DOM 에서 실행되는 유형\n* (D) : XSS 완화를 위해 브라우저에 허용된 스크립트 출처를 지시하는 HTTP 응답 헤더",
-      "answer": "정답\n(A) Stored(저장형) XSS\n(B) Reflected(반사형) XSS\n(C) DOM-based XSS\n(D) CSP (Content-Security-Policy)",
-      "explanation": "대응: 출력 시 컨텍스트별 인코딩(HTML/속성/JS/URL), 입력 검증, 위험 태그·이벤트 필터링, `HttpOnly` 쿠키(세션 탈취 완화), CSP, 신뢰 라이브러리(DOMPurify).\n- DOM XSS 는 서버 필터를 우회하므로 클라이언트 코드 점검 필수.",
+      "question": "JWT(JSON Web Token) 에 대한 물음이다.\n\n(A) JWT 는 점(.)으로 구분된 3부분으로 구성된다. 각 부분의 이름을 순서대로 쓰시오.\n(B) 서버가 토큰의 `alg` 헤더 값을 그대로 신뢰할 때, 공격자가 `alg` 를 `none` 으로 바꾸고 서명을 제거해 위조 토큰을 통과시키는 취약점의 명칭은?\n(C) 대칭키(HS256)로 서명하는 서비스에서 (B) 외에 발생할 수 있는 대표적 취약점 한 가지를 쓰시오.",
+      "answer": "정답\n(A) 헤더(Header) . 페이로드(Payload) . 서명(Signature)\n(B) alg:none (알고리즘 혼동/none 알고리즘) 공격\n(C) 약한 비밀키(secret)에 대한 오프라인 무차별 대입·사전 공격으로 서명키 탈취 → 임의 토큰 위조 (그 밖에: RS256 공개키를 HS256 키로 오용하는 알고리즘 혼동, 만료·서명 미검증, 민감정보 평문 저장)",
+      "explanation": "- 페이로드는 base64url 인코딩일 뿐 암호화가 아님 → 민감정보 금지.\n- 대응: 서버에서 허용 알고리즘 화이트리스트 고정(`none` 거부), 충분히 긴 무작위 비밀키, 짧은 만료+리프레시, `aud`/`iss` 검증, 로그아웃·탈취 대비 토큰 폐기 목록.",
       "notes": [
-        "애플리케이션보안/xss-csrf"
+        "애플리케이션보안/owasp-top10과-시큐어-sdlc"
       ],
       "tags": [
-        "XSS",
-        "Stored",
-        "Reflected",
-        "CSP"
+        "JWT",
+        "alg-none",
+        "토큰",
+        "인증"
       ]
     },
     {
       "id": "y-app-028",
       "type": "단답형",
-      "question": "CSRF(Cross-Site Request Forgery) 공격에 대한 설명이다. 빈칸을 채우시오.\n\n* 공격 원리: 로그인된 피해자의 브라우저가 자동으로 `(A)` 를 실어 보내는 점을 악용해, 피해자 모르게 상태 변경 요청(송금·비밀번호 변경)을 수행한다.\n* 대응 (A): 서버가 폼 렌더링 시 예측 불가능한 임의 값을 심고 요청 시 검증하는 방식은 `(B)` 이다.\n* 대응 (B): 크로스 사이트 요청에 쿠키가 실리지 않도록 제한하는 쿠키 속성은 `(C)` 이다.",
-      "answer": "정답\n(A) 세션 쿠키 (인증 쿠키)\n(B) CSRF 토큰 (Synchronizer Token, 요청마다/세션마다 검증)\n(C) SameSite (SameSite=Lax 또는 Strict)",
-      "explanation": "추가 대응: Referer/Origin 헤더 검증, 중요 작업 재인증·CAPTCHA, 상태변경은 POST 만 허용(GET 부작용 금지), Double Submit Cookie.\n- XSS 가 있으면 CSRF 대응이 무력화될 수 있어 XSS 방어가 선행.\n- 함정: CSRF 는 '요청 위조', SSRF 는 '서버가 내부로 요청하게 만드는 것'.",
+      "question": "OAuth 2.0 인가에 대한 물음이다.\n\n(A) 사용자가 인가 서버에서 로그인·동의 후 클라이언트가 '인가 코드'를 받고, 이를 백엔드에서 토큰으로 교환하는, 서버 사이드 웹앱에 권장되는 흐름(grant)의 명칭은?\n(B) 인가 응답의 CSRF 를 방지하기 위해 클라이언트가 요청에 담아 보내고 콜백에서 대조하는 임의 값 파라미터는?\n(C) 모바일·SPA 처럼 클라이언트 시크릿을 안전하게 보관할 수 없는 환경에서 인가 코드 가로채기를 막기 위한 확장은?",
+      "answer": "정답\n(A) Authorization Code Grant (인가 코드 방식)\n(B) state 파라미터\n(C) PKCE (Proof Key for Code Exchange)",
+      "explanation": "- Implicit Grant(토큰을 프론트로 직접 반환)는 토큰 노출 위험으로 현재 비권장 → Authorization Code + PKCE 로 대체.\n- 필수 보안: `redirect_uri` 정확 일치 검증(부분/와일드카드 금지), 코드 1회성·단명, 스코프 최소화.\n- OAuth 는 '인가', 그 위에서 '인증'을 표준화한 것이 OpenID Connect(id_token).",
       "notes": [
-        "애플리케이션보안/xss-csrf"
+        "애플리케이션보안/owasp-top10과-시큐어-sdlc"
       ],
       "tags": [
-        "CSRF",
-        "토큰",
-        "SameSite"
+        "OAuth2",
+        "AuthorizationCode",
+        "PKCE",
+        "state"
       ]
     },
     {
       "id": "y-app-029",
       "type": "단답형",
-      "question": "웹 서버 로그 분석 시 자주 등장하는 HTTP 상태 코드의 의미를 쓰시오.\n\n* (A) : 301\n* (B) : 401\n* (C) : 403\n* (D) : 500",
-      "answer": "정답\n(A) Moved Permanently — 영구 이동(리다이렉트)\n(B) Unauthorized — 인증 필요(인증 실패/미인증)\n(C) Forbidden — 인증과 무관하게 접근 자체가 금지됨(권한 없음)\n(D) Internal Server Error — 서버 내부 오류",
-      "explanation": "분류: 1xx 정보, 2xx 성공(200 OK, 201 Created, 204 No Content), 3xx 리다이렉트(302 임시, 304 Not Modified), 4xx 클라이언트 오류(400, 404, 405, 429 Too Many Requests), 5xx 서버 오류(502 Bad Gateway, 503 Service Unavailable).\n- 401 vs 403: 401 은 '누구인지 모름/인증 실패', 403 은 '누구인지 알지만 금지'. 공격 로그에서 다수의 401→성공(200) 은 무차별 대입 성공 징후.",
+      "question": "XML 처리 취약점에 대한 물음이다.\n\n(A) XML 파서가 문서 내에서 정의한 외부 엔티티(예: `<!ENTITY x SYSTEM \"file:///etc/passwd\">`)를 해석하도록 악용해 서버 파일 읽기·SSRF·DoS 를 일으키는 취약점의 명칭(약어)은?\n(B) 재귀적으로 확장되는 엔티티를 이용해 메모리·CPU 를 폭증시키는 DoS 공격의 별칭은?\n(C) 이 취약점의 근본 대응 한 가지를 쓰시오.",
+      "answer": "정답\n(A) XXE (XML External Entity Injection)\n(B) Billion Laughs 공격 (XML Entity Expansion / 엔티티 폭탄)\n(C) XML 파서에서 DTD 처리 및 외부 엔티티 해석을 비활성화한다 (예: `disallow-doctype-decl` = true, external general/parameter entities = false). 가능하면 XML 대신 JSON 사용, 입력 스키마 검증.",
+      "explanation": "- 취약 지점: SOAP, SAML, 문서 업로드(docx·svg·xlsx), RSS, 설정 파일 파싱.\n- 언어별 안전 설정 필요(Java: XMLConstants.FEATURE_SECURE_PROCESSING, libxml: `LIBXML_NONET`).",
       "notes": [
-        "애플리케이션보안/아파치-웹서버-보안설정과-로그"
+        "애플리케이션보안/인젝션-웹셸-요청위조-스머글링"
       ],
       "tags": [
-        "HTTP",
-        "상태코드",
-        "로그분석"
+        "XXE",
+        "XML",
+        "BillionLaughs",
+        "SSRF"
       ]
     },
     {
       "id": "y-app-030",
       "type": "단답형",
-      "question": "웹 세션·쿠키 보안 속성에 대한 설명이다. 각 설명에 해당하는 쿠키 속성명을 쓰시오.\n\n* (A) : HTTPS 연결에서만 쿠키를 전송하여 평문 도청을 방지\n* (B) : JavaScript(`document.cookie`)로 쿠키에 접근하지 못하게 하여 XSS 를 통한 세션 탈취를 완화\n* (C) : 쿠키가 유효한 경로를 제한\n* (D) : 크로스 사이트 컨텍스트에서 쿠키 전송을 제한(CSRF 완화)",
-      "answer": "정답\n(A) Secure\n(B) HttpOnly\n(C) Path\n(D) SameSite",
-      "explanation": "세션 보안 종합: 로그인 성공 시 세션ID 재발급(고정 공격 방지), 충분한 엔트로피, 유휴/절대 타임아웃, 로그아웃 시 서버 세션 무효화, `__Host-`/`__Secure-` 접두어.\n- 세션 고정(Session Fixation): 공격자가 발급한 세션ID 를 피해자가 그대로 인증에 사용하게 만드는 공격 → 인증 후 재발급으로 방어.",
+      "question": "클릭재킹(Clickjacking) 공격에 대한 물음이다.\n\n(A) 공격 원리를 한 문장으로 쓰시오.\n(B) 이 공격을 방어하기 위해 사용하는 HTTP 응답 헤더 2가지를 쓰시오.\n(C) 은행 이체·권한 변경처럼 중요한 동작에서 클릭재킹 피해를 줄이기 위한 추가 대책 한 가지를 쓰시오.",
+      "answer": "정답\n(A) 공격자가 투명하게 만든 iframe 안에 정상 사이트를 띄우고, 그 위에 미끼 UI 를 겹쳐 사용자가 미끼를 누르는 줄 알고 실제로는 iframe 속 정상 사이트의 버튼(예: 이체·동의)을 클릭하게 만드는 UI 기만 공격이다.\n(B) `X-Frame-Options: DENY(또는 SAMEORIGIN)` , `Content-Security-Policy: frame-ancestors 'self'(또는 'none')`\n(C) 중요한 동작에 재인증(비밀번호·OTP) 또는 확인용 CAPTCHA·명시적 확인 단계를 추가한다. (프레임버스팅 스크립트 병행)",
+      "explanation": "- CSP `frame-ancestors` 가 X-Frame-Options 를 대체하는 현대적 방식이며 다중 출처 허용도 가능.\n- 관련 변형: likejacking, cursorjacking. SameSite 쿠키는 프레임 내 인증 상태에도 영향.",
       "notes": [
-        "애플리케이션보안/owasp-top10과-시큐어-sdlc"
+        "애플리케이션보안/xss-csrf"
       ],
       "tags": [
-        "쿠키",
-        "세션",
-        "HttpOnly",
-        "Secure"
+        "클릭재킹",
+        "XFrameOptions",
+        "frame-ancestors",
+        "UI기만"
       ]
     },
     {
       "id": "y-app-031",
       "type": "단답형",
-      "question": "다음이 설명하는 웹 취약점의 명칭을 쓰시오.\n\n* (A) : `../` 같은 상위 경로 이동 문자를 파일 파라미터에 넣어, 웹 루트를 벗어난 `/etc/passwd` 등 임의 파일을 읽는 취약점\n* (B) : 서버가 사용자가 지정한 URL 로 요청을 보내도록 유도하여, 내부망 자원·클라우드 메타데이터(169.254.169.254)에 접근하는 취약점\n* (C) : 애플리케이션이 인증·인가 검사 없이 객체 식별자(예: `?id=123`)만으로 자원을 반환해, 값을 바꿔 타인 데이터에 접근하는 취약점",
-      "answer": "정답\n(A) 디렉터리 트래버설 / 경로 조작 (Path Traversal, LFI 포함)\n(B) SSRF (Server-Side Request Forgery)\n(C) IDOR (Insecure Direct Object Reference) — 취약한 접근통제",
-      "explanation": "- Path Traversal 대응: 경로 정규화(canonicalization) 후 화이트리스트 검증, 파일명만 허용(경로 구분자 제거), chroot/권한 최소화.\n- SSRF 대응: 아웃바운드 목적지 화이트리스트, 사설·링크로컬 IP 차단, 리다이렉트 제한, 메타데이터 서비스 보호(IMDSv2).\n- IDOR 대응: 요청마다 소유권·권한 확인, 추측 불가 식별자.",
+      "question": "다음이 설명하는 웹 취약점의 명칭을 쓰시오.\n\n(A) `?url=` 파라미터 값을 검증 없이 리다이렉트 대상으로 사용해, 신뢰 도메인 링크로 위장한 피싱·토큰 탈취에 악용되는 취약점\n(B) 사용자 입력이 서버 측 템플릿 엔진(예: Jinja2, Freemarker)에 그대로 삽입되어 템플릿 문법이 실행되고, 나아가 원격 코드 실행까지 이어지는 취약점\n(C) 신뢰할 수 없는 직렬화 데이터를 역직렬화하면서 객체 생성·메서드 호출이 유발되어 RCE·권한상승이 발생하는 취약점",
+      "answer": "정답\n(A) 오픈 리다이렉트 (Open Redirect / Unvalidated Redirects and Forwards)\n(B) SSTI (Server-Side Template Injection)\n(C) 안전하지 않은 역직렬화 (Insecure Deserialization)",
+      "explanation": "- Open Redirect 대응: 리다이렉트 대상은 서버 화이트리스트·상대경로만 허용.\n- SSTI 대응: 사용자 입력을 템플릿 '데이터'로만 전달, 로직리스 템플릿·샌드박스.\n- 역직렬화 대응: 신뢰 불가 데이터 역직렬화 금지, 허용 클래스 화이트리스트, 서명·무결성 검증, JSON 등 데이터 전용 포맷.",
       "notes": [
-        "애플리케이션보안/인젝션-웹셸-요청위조-스머글링"
+        "애플리케이션보안/인젝션-웹셸-요청위조-스머글링",
+        "애플리케이션보안/owasp-top10과-시큐어-sdlc"
       ],
       "tags": [
-        "PathTraversal",
-        "SSRF",
-        "IDOR"
+        "OpenRedirect",
+        "SSTI",
+        "역직렬화",
+        "RCE"
       ]
     },
     {
       "id": "y-app-032",
       "type": "단답형",
-      "question": "파일 업로드 취약점 대응에 대한 설명이다. 빈칸을 채우시오.\n\n* 업로드 허용 파일은 확장자 `(A)` 방식(허용 목록만 통과)으로 검증하고, `(B)` 타입(Content-Type)과 파일 시그니처(매직 넘버)도 함께 확인한다.\n* 업로드된 파일은 웹 루트 `(C)` 에 저장하거나, 저장 디렉터리에서 스크립트 `(D)` 권한을 제거하여 웹셸 실행을 막는다.\n* 저장 파일명은 사용자 입력을 쓰지 않고 서버가 임의로 재생성한다.",
-      "answer": "정답\n(A) 화이트리스트 (허용 목록)\n(B) MIME\n(C) 외부(밖) — 웹으로 직접 접근 불가한 경로\n(D) 실행(execute)",
-      "explanation": "웹셸 방지 핵심: ①확장자 화이트리스트(대소문자·이중확장자·`.php.jpg`·널바이트 주의) ②실제 콘텐츠 검증 ③실행권한 차단·별도 도메인/스토리지 ④파일명·경로 서버 생성 ⑤크기·개수 제한, 이미지 재인코딩.\n- Apache 는 `<Directory>` 에서 `php_admin_flag engine off` 또는 핸들러 제거.",
+      "question": "입력 검증과 출력 처리에 대한 물음이다. 빈칸을 채우시오.\n\n(A) 허용되는 문자·형식·범위만 통과시키고 나머지는 모두 거부하는 검증 방식은 `(A)` 방식이며, 알려진 위험 문자열만 제거하는 `(B)` 방식보다 안전하다.\n(C) 입력을 검증하기 전에 인코딩·경로 표기를 표준형으로 통일하는 과정을 `(C)` 라 하며, 이를 생략하면 `%2e%2e%2f`(이중 인코딩)·유니코드 우회로 필터를 통과당할 수 있다.\n(D) XSS 방어의 핵심은 입력 시점의 필터링보다, 데이터를 HTML/속성/자바스크립트/URL 등 삽입 위치에 맞게 변환하는 `(D)` 이다.",
+      "answer": "정답\n(A) 화이트리스트(Positive/Allow list) 방식\n(B) 블랙리스트(Negative/Deny list) 방식\n(C) 정규화 (Canonicalization / Normalization)\n(D) 출력 인코딩(이스케이프), 컨텍스트별 인코딩",
+      "explanation": "- 블랙리스트는 우회 기법이 계속 나와 근본 방어가 못 됨.\n- 검증 순서: 정규화 → 검증 → 사용. 정규화 후 재검증(재인코딩 방지).\n- 서버 측 검증 필수(클라이언트 검증은 UX 용).",
       "notes": [
-        "애플리케이션보안/파일업로드-취약점"
+        "애플리케이션보안/owasp-top10과-시큐어-sdlc",
+        "애플리케이션보안/xss-csrf"
       ],
       "tags": [
-        "파일업로드",
-        "웹셸",
-        "화이트리스트"
+        "입력검증",
+        "화이트리스트",
+        "정규화",
+        "출력인코딩"
       ]
     },
     {
       "id": "y-app-033",
       "type": "단답형",
-      "question": "이메일 발신자 위조(스푸핑)·피싱 대응을 위한 3대 메일 인증 기술에 대한 설명이다. 명칭을 쓰시오.\n\n* (A) : 도메인의 DNS TXT 레코드에 '이 도메인의 메일을 보낼 수 있는 서버 IP 목록'을 게시하고, 수신 서버가 발신 IP 와 대조\n* (B) : 발신 서버가 메일 헤더·본문에 개인키로 전자서명을 붙이고, 수신 서버가 DNS 에 게시된 공개키로 검증\n* (C) : (A)·(B) 결과와 From 도메인 정렬(alignment)을 확인하고, 실패 시 처리 정책(none/quarantine/reject)과 리포트 수신 주소를 도메인 소유자가 지정",
-      "answer": "정답\n(A) SPF (Sender Policy Framework)\n(B) DKIM (DomainKeys Identified Mail)\n(C) DMARC (Domain-based Message Authentication, Reporting and Conformance)",
-      "explanation": "- SPF 는 전달(forwarding) 시 깨질 수 있고, DKIM 은 본문 변조에 강함. DMARC 는 둘 중 하나가 '정렬되어' 통과하면 합격.\n- 추가: BIMI(로고 표시, DMARC 통과 전제), MTA-STS/TLS-RPT(전송구간 암호화 강제).\n- 함정: SPF/DKIM 만으로는 표시 이름(display name) 스푸핑·유사도메인은 못 막음.",
+      "question": "웹 취약점 진단 도구·기법에 대한 물음이다.\n\n(A) 웹 서버의 알려진 취약 파일·구버전·위험 설정을 빠르게 점검하는 오픈소스 스캐너는?\n(B) 요청을 가로채 수정·재전송하고 크롤링·퍼징·리피터를 제공하는, 웹 모의해킹의 사실상 표준 프록시 도구 2가지를 쓰시오.\n(C) SQL 인젝션 탐지·자동 익스플로잇에 특화된 오픈소스 도구는?\n(D) 소스코드를 실행하지 않고 정적 분석으로 취약점을 찾는 기법과, 실행 중인 애플리케이션에 요청을 보내며 동적으로 찾는 기법의 약어를 각각 쓰시오.",
+      "answer": "정답\n(A) Nikto\n(B) OWASP ZAP, Burp Suite\n(C) sqlmap\n(D) 정적 분석 : SAST (Static Application Security Testing) / 동적 분석 : DAST (Dynamic Application Security Testing)",
+      "explanation": "- 그 밖에: 디렉터리 브루트포싱(dirb/gobustr/ffuf), 취약점 스캐너(Acunetix, w3af), 크롤러.\n- SAST(코드 접근·이른 단계·오탐↑) vs DAST(런타임·환경 의존·인증 흐름 필요) vs IAST(에이전트로 결합) vs SCA(오픈소스 구성요소 취약점).",
       "notes": [
-        "애플리케이션보안/메일보안-spf-dkim-dmarc"
+        "애플리케이션보안/웹취약점-진단도구와-테스트기법"
       ],
       "tags": [
-        "SPF",
-        "DKIM",
-        "DMARC",
-        "메일보안"
+        "Nikto",
+        "BurpSuite",
+        "sqlmap",
+        "SAST",
+        "DAST"
       ]
     },
     {
       "id": "y-app-034",
       "type": "단답형",
-      "question": "Apache HTTP Server 보안 설정에 대한 설명이다. 빈칸에 들어갈 지시어(directive)와 값을 쓰시오.\n\n* 응답 헤더에서 서버 종류·버전 정보를 최소화: `ServerTokens (A)` , `ServerSignature (B)`\n* 디렉터리 인덱스(파일 목록) 자동 노출 비활성화: `Options (C)`\n* 위험한 HTTP 메서드인 TRACE 차단: `(D) off`",
-      "answer": "정답\n(A) Prod (ServerTokens Prod → 'Apache' 만 표시)\n(B) Off\n(C) -Indexes\n(D) TraceEnable",
-      "explanation": "추가 하드닝: 불필요 모듈 제거, `Timeout`·`LimitRequestBody` 조정, `<Directory />` 기본 `Require all denied`, `.htaccess` 사용 제한(`AllowOverride None`), 디렉터리별 `Options -ExecCGI -Includes`, 에러문서 커스터마이즈, mod_security(WAF), 로그(`CustomLog`/`ErrorLog`)와 로테이션.\n- TRACE 는 XST(Cross-Site Tracing) 로 HttpOnly 쿠키 우회 악용.",
+      "question": "REST API 보안에 대한 물음이다. 빈칸을 채우시오.\n\n(A) 클라이언트가 서버가 정한 것보다 많은 필드를 요청 본문에 넣어 보내 권한 밖 속성(예: `\"role\":\"admin\"`)까지 변경하는 취약점의 명칭은?\n(B) 응답에 필요 이상의 내부 필드(비밀번호 해시, 내부 ID, 디버그 정보)를 포함해 정보가 노출되는 취약점의 명칭은?\n(C) 무차별 대입·스크래핑·비용 유발 남용을 막기 위해 시간당 요청 수를 제한하는 통제는?\n(D) API 게이트웨이에서 클라이언트·서버가 서로 인증서로 신원을 증명하는 상호 인증 방식(약어)은?",
+      "answer": "정답\n(A) 대량 할당(Mass Assignment) / 자동 바인딩 취약점\n(B) 과도한 데이터 노출 (Excessive Data Exposure)\n(C) Rate Limiting (요청 속도 제한) / 쓰로틀링\n(D) mTLS (상호 TLS, Mutual TLS)",
+      "explanation": "- OWASP API Security Top 10 참고: BOLA(객체 수준 인가 실패=IDOR), Broken Authentication, BFLA(기능 수준 인가), SSRF, 부적절한 인벤토리 관리.\n- 대응: 필드 화이트리스트 바인딩, 응답 DTO 로 명시적 직렬화, 모든 엔드포인트 인가 검증, API 버전·문서·폐기 관리.",
       "notes": [
-        "애플리케이션보안/아파치-웹서버-보안설정과-로그"
+        "애플리케이션보안/owasp-top10과-시큐어-sdlc"
       ],
       "tags": [
-        "Apache",
-        "ServerTokens",
-        "하드닝",
-        "TRACE"
+        "RESTAPI",
+        "MassAssignment",
+        "RateLimiting",
+        "mTLS"
       ]
     },
     {
       "id": "y-app-035",
       "type": "서술형",
-      "question": "OWASP Top 10(2021) 항목 중 3가지를 선택하여, 각 항목의 의미와 대표적인 대응방안을 서술하시오.",
-      "answer": "정답 (아래 중 3가지 서술)\n1. A01 취약한 접근 통제(Broken Access Control)\n- 의미: 사용자가 자신의 권한을 벗어난 기능·데이터에 접근(IDOR, 강제 브라우징, 권한 상승, JWT 조작).\n- 대응: 서버 측에서 요청마다 인가 검증, 기본 거부(deny by default), 객체 소유권 확인, 접근제어 로직 중앙화·테스트, 디렉터리 리스팅 비활성.\n2. A02 암호화 실패(Cryptographic Failures)\n- 의미: 전송·저장 시 민감정보를 암호화하지 않거나 약한 알고리즘·키 관리 사용.\n- 대응: 전 구간 TLS(HSTS), 저장 시 강한 알고리즘(AES-GCM), 패스워드는 bcrypt/Argon2 해시+솔트, 키 분리 보관·주기적 교체, 불필요 민감정보 미저장.\n3. A03 인젝션(Injection)\n- 의미: 신뢰할 수 없는 입력이 SQL·OS 명령·LDAP 등 인터프리터로 전달되어 실행(SQLi, 명령삽입, XSS 포함).\n- 대응: 파라미터 바인딩·ORM, 입력 검증(화이트리스트), 출력 인코딩, 최소권한, 위험 API 회피.\n4. A05 보안 설정 오류(Security Misconfiguration)\n- 의미: 기본 계정·불필요 기능 활성화, 상세 오류 노출, 헤더 미설정, 패치 누락.\n- 대응: 하드닝 기준·자동화 배포, 불필요 기능 제거, 보안 헤더, 정기 점검.\n5. A06 취약하고 오래된 컴포넌트, A07 인증 실패, A08 무결성 실패(역직렬화/CI-CD), A09 로깅·모니터링 실패, A10 SSRF 중 택1도 가능.",
-      "explanation": "채점 포인트: 서로 다른 3개 항목을 골라 각각 '의미 1문장 + 대응 1~2개'. A01·A03 은 거의 필수급, 대응은 '서버 측 검증/파라미터 바인딩/암호화·해시' 처럼 구체적으로. 항목명을 틀리게 쓰면 감점.",
+      "question": "웹 애플리케이션의 로그인(인증) 기능을 안전하게 구현하기 위한 요구사항을 서술하시오. 비밀번호 저장, 자동화 공격 대응, 오류 처리 관점을 포함하여 5가지 이상 제시하시오.",
+      "answer": "정답\n1. 비밀번호 저장: 평문·단순 해시(MD5/SHA-1) 금지. 사용자별 무작위 솔트 + 적응형 해시 함수(bcrypt, scrypt, Argon2id, PBKDF2)로 저장하고, 하드웨어 성능 향상에 맞춰 작업 계수를 상향한다. 필요 시 서버 측 비밀값(pepper)을 별도 보관.\n2. 자동화 공격(무차별 대입/크리덴셜 스터핑) 대응: 계정·IP 기준 실패 횟수 제한과 점증적 지연, 임계 초과 시 CAPTCHA·일시 잠금. 유출된 비밀번호 목록 차단, 이상 로그인(새 기기·지역) 알림.\n3. 다단계 인증(MFA): 최소한 중요 계정·관리자에 OTP/FIDO2 적용. 로그인·비밀번호 변경·MFA 해제 시 재인증.\n4. 세션 처리: 로그인 성공 시 세션 ID 재발급(세션 고정 방지), 세션 쿠키에 Secure·HttpOnly·SameSite, 유휴·절대 타임아웃, 로그아웃 시 서버 세션 무효화.\n5. 오류 메시지: '아이디 또는 비밀번호가 올바르지 않습니다'처럼 존재 여부를 구분할 수 없게 통일(사용자 열거 방지). 응답 시간도 일정하게.\n6. 비밀번호 정책: 길이 위주(최소 8~12자 이상), 과도한 복잡도 강제·주기적 변경 지양(NIST 권고), 붙여넣기 허용.\n7. 비밀번호 재설정: 추측 불가능·단명 토큰을 등록된 채널로만 전송, 사용 즉시 폐기, 재설정 시 기존 세션 무효화.\n8. 전 구간 HTTPS(HSTS), 자격증명·토큰 로깅 금지.",
+      "explanation": "채점 포인트: bcrypt/Argon2+솔트, 무차별 대입·크리덴셜 스터핑 대응(제한·CAPTCHA·유출목록), MFA, 세션 ID 재발급·쿠키 속성, 사용자 열거 방지 오류 통일 중 5개 이상. 'SHA-256 으로 해시' 만 쓰면 감점(적응형 해시 필요).",
       "notes": [
         "애플리케이션보안/owasp-top10과-시큐어-sdlc"
       ],
       "tags": [
-        "OWASP",
-        "Top10",
-        "접근통제",
-        "인젝션"
+        "인증구현",
+        "패스워드저장",
+        "bcrypt",
+        "크리덴셜스터핑",
+        "MFA"
       ]
     },
     {
       "id": "y-app-036",
       "type": "서술형",
-      "question": "웹셸(Web Shell)이 무엇인지 설명하고, 서버에 업로드된 웹셸을 탐지하는 방법과 사고 발생 시 대응 절차를 각각 서술하시오.",
-      "answer": "정답\n[웹셸이란]\n공격자가 웹 서버에 업로드한, 웹 요청으로 원격에서 명령 실행·파일 조작·DB 접근·추가 악성코드 배포를 수행할 수 있는 스크립트(JSP/PHP/ASP 등). 파일 업로드 취약점, 취약한 게시판, 원격 코드 실행, 관리자 페이지 탈취 등을 통해 설치되며 지속적 침투 통로가 된다.\n\n[탐지 방법]\n1. 파일 시스템 점검: 웹 디렉터리에서 최근 생성·수정된 스크립트 파일, 실행권한이 붙은 이미지, 비정상 파일명·이중확장자 탐색(`find`, 무결성 도구 AIDE 로 신규 파일 검출).\n2. 콘텐츠 시그니처: `eval`, `base64_decode`, `system`, `exec`, `passthru`, `cmd`, `Runtime.exec`, 난독화된 긴 문자열 등 웹셸 특징 문자열 스캔(전용 도구: 한국인터넷진흥원 휘슬(WHISTL), yara 룰).\n3. 웹 로그 분석: 잘 알려지지 않은 스크립트 URL 에 POST 요청, 동일 IP 가 특정 파일에 반복 접근, User-Agent 이상, 요청 파라미터에 명령어 문자열.\n4. 네트워크·프로세스: 웹 프로세스(www-data)가 셸·컴파일러·아웃바운드 연결을 생성하는지 EDR/감사로그로 관찰.\n\n[대응 절차]\n1. 해당 서버를 서비스에서 분리·격리(필요 시 스냅샷·이미지 확보), 웹 로그·시스템 로그 즉시 백업.\n2. 웹셸 파일 격리(삭제 전 사본 보존)하고, 업로드 시각을 기준으로 웹 로그를 역추적해 유입 경로·공격자 IP·추가 파일·실행된 명령을 파악.\n3. 2차 침해 점검: 계정 추가·크론탭·시작 프로그램·다른 디렉터리의 웹셸·DB 변조·유출 흔적.\n4. 근본 원인 제거: 파일 업로드/취약 파라미터 패치, 업로드 디렉터리 실행권한 제거·웹루트 외 저장, 관리자 페이지 접근통제.\n5. 자격증명 초기화, 필요 시 클린 재구축 후 검증된 백업 복원, 재발 방지(WAF 룰, 정기 웹셸 스캔), 규정에 따른 신고.",
-      "explanation": "채점 포인트: 웹셸 정의(웹 요청으로 원격 제어하는 스크립트), 탐지(신규/수정 파일·위험 함수 시그니처·웹로그 POST 패턴 중 2개↑), 대응(격리→로그 보존→유입경로 역추적→취약점 패치→재발방지). '삭제만 하고 끝'은 감점.",
+      "question": "운영 중인 웹 애플리케이션에 대한 취약점 점검(모의침투)을 수행하려 한다. 진행 단계(방법론)를 순서대로 설명하고, 자동화 도구 점검과 수동 점검을 병행해야 하는 이유를 서술하시오.",
+      "answer": "정답\n[진행 단계]\n1. 사전 준비·범위 협의: 대상 URL·계정·테스트 시간·제외 항목·연락체계·백업 확인, 서면 승인(범위 밖 금지).\n2. 정보 수집(정찰): 도메인·서브도메인·기술 스택·오픈 포트·검색엔진 노출·robots.txt·에러 페이지·JS 파일 분석.\n3. 애플리케이션 매핑: 크롤링으로 모든 페이지·파라미터·API·인증 흐름·역할별 기능을 목록화(공격 표면 식별).\n4. 취약점 분석: 인증·인가(IDOR·권한상승), 입력 검증(SQLi·XSS·파일업로드·SSRF), 세션 관리, 설정 오류, 민감정보 노출, 비즈니스 로직 결함을 점검. 자동 스캐너로 폭넓게 훑고 의심 지점을 수동 검증.\n5. 취약점 악용·영향 확인(PoC): 실제 악용 가능성과 피해 범위를 통제된 범위에서 입증(데이터 파괴·대량 조회 금지).\n6. 사후 정리·보고: 재현 절차·위험도(CVSS)·증거·개선 권고를 담은 보고서 작성, 조치 후 재점검, 생성한 테스트 데이터·계정 정리.\n\n[자동+수동 병행 이유]\n- 자동 도구: 넓은 범위를 빠르게 점검하고 알려진 패턴(구버전·기본 설정·반사형 XSS 등) 탐지에 효율적이나, 인증 이후 흐름·다단계 시나리오·비즈니스 로직 취약점(가격 조작, 권한 우회, 순서 위반)·문맥 의존 IDOR 은 놓치고 오탐·미탐이 있다.\n- 수동 점검: 도구가 이해하지 못하는 로직·권한 모델·연계 취약점을 사람이 추론·검증하고 오탐을 걸러낸다.\n- 따라서 자동으로 커버리지를 확보하고 수동으로 깊이와 정확성을 보완해야 한다.",
+      "explanation": "채점 포인트: 준비·범위 승인 → 정보수집 → 매핑 → 취약점 분석 → 악용/영향확인 → 보고·재점검 순서. 자동(넓게·빠르게·알려진 패턴) vs 수동(비즈니스 로직·권한·오탐 제거)의 상호 보완. 승인·범위 언급 시 가점.",
       "notes": [
-        "애플리케이션보안/인젝션-웹셸-요청위조-스머글링",
-        "애플리케이션보안/파일업로드-취약점"
+        "애플리케이션보안/웹취약점-진단도구와-테스트기법"
       ],
       "tags": [
-        "웹셸",
-        "탐지",
-        "침해대응"
+        "모의침투",
+        "점검방법론",
+        "정보수집",
+        "자동수동병행"
       ]
     },
     {
       "id": "y-app-037",
       "type": "실무형",
-      "question": "웹 서버의 Apache `access_log` 에서 아래 요청들이 발견되었다.\n\n```\n203.0.113.9 - - [12/Jul/2025:14:02:11] \"GET /board/view.jsp?idx=15 HTTP/1.1\" 200 5120\n203.0.113.9 - - [12/Jul/2025:14:02:19] \"GET /board/view.jsp?idx=15+and+1=1 HTTP/1.1\" 200 5120\n203.0.113.9 - - [12/Jul/2025:14:02:25] \"GET /board/view.jsp?idx=15+and+1=2 HTTP/1.1\" 200 210\n203.0.113.9 - - [12/Jul/2025:14:03:02] \"GET /board/view.jsp?idx=15+and+substr(user,1,1)='s' HTTP/1.1\" 200 210\n203.0.113.9 - - [12/Jul/2025:14:05:40] \"GET /board/view.jsp?idx=15;WAITFOR+DELAY+'0:0:5'-- HTTP/1.1\" 200 5120\n```\n\n(a) 이 로그가 나타내는 공격 유형과, 공격자가 사용하고 있는 세부 기법 2가지를 쓰시오.\n(b) 공격이 성공(취약점 존재)했다고 판단할 수 있는 근거를 로그에서 찾아 설명하시오.\n(c) 애플리케이션·서버·네트워크 관점의 대응방안을 각각 제시하시오.",
-      "answer": "정답\n(a) SQL 인젝션 공격. 세부 기법: ① Boolean-based Blind SQLi (`and 1=1` / `and 1=2` 로 응답 크기 차이 유도, `substr(user,1,1)='s'` 로 한 글자씩 추출) ② Time-based Blind SQLi (`WAITFOR DELAY '0:0:5'` 로 응답 지연 유발).\n\n(b) 근거:\n- `idx=15 and 1=1` 요청은 정상과 동일한 5120바이트(200) 응답, `idx=15 and 1=2` 요청은 210바이트로 급감 → 삽입한 논리 조건이 실제 SQL 로 해석되어 결과 집합이 달라졌다.\n- `substr(user,1,1)='s'` 도 210바이트 → 참/거짓이 응답에 반영됨(계정명 첫 글자 추정 중).\n- 이는 파라미터가 쿼리에 그대로 연결되고 있음을 의미하므로 취약점이 존재한다.\n\n(c)\n- 애플리케이션: `view.jsp` 의 `idx` 를 정수로 강제 형변환·검증, 모든 쿼리를 PreparedStatement(파라미터 바인딩)로 전환, 오류·행 개수에 따른 응답 차이를 노출하지 않도록 처리, DB 계정 최소권한(SELECT 만, 시스템 함수·`WAITFOR` 권한 회수).\n- 서버: 상세 오류 비노출, WAF(mod_security)로 SQLi 패턴·이상 파라미터 차단, 접근 로그 상시 모니터링·알림.\n- 네트워크: 공격 IP(203.0.113.9) 차단, 동일 IP 의 고빈도·비정상 파라미터 요청에 rate limit, IPS 시그니처 적용, SIEM 상관분석으로 후속 행위 추적.",
-      "explanation": "채점 포인트: (a) SQLi + Blind(Boolean)/Time-based 2기법 (b) 1=1 vs 1=2 응답 크기(5120→210) 차이로 조건이 SQL 로 실행됨을 입증 (c) 파라미터 바인딩·정수검증(앱) / WAF·오류숨김(서버) / IP차단·IPS(네트워크). '성공 여부 불명'이라고만 쓰면 감점.",
+      "question": "API 서버 로그에서 다음이 확인되었다.\n\n```\nPOST /api/login  {\"user\":\"kim\"}  200  {\"token\":\"eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoia2ltIiwicm9sZSI6InVzZXIifQ.SIG\"}\nGET  /api/admin/users  Authorization: Bearer eyJhbGciOiJub25lIn0.eyJ1c2VyIjoia2ltIiwicm9sZSI6ImFkbWluIn0.  200\nGET  /api/admin/users  Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4ifQ.WEAKSIG  200\n```\n\n(첫 토큰의 헤더는 `{\"alg\":\"HS256\"}`, 두 번째는 `{\"alg\":\"none\"}`, payload 는 각각 role:user / role:admin 이다.)\n\n(a) 공격자가 관리자 API 에 접근하기 위해 사용한 두 가지 JWT 공격 기법을 쓰시오.\n(b) 서버 측 구현에 어떤 결함이 있었는지 각각 설명하시오.\n(c) 대응 방안을 3가지 이상 제시하시오.",
+      "answer": "정답\n(a) ① alg:none 공격 — 헤더의 alg 를 `none` 으로 바꾸고 서명 부분을 비운 뒤 payload 의 role 을 admin 으로 변조. ② 약한 비밀키(secret) 무차별 대입 — HS256 서명키를 사전·brute force 로 알아내 role:admin·user:admin 토큰을 직접 위조·서명.\n\n(b)\n- 첫 번째 결함: 서버가 토큰 헤더의 `alg` 값을 신뢰하여 `none` 이면 서명 검증을 건너뛰었다(허용 알고리즘을 고정하지 않음).\n- 두 번째 결함: 서명 검증은 하지만 비밀키가 추측 가능한 짧은 문자열이어서 오프라인에서 크래킹되었다. 또한 `role` 클레임만으로 인가를 판단하고 서버 측에서 사용자 권한을 재확인하지 않았다.\n\n(c)\n1. 검증 시 허용 알고리즘을 서버 코드에 화이트리스트로 고정하고 `none` 을 명시적으로 거부. 라이브러리의 안전한 verify API 사용.\n2. 서명 비밀키를 충분히 길고 무작위(≥256bit)로 생성해 안전 저장(KMS/Secret Manager), 주기적 교체. 가능하면 비대칭(RS256/ES256)으로 전환하고 공개키만 검증에 사용.\n3. 토큰의 role 을 그대로 신뢰하지 말고, 인가가 필요한 요청마다 서버가 사용자 권한을 재조회·검증(최소 권한, BFLA 방지).\n4. 만료(exp) 짧게 + 리프레시 토큰, `iss`/`aud` 검증, 탈취 대비 토큰 폐기 목록·jti.\n5. 관리자 API 접근 로그·이상탐지(권한 상승 시도 알림), 관리 기능 IP 제한·MFA.",
+      "explanation": "채점 포인트: (a) alg:none + 약한 secret 크래킹 (b) alg 신뢰·서명 스킵 / 약한 키·서버측 권한 미검증 (c) 알고리즘 화이트리스트·강한 키(또는 비대칭)·요청마다 권한 재검증 중 3개. 'HTTPS 를 쓰면 된다' 수준이면 감점.",
       "notes": [
-        "애플리케이션보안/sql-injection",
-        "애플리케이션보안/아파치-웹서버-보안설정과-로그"
+        "애플리케이션보안/owasp-top10과-시큐어-sdlc",
+        "애플리케이션보안/인젝션-웹셸-요청위조-스머글링"
       ],
       "tags": [
-        "SQLi",
-        "로그분석",
-        "Blind",
-        "WAF"
+        "JWT",
+        "alg-none",
+        "권한상승",
+        "API보안"
+      ]
+    },
+    {
+      "id": "y-app-038",
+      "type": "실무형",
+      "question": "회원가입 이벤트를 진행 중인 쇼핑몰의 접근 로그에서 다음이 확인되었다.\n\n```\n185.7.x.10 - [10:00:01] \"POST /api/signup\" 201  ua:\"python-requests/2.31\"\n185.7.x.10 - [10:00:01] \"POST /api/signup\" 201  ua:\"python-requests/2.31\"\n185.7.x.11 - [10:00:02] \"POST /api/signup\" 201  ua:\"python-requests/2.31\"\n... 초당 30~50건, 10분간 약 25,000건, 이메일은 gmail 주소에 +태그 변형(user+1@, user+2@ ...)\n```\n\n(a) 이 트래픽의 성격(무엇을 노린 것인지)을 판단하고 근거를 3가지 쓰시오.\n(b) 이 공격으로 발생하는 피해를 2가지 쓰시오.\n(c) 애플리케이션·인프라 측면의 대응책을 각각 제시하시오.",
+      "answer": "정답\n(a) 자동화 스크립트를 이용한 대량 가짜 계정 생성(이벤트 어뷰징/프로모션 남용) 공격이다. 근거:\n1. User-Agent 가 `python-requests` 로 브라우저가 아닌 스크립트이며 동일 값이 반복된다.\n2. 소수 IP(185.7.x.10~11)에서 초당 수십 건, 10분간 2.5만 건으로 사람이 낼 수 없는 속도·규모다.\n3. 이메일이 `user+N@gmail.com` 형태의 규칙적 변형으로, 하나의 실제 메일함으로 다수 계정을 만드는 전형적 어뷰징 패턴이다.\n\n(b)\n1. 이벤트 쿠폰·적립금·신규가입 혜택이 부정 수령되어 직접적 금전 손실, 정상 이용자 혜택 소진.\n2. 가짜 계정·더미 데이터로 DB·메일 발송량 급증(비용·평판), 통계 왜곡, 후속적으로 리뷰 조작·재고 선점 등 2차 남용.\n\n(c)\n- 애플리케이션: 가입에 이메일 인증(실제 수신 확인) 필수화, 이메일 정규화(+태그·점 제거 후 중복 판정), CAPTCHA/자바스크립트 검증, 가입 속도·동일 IP/디바이스 지문당 계정 수 제한, 혜택 지급을 즉시가 아닌 조건(구매·인증) 충족 후로, 이상 가입 패턴 모니터링.\n- 인프라: API 게이트웨이/WAF 에서 IP·ASN 기준 rate limiting 과 봇 시그니처(User-Agent, 헤더 패턴) 차단, 위협 인텔리전스로 악성 IP 자동 차단, 자동화 트래픽 비율 알림, 필요 시 이벤트 페이지에 부하 분산·대기열.",
+      "explanation": "채점 포인트: (a) 봇 대량가입·어뷰징 + 근거(스크립트 UA·비정상 속도·+태그 이메일) (b) 혜택 부정수령·비용/데이터 오염 (c) 앱(이메일 인증·정규화·CAPTCHA·계정수 제한) / 인프라(WAF rate limit·봇 차단). 단순 'DDoS' 로만 답하면 감점(자원 고갈이 목적이 아님).",
+      "notes": [
+        "애플리케이션보안/owasp-top10과-시큐어-sdlc",
+        "애플리케이션보안/웹취약점-진단도구와-테스트기법"
+      ],
+      "tags": [
+        "봇",
+        "어뷰징",
+        "RateLimiting",
+        "이메일인증"
       ]
     }
   ]

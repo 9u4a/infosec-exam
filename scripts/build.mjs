@@ -197,6 +197,29 @@ function loadPredicted(notes, rounds) {
   for (const [t, n] of Object.entries(need)) {
     if ((perType[t] || 0) < n) warn(`예상문제: ${t} ${perType[t] || 0}개 < 모의고사 1회 편성 ${n}개`);
   }
+
+  // 중복·과유사 문항 점검 (모의고사에서 비슷한 문제가 겹쳐 나오는 것 방지)
+  const trigrams = (s) => {
+    const t = String(s || '').replace(/\s+/g, '').replace(/[()（）:：.,/*`#\-]/g, '').toLowerCase();
+    const g = new Set();
+    for (let i = 0; i < t.length - 2; i++) g.add(t.slice(i, i + 3));
+    return g;
+  };
+  const jac = (a, b) => { let i = 0; for (const x of a) if (b.has(x)) i++; return i / (a.size + b.size - i || 1); };
+  const sig = items.map((it) => ({ qid: it.qid, tags: new Set(it.tags || []), qa: trigrams(it.question + ' ' + it.answer) }));
+  let simPairs = 0;
+  for (let i = 0; i < sig.length; i++) {
+    for (let j = i + 1; j < sig.length; j++) {
+      const s = jac(sig[i].qa, sig[j].qa);
+      let sharedTags = 0; for (const t of sig[i].tags) if (sig[j].tags.has(t)) sharedTags++;
+      if (s >= 0.45 || (s >= 0.3 && sharedTags >= 3)) {
+        warn(`예상문제: ${sig[i].qid} ↔ ${sig[j].qid} 과유사 (유사도 ${s.toFixed(2)}, 공유태그 ${sharedTags}) — 중복 검토`);
+        simPairs++;
+      }
+    }
+  }
+  if (simPairs) warn(`예상문제: 과유사 쌍 ${simPairs}건 — 학습 효율·모의고사 다양성 저하`);
+
   return { items, perType, perDomain };
 }
 
