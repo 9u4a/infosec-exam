@@ -467,6 +467,229 @@
         "세션하이재킹",
         "프래그먼트"
       ]
+    },
+    {
+      "id": "y-net-029",
+      "type": "단답형",
+      "question": "TCP 연결에 대한 설명이다. 빈칸을 채우시오.\n\n* 연결 수립(3-way handshake): 클라이언트 → 서버 `(A)` , 서버 → 클라이언트 `SYN+ACK` , 클라이언트 → 서버 `ACK`\n* 정상 연결 종료(4-way handshake)를 시작할 때 보내는 플래그는 `(B)` 이다.\n* 연결을 비정상적으로 즉시 끊거나, 닫힌 포트로 패킷이 도달했을 때 응답으로 오는 플래그는 `(C)` 이다.",
+      "answer": "정답\n(A) SYN\n(B) FIN\n(C) RST",
+      "explanation": "TCP 플래그: SYN(연결요청), ACK(확인), FIN(정상 종료 요청), RST(강제 초기화), PSH(버퍼 즉시 전달), URG(긴급).\n- 닫힌 TCP 포트 스캔 시 RST+ACK 응답 → 포트스캔 판별 근거.\n- FIN/NULL/XMAS 스캔: 열린 포트는 무응답, 닫힌 포트는 RST.",
+      "notes": [
+        "네트워크보안/tcp-ip-헤더와-라우팅"
+      ],
+      "tags": [
+        "TCP",
+        "핸드셰이크",
+        "플래그"
+      ]
+    },
+    {
+      "id": "y-net-030",
+      "type": "단답형",
+      "question": "ICMP 메시지 타입에 대한 설명이다. 타입 번호를 쓰시오.\n\n* (A) : Echo Request (ping 요청)\n* (B) : Echo Reply (ping 응답)\n* (C) : Destination Unreachable (목적지 도달 불가)\n* (D) : Time Exceeded (TTL 만료 — traceroute 가 이용)",
+      "answer": "정답\n(A) 8\n(B) 0\n(C) 3\n(D) 11",
+      "explanation": "- traceroute: TTL 을 1부터 증가시키며 보내 각 홉에서 Type 11 응답을 유도(리눅스는 UDP, Windows `tracert`는 ICMP Echo).\n- Type 3 코드: 0 net, 1 host, 3 port unreachable, 4 fragmentation needed(DF).\n- Type 5 Redirect(스푸핑 악용), Smurf 공격은 브로드캐스트로 Echo Request 를 뿌려 증폭.\n- 함정: Request 8 / Reply 0 을 반대로 쓰기 쉬움.",
+      "notes": [
+        "네트워크보안/tcp-ip-헤더와-라우팅",
+        "네트워크보안/프로토콜-계층별-보안-총정리"
+      ],
+      "tags": [
+        "ICMP",
+        "ping",
+        "traceroute"
+      ]
+    },
+    {
+      "id": "y-net-031",
+      "type": "단답형",
+      "question": "포트 스캔 기법에 대한 설명이다. 각 설명에 해당하는 스캔 명칭을 쓰시오.\n\n* (A) : 3-way handshake 를 완성하지 않고 SYN 만 보낸 뒤, SYN+ACK 가 오면 열림으로 판단하고 RST 로 끊는다. 세션이 완성되지 않아 로그가 덜 남는다.\n* (B) : FIN, PSH, URG 플래그를 동시에 켜서 보낸다. 닫힌 포트는 RST, 열린 포트는 무응답.\n* (C) : 아무 플래그도 설정하지 않고 보낸다.\n* (D) : UDP 패킷을 보내 `ICMP Port Unreachable(Type 3/Code 3)` 이 오면 닫힘으로 판단한다.",
+      "answer": "정답\n(A) TCP SYN 스캔 (Half-open / Stealth 스캔)\n(B) XMAS 스캔\n(C) NULL 스캔\n(D) UDP 스캔",
+      "explanation": "- FIN/NULL/XMAS 스캔은 RFC 793 을 따르는 스택(유닉스 계열)에서만 유효하고 Windows 는 열림·닫힘 모두 RST → OS 추정에 이용.\n- TCP Connect 스캔: connect() 로 완전한 3-way, 권한 불필요하나 로그 다수.\n- 대응: IDS/IPS 시그니처, 포트스캔 임계 탐지, 미사용 포트 필터링, 방화벽 stealth(drop).",
+      "notes": [
+        "네트워크보안/포트스캔-유형"
+      ],
+      "tags": [
+        "포트스캔",
+        "SYN스캔",
+        "XMAS",
+        "NULL"
+      ]
+    },
+    {
+      "id": "y-net-032",
+      "type": "단답형",
+      "question": "ARP 스푸핑(ARP Cache Poisoning) 공격에 대한 설명이다. 빈칸을 채우시오.\n\n* 공격자는 위조된 `(A)` 패킷을 브로드캐스트/유니캐스트로 보내, 피해자의 ARP 캐시에서 게이트웨이 IP 에 대응하는 MAC 주소를 공격자 MAC 으로 바꿔 트래픽을 가로챈다(중간자 공격).\n* 스위치 환경에서 이 공격의 탐지·대응에 쓰이는 스위치 기능으로, DHCP 스누핑 정보를 바탕으로 비정상 ARP 를 차단하는 기술은 `(B)` 이다.\n* 호스트 측 대응으로, 게이트웨이의 IP-MAC 매핑을 `(C)` 으로 등록하면 위조 ARP 응답을 무시한다.",
+      "answer": "정답\n(A) ARP Reply (gratuitous ARP 포함)\n(B) DAI (Dynamic ARP Inspection)\n(C) 정적(static) ARP 엔트리",
+      "explanation": "- ARP 는 인증이 없어 마지막 응답을 신뢰 → 위조 가능.\n- 탐지: `arpwatch`(MAC 변경 알림), 동일 IP 에 다른 MAC 응답 관찰, 중복 MAC.\n- 대응: DAI+DHCP 스누핑, 포트 시큐리티, 정적 ARP, 세그먼트 분리, 상위계층 암호화(HTTPS/SSH)로 도청 피해 최소화.",
+      "notes": [
+        "네트워크보안/arp스푸핑-스니핑탐지"
+      ],
+      "tags": [
+        "ARP스푸핑",
+        "MITM",
+        "DAI"
+      ]
+    },
+    {
+      "id": "y-net-033",
+      "type": "단답형",
+      "question": "DNS 리소스 레코드에 대한 설명이다. 레코드 타입을 쓰시오.\n\n* (A) : 도메인 이름 → IPv4 주소\n* (B) : 도메인 이름 → IPv6 주소\n* (C) : 해당 도메인의 메일 서버 지정(우선순위 포함)\n* (D) : IP 주소 → 도메인 이름 (역방향 조회)\n* (E) : SPF·DKIM·도메인 소유 확인 등 임의의 텍스트 정보",
+      "answer": "정답\n(A) A\n(B) AAAA\n(C) MX\n(D) PTR\n(E) TXT",
+      "explanation": "- CNAME(별칭), NS(네임서버 위임), SOA(존 관리 정보·시리얼).\n- PTR 은 in-addr.arpa(IPv4)/ip6.arpa 존에 등록, 메일 서버 신뢰도(역방향 일치)에 중요.\n- DNS 보안: DNSSEC(레코드 서명, 위조·캐시 포이즈닝 방지), DNS over HTTPS/TLS(도청 방지).",
+      "notes": [
+        "애플리케이션보안/dns-보안"
+      ],
+      "tags": [
+        "DNS",
+        "레코드",
+        "MX",
+        "PTR"
+      ]
+    },
+    {
+      "id": "y-net-034",
+      "type": "단답형",
+      "question": "IPsec 에 대한 설명이다. 빈칸을 채우시오.\n\n* (A) : 무결성·인증만 제공하고 기밀성(암호화)은 제공하지 않는 프로토콜\n* (B) : 기밀성·무결성·인증을 모두 제공하는 프로토콜\n* (C) : 원본 IP 헤더까지 통째로 암호화하고 새 IP 헤더를 붙이는 모드로, VPN 게이트웨이 간 통신에 사용\n* (D) : 두 통신 주체가 키 교환·SA 협상을 수행하는 프로토콜(UDP 500)",
+      "answer": "정답\n(A) AH (Authentication Header)\n(B) ESP (Encapsulating Security Payload)\n(C) 터널(Tunnel) 모드\n(D) IKE (Internet Key Exchange)",
+      "explanation": "- AH 는 IP 헤더 일부까지 무결성 보호 → NAT 통과 불가. 실무는 대부분 ESP 사용.\n- 전송(Transport) 모드: 페이로드만 보호, 호스트 간(End-to-End).\n- IKE: Phase 1(ISAKMP SA, Main/Aggressive) → Phase 2(IPsec SA, Quick). SA 는 단방향이라 양방향에 2개.\n- NAT-T 는 UDP 4500 캡슐화.",
+      "notes": [
+        "네트워크보안/ipsec",
+        "네트워크보안/vpn-종합"
+      ],
+      "tags": [
+        "IPsec",
+        "AH",
+        "ESP",
+        "IKE"
+      ]
+    },
+    {
+      "id": "y-net-035",
+      "type": "단답형",
+      "question": "무선랜(IEEE 802.11) 보안에 대한 설명이다. 빈칸을 채우시오.\n\n* (A) : RC4 기반으로 IV 재사용·약한 무결성(CRC-32) 때문에 완전히 폐기된 초기 암호화 방식\n* (B) : WPA2 에서 사용하는, AES 블록암호를 CCM 모드로 운용하는 암호화 프로토콜\n* (C) : WPA3-Personal 에서 PSK 방식의 오프라인 사전공격을 방지하기 위해 도입된, 동등성 동시 인증 기반 키 교환 방식",
+      "answer": "정답\n(A) WEP (Wired Equivalent Privacy)\n(B) CCMP (AES-CCMP)\n(C) SAE (Simultaneous Authentication of Equals) — Dragonfly 핸드셰이크",
+      "explanation": "- WPA(TKIP, 임시방편) → WPA2(CCMP/AES, 4-way handshake로 PTK 유도) → WPA3(SAE, PMF 강제, 192bit 엔터프라이즈).\n- WPA2-PSK 취약: 4-way handshake 캡처 후 오프라인 사전공격, KRACK(키 재설치).\n- 엔터프라이즈: 802.1X/EAP + RADIUS 로 사용자별 인증.",
+      "notes": [
+        "네트워크보안/무선랜-보안"
+      ],
+      "tags": [
+        "무선랜",
+        "WPA2",
+        "WPA3",
+        "SAE"
+      ]
+    },
+    {
+      "id": "y-net-036",
+      "type": "단답형",
+      "question": "방화벽 유형에 대한 설명이다. 각 설명에 해당하는 명칭을 쓰시오.\n\n* (A) : OSI 3·4계층에서 출발지/목적지 IP·포트·프로토콜만으로 정적 규칙에 따라 허용/차단. 연결 상태를 추적하지 않는다.\n* (B) : 연결(세션)의 상태 정보를 상태 테이블로 관리하여, 기존 연결에 속한 응답 패킷을 자동 허용한다.\n* (C) : 각 서비스별 프록시가 클라이언트를 대신해 연결을 맺어주며, 애플리케이션 계층 데이터까지 검사한다. 내부 IP 은닉 효과가 있으나 성능 부담이 크다.",
+      "answer": "정답\n(A) 패킷 필터링 방화벽 (Packet Filtering)\n(B) 상태 기반 검사 방화벽 (Stateful Inspection)\n(C) 애플리케이션 게이트웨이 (Application Gateway / 프록시 방화벽)\n※ (C) 중 회선 단위로 동작하는 것은 서킷 게이트웨이(Circuit-level Gateway).",
+      "explanation": "- 구조: 스크리닝 라우터, 배스천 호스트, 단일 홈 게이트웨이, 이중 홈 게이트웨이, 스크린드 호스트, 스크린드 서브넷(DMZ, 가장 안전).\n- 차세대 방화벽(NGFW): Stateful + 애플리케이션 식별 + IPS + 사용자 인식.\n- WAF 는 웹 애플리케이션 계층 전용.",
+      "notes": [
+        "네트워크보안/방화벽-구조와-유형"
+      ],
+      "tags": [
+        "방화벽",
+        "스테이트풀",
+        "프록시"
+      ]
+    },
+    {
+      "id": "y-net-037",
+      "type": "단답형",
+      "question": "네트워크 접근제어에 대한 설명이다. 빈칸을 채우시오.\n\n* (A) : 단말이 네트워크에 접속하기 전 보안 정책(백신·패치·자산등록) 준수 여부를 점검하고, 미준수 단말을 격리·치료 네트워크로 보내는 솔루션\n* (B) : 포트 기반 네트워크 접근제어 표준으로, 스위치 포트에서 인증 성공 전까지 트래픽을 차단한다.\n* (C) : (B) 에서 인증을 요청하는 단말(클라이언트) 측 구성요소의 명칭\n* (D) : (B) 에서 실제 자격증명을 검증하는 인증 서버로 주로 사용되는 프로토콜",
+      "answer": "정답\n(A) NAC (Network Access Control)\n(B) IEEE 802.1X\n(C) Supplicant (서플리컨트)\n(D) RADIUS",
+      "explanation": "- 802.1X 3요소: Supplicant ↔ Authenticator(스위치/AP) ↔ Authentication Server(RADIUS). EAP 로 인증 프레임 전달(EAPOL).\n- NAC 방식: 에이전트형/에이전트리스, 802.1X·DHCP·ARP·인라인 방식.\n- 무단 단말 탐지, IoT 세분화(마이크로세그멘테이션)에도 활용.",
+      "notes": [
+        "네트워크보안/vlan-스위칭-nac-망분리"
+      ],
+      "tags": [
+        "NAC",
+        "802.1X",
+        "RADIUS",
+        "EAP"
+      ]
+    },
+    {
+      "id": "y-net-038",
+      "type": "단답형",
+      "question": "SYN Flooding 공격과 대응에 대한 설명이다. 빈칸을 채우시오.\n\n* 공격 원리: 출발지 IP 를 위조한 SYN 을 대량 전송하면 서버가 SYN+ACK 를 보내고 마지막 ACK 를 기다리며 연결 정보를 `(A)` 큐(미완성 연결 큐)에 쌓는다. 큐가 가득 차면 정상 연결을 못 받는다.\n* 대응 (A): 서버가 연결 상태를 저장하지 않고, 초기 시퀀스 번호에 연결 정보를 암호학적으로 인코딩해 두었다가 ACK 로 복원하는 기법은 `(B)` 이다.\n* 대응 (B): 미완성 연결의 대기 시간을 줄이고 재전송 횟수를 낮추는 커널 파라미터 조정, `(C)` 큐 크기 확대.",
+      "answer": "정답\n(A) Backlog (SYN Backlog / 미완성 연결)\n(B) SYN Cookie (SYN 쿠키)\n(C) Backlog",
+      "explanation": "- SYN Cookie: 백로그를 쓰지 않으므로 자원 소진을 회피, 단 TCP 옵션 일부 손실.\n- 기타 대응: 방화벽/IPS 의 SYN proxy, first-SYN drop, 임계치 기반 rate limit, anti-spoofing(uRPF, BCP38).\n- SYN Flood 는 '자원 소진형' DoS. 함정: 대역폭 소진형(UDP Flood 등)과 구분.",
+      "notes": [
+        "네트워크보안/DoS-DDoS-총정리"
+      ],
+      "tags": [
+        "SYNFlood",
+        "SYN쿠키",
+        "DoS"
+      ]
+    },
+    {
+      "id": "y-net-039",
+      "type": "단답형",
+      "question": "다음 서비스가 기본적으로 사용하는 포트 번호와 전송계층 프로토콜(TCP/UDP)을 쓰시오.\n\n* (A) : DNS (조회)\n* (B) : SNMP (에이전트)\n* (C) : SMTP\n* (D) : RDP\n* (E) : LDAP / LDAPS",
+      "answer": "정답\n(A) 53/UDP (영역전송·큰 응답은 53/TCP)\n(B) 161/UDP (트랩은 162/UDP)\n(C) 25/TCP (메일 제출은 587/TCP, 구 SMTPS 465/TCP)\n(D) 3389/TCP\n(E) LDAP 389/TCP, LDAPS 636/TCP",
+      "explanation": "자주 나오는 포트: FTP 20·21, SSH 22, Telnet 23, HTTP 80, HTTPS 443, POP3 110, IMAP 143, NetBIOS 137·138·139, SMB 445, Kerberos 88, syslog 514/UDP, NTP 123/UDP, TFTP 69/UDP.\n- DNS 는 UDP 우선, 512바이트 초과·존 전송 시 TCP.",
+      "notes": [
+        "네트워크보안/프로토콜-계층별-보안-총정리",
+        "네트워크보안/snmp-네트워크관리"
+      ],
+      "tags": [
+        "포트",
+        "DNS",
+        "SNMP",
+        "RDP"
+      ]
+    },
+    {
+      "id": "y-net-040",
+      "type": "서술형",
+      "question": "DDoS 공격을 (1) 대역폭 소진형, (2) 자원 소진형, (3) 애플리케이션 계층 공격으로 분류하고, 각 유형의 대표 공격 예시와 대응방안을 서술하시오.",
+      "answer": "정답\n(1) 대역폭 소진형(Volumetric)\n- 원리: 대량 트래픽으로 회선 대역폭 자체를 고갈. 반사·증폭(DNS/NTP/memcached, 스푸핑된 출발지) 이용.\n- 예: UDP Flood, ICMP Flood, DNS 증폭, NTP monlist 증폭, Smurf.\n- 대응: ISP·클라우드 스크러빙 센터로 우회(BGP/DNS), Anycast 분산, 대용량 회선, 출발지 위조 차단(uRPF), 불필요 UDP 차단.\n\n(2) 자원 소진형(Protocol/State-exhaustion)\n- 원리: 서버·방화벽·로드밸런서의 연결 테이블·세션 자원을 고갈.\n- 예: SYN Flood, ACK Flood, 미완성 연결 공격, Sockstress.\n- 대응: SYN Cookie, 연결 타임아웃 축소, 방화벽 SYN proxy, 세션 테이블 확장, rate limiting.\n\n(3) 애플리케이션 계층(L7)\n- 원리: 정상 요청처럼 보이는 소량 트래픽으로 애플리케이션·DB 자원 소모. 탐지 어려움.\n- 예: HTTP GET/POST Flood, Slowloris·Slow POST(저속 헤더/본문), 캐시 우회 쿼리, 무거운 검색 반복.\n- 대응: WAF·L7 로드밸런서, 요청 rate/동시연결 제한, CAPTCHA·자바스크립트 검증, 비정상 User-Agent·패턴 차단, CDN 캐싱, 타임아웃·헤더 크기 제한(Slowloris).\n\n[공통] 평상시 트래픽 베이스라인 확보·이상탐지, 대응 플레이북·연락체계, 로그 및 사후 분석.",
+      "explanation": "채점 포인트: 3분류 각각에 대해 ①원리 ②예시(최소 1개) ③대응(최소 1개). 특히 L7 공격이 소량 트래픽으로 탐지가 어렵다는 점, 대역폭형은 스크러빙/Anycast 로 대응한다는 점.",
+      "notes": [
+        "네트워크보안/DoS-DDoS-총정리"
+      ],
+      "tags": [
+        "DDoS",
+        "증폭공격",
+        "Slowloris",
+        "L7"
+      ]
+    },
+    {
+      "id": "y-net-041",
+      "type": "서술형",
+      "question": "IDS 와 IPS 의 차이를 (1) 네트워크 배치 방식, (2) 대응 방식 관점에서 설명하고, 탐지 방식인 '오용 탐지(시그니처 기반)'와 '이상 탐지(anomaly 기반)'의 원리와 각각의 장단점을 서술하시오.",
+      "answer": "정답\n[IDS vs IPS]\n1. 배치 방식: IDS 는 미러링(TAP/SPAN)으로 트래픽 사본을 수동적으로 관찰(out-of-path). IPS 는 트래픽 경로에 인라인(in-line)으로 위치.\n2. 대응 방식: IDS 는 탐지·경보·로깅까지만 수행(차단하려면 방화벽 등과 연동). IPS 는 탐지 즉시 해당 패킷·세션을 실시간 차단(drop/reset)한다. 대신 IPS 는 오탐 시 정상 트래픽을 끊고, 인라인이라 지연·단일 장애점이 될 수 있다.\n\n[오용 탐지 (시그니처/지식 기반)]\n- 원리: 알려진 공격 패턴(시그니처)과 트래픽을 비교하여 일치하면 탐지.\n- 장점: 알려진 공격에 정확도 높고 오탐 적음, 결과 해석 쉬움.\n- 단점: 미지의 공격(제로데이)·변형 탐지 불가, 시그니처 지속 갱신 필요.\n\n[이상 탐지 (행위/통계 기반)]\n- 원리: 정상 상태의 프로파일(트래픽량·포트·행위 통계, 또는 머신러닝 모델)을 학습하고, 이에서 벗어나는 편차를 공격으로 판단.\n- 장점: 알려지지 않은 공격·내부자 이상행위 탐지 가능.\n- 단점: 오탐(false positive) 많음, 정상 프로파일 학습 기간 필요, '정상'이 변하면 재학습, 공격자가 서서히 프로파일을 오염시킬 수 있음.",
+      "explanation": "채점 포인트: IDS(수동·미러·탐지only) vs IPS(인라인·실시간 차단) 대비, 시그니처 기반(오탐↓ 제로데이✗) vs 이상 기반(제로데이 가능·오탐↑). IPS 오탐/지연 단점 언급 시 가점.",
+      "notes": [
+        "네트워크보안/ids-ips"
+      ],
+      "tags": [
+        "IDS",
+        "IPS",
+        "시그니처",
+        "이상탐지"
+      ]
+    },
+    {
+      "id": "y-net-042",
+      "type": "실무형",
+      "question": "네트워크 관제 중 특정 외부 IP(198.51.100.23)에서 유입되는 트래픽을 tcpdump 로 캡처하니 아래와 같았다.\n\n```\n10:02:11.101 IP 198.51.100.23.51000 > 10.10.10.5.22:  Flags [S], seq 0, win 1024\n10:02:11.101 IP 198.51.100.23.51000 > 10.10.10.5.23:  Flags [S], seq 0, win 1024\n10:02:11.102 IP 198.51.100.23.51000 > 10.10.10.5.25:  Flags [S], seq 0, win 1024\n10:02:11.102 IP 198.51.100.23.51000 > 10.10.10.5.80:  Flags [S], seq 0, win 1024\n10:02:11.103 IP 198.51.100.23.51000 > 10.10.10.5.443: Flags [S], seq 0, win 1024\n10:02:11.150 IP 10.10.10.5.22 > 198.51.100.23.51000: Flags [S.], seq ...\n10:02:11.151 IP 198.51.100.23.51000 > 10.10.10.5.22:  Flags [R], seq 1\n```\n\n(a) 이 트래픽이 나타내는 행위와 사용된 스캔 기법을 판단하고 근거를 쓰시오.\n(b) 스캔 결과 22번 포트의 상태를 어떻게 판단할 수 있는지 근거와 함께 쓰시오.\n(c) 이러한 정찰 활동에 대한 탐지·차단 대책을 3가지 이상 제시하시오.",
+      "answer": "정답\n(a) 단일 출발지(198.51.100.23)에서 하나의 목적지 호스트(10.10.10.5)의 여러 포트(22·23·25·80·443)로 짧은 시간에 순차적으로 SYN 만 전송하고 있다 → TCP 포트 스캔이며, SYN+ACK 수신 후 ACK 대신 RST 로 끊는 패턴이므로 TCP SYN(Half-open/Stealth) 스캔이다.\n\n(b) 22번 포트는 열림(open) 상태이다. 근거: 서버가 22번에 대해 `Flags [S.]`(SYN+ACK)로 응답했고, 공격자가 곧바로 RST 를 보내 연결을 완성하지 않았다. (닫힌 포트라면 RST+ACK 가 왔을 것이고, 필터링되어 있으면 무응답이었을 것이다.)\n\n(c)\n1. IDS/IPS 에 포트스캔 시그니처·임계 탐지 적용(단위 시간당 SYN·목적지 포트 수 임계 초과 시 경보/차단).\n2. 경계 방화벽에서 미사용 포트를 기본 drop(무응답)으로 설정하고 필요한 서비스만 허용, 관리 포트(22/3389)는 특정 관리자 IP 만 허용.\n3. 해당 출발지 IP 를 일시 차단(방화벽/블랙리스트), 반복 시 위협 인텔리전스 연동으로 자동 차단.\n4. 서버 하드닝: 불필요 서비스(23 telnet 등) 제거, fail2ban·rate limit, SSH 키 인증.\n5. 스캔 로그를 SIEM 으로 수집·상관분석하여 후속 공격(취약점 스캔·로그인 시도)과의 연계를 조기 탐지.",
+      "explanation": "채점 포인트: (a) 단일→다포트 SYN + RST 로 세션 미완성 = SYN 스캔 (b) SYN+ACK 응답 = open (닫힘이면 RST) (c) IPS 임계탐지·미사용 포트 drop·관리포트 IP 제한·SIEM 상관분석 중 3개. '닫힘'으로 판단하면 감점.",
+      "notes": [
+        "네트워크보안/포트스캔-유형",
+        "네트워크보안/ids-ips"
+      ],
+      "tags": [
+        "포트스캔",
+        "tcpdump",
+        "SYN스캔",
+        "관제"
+      ]
     }
   ]
 }

@@ -427,7 +427,8 @@ route('solve', (app) => {
       <option value="wrong">오답만 (마지막이 틀림)</option>
       <option value="maybe">애매함만 (마지막이 애매함)</option>
       <option value="fav">즐겨찾기만</option>
-      <option value="unseen">안 푼 문항</option>
+      <option value="seen">푼 문항만 (1회+)</option>
+      <option value="unseen">안 푼 문항만</option>
       <option value="random">랜덤</option>
     </select></label>`));
 
@@ -489,9 +490,10 @@ route('solve', (app) => {
     else if (v === 'wrong') { list = list.filter((q) => store.lastGrade(q.qid) === 'x'); label = '오답'; }
     else if (v === 'maybe') { list = list.filter((q) => store.lastGrade(q.qid) === 'm'); label = '애매함'; }
     else if (v === 'fav') { list = store.state.favorites.map((id) => anyQ(id)).filter(Boolean); label = '즐겨찾기'; }
+    else if (v === 'seen') { list = list.filter((q) => store.attemptCount(q.qid) > 0); label = '푼 문항'; }
     else if (v === 'unseen') { list = list.filter((q) => store.attemptCount(q.qid) === 0); label = '안 푼 문항'; }
     else if (v === 'random') { label = '랜덤'; }
-    if (incPred && ['domain', 'type', 'wrong', 'maybe', 'unseen', 'random'].includes(v)) label += ' + 예상';
+    if (incPred && ['domain', 'type', 'wrong', 'maybe', 'seen', 'unseen', 'random'].includes(v)) label += ' + 예상';
 
     if ($('#order', form).value === 'shuffle' || v === 'random') shuffle(list);
     else list.sort((a, b) => (a.round || 9999) - (b.round || 9999) || (a.no || 0) - (b.no || 0) || String(a.qid).localeCompare(String(b.qid)));
