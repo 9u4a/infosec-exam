@@ -180,6 +180,15 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 `main` 브랜치에 push → GitHub Pages가 `/docs` 를 서빙.
 데이터/코드 수정 → `node scripts/build.mjs` → `git add -A && git commit && git push`.
 
+## Git / 커밋 규칙
+
+- **공개 저장소다.** 커밋 메시지·본문·파일에 개인 식별·인프라 정보를 넣지 않는다:
+  - `Claude-Session:` 트레일러나 `claude.ai/code/session_...` 링크 **넣지 않는다**.
+  - 개인 배포값(Cloudflare Worker URL·계정 서브도메인, KV 네임스페이스 id, 토큰·암호, 이메일 등) 커밋 금지.
+- `server/wrangler.toml` 은 **git 무시**(`server/wrangler.toml.example` 만 추적). 실제 값은 각자 로컬에만.
+- `.wrangler/`, `.dev.vars` 도 무시(계정 캐시·시크릿).
+- 시크릿(`PASSPHRASE`·`TOKEN_SECRET`)은 저장소에 절대 두지 말고 `wrangler secret put` 으로만.
+
 ## 사이트 동작 요약
 
 - 문제는 기본적으로 **정답 숨김**. "정답 보기" 토글(다시 접기 가능). 설정에서 항상 펼침 토글.
@@ -194,7 +203,7 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 - **문항 직링크** `#/q/<qid>`: 통계·즐겨찾기·노트·검색의 단일 문항 클릭은 세션을 건드리지 않고 이 라우트로 이동. 같은 회차 이전/다음 이동.
 - **통합 검색** `#/search/<query>`: 문제·정답·해설·보충지문·노트 전체를 AND 부분일치로 검색(예상문제 포함). 결과에서 바로 세션 시작 가능. 입력은 `history.replaceState` 로 URL 동기화.
 - **모의고사** `#/mock`(하단 탭): 예상문제 18문항 실전 편성 + 180분 타이머 + 60점 합격 판정. 위 「예상문제」 섹션 참고. 세션 인프라(`route('session')`/`route('summary')`)를 재사용하며 `SESSION.kind==='mock'`·`durationMin` 으로 타이머·합격배너 분기.
-- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v19**).
+- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v20**).
 - **CPPG 트랙**: `#/cppg` 홈에서 연습문제(과목/노트/태그/오답/랜덤 범위, 즉시 공개 토글) ·
   모의고사(과목별 배분 100문항 + 120분 타이머 + 총점 60·과목별 40% 과락 판정) · 통계 ·
   노트. 연습·모의 세션 모두 `cppg.session` 에 영속(타이머 포함 복원). 마지막 트랙을

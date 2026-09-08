@@ -7,8 +7,9 @@ Thumbs.db
 scratch/
 scratch_dump.txt
 
-# Cloudflare Wrangler (로컬 캐시·계정정보 — 커밋 금지)
+# Cloudflare Wrangler (로컬 캐시·계정정보·개인 배포값 — 커밋 금지)
 .wrangler/
 **/.wrangler/
 .dev.vars
 **/.dev.vars
+server/wrangler.toml

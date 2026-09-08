@@ -1,0 +1,19 @@
+# 이 파일을 wrangler.toml 로 복사한 뒤 값을 채운다.  (wrangler.toml 은 .gitignore — 커밋 금지)
+#   cp wrangler.toml.example wrangler.toml
+
+name = "my-sync"                # 원하는 워커 이름 (URL 의 첫 부분이 됨)
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# `wrangler kv namespace create STORE` 실행 후 출력되는 id 로 교체
+[[kv_namespaces]]
+binding = "STORE"
+id = "PUT_YOUR_KV_NAMESPACE_ID_HERE"
+
+[vars]
+# 배포된 공부 사이트의 origin. 로컬(wrangler dev) 테스트만 할 땐 "*" 도 가능
+ALLOW_ORIGIN = "https://<your-github-id>.github.io"
+
+# PASSPHRASE, TOKEN_SECRET 은 여기 두지 말고 secret 으로:
+#   npx wrangler secret put PASSPHRASE
+#   npx wrangler secret put TOKEN_SECRET

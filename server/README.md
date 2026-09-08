@@ -20,6 +20,7 @@
 
 ```bash
 cd server
+cp wrangler.toml.example wrangler.toml   # 개인 설정 파일 생성 (wrangler.toml 은 git 무시)
 npx wrangler login          # 브라우저로 Cloudflare 로그인
 ```
 
@@ -44,8 +45,9 @@ npx wrangler secret put TOKEN_SECRET    # 토큰 서명용 임의 문자열 32�
 `TOKEN_SECRET` 생성 예: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 
 ### 4. `wrangler.toml` 확인
+- `name` — 원하는 워커 이름 (URL 첫 부분)
 - `kv_namespaces.id` — 2번에서 받은 값으로 교체했는지
-- `vars.ALLOW_ORIGIN` — 배포된 사이트 주소 (`https://9u4a.github.io`). 오타 주의.
+- `vars.ALLOW_ORIGIN` — 배포된 공부 사이트의 origin (`https://<your-github-id>.github.io`). 오타 주의.
 
 ### 5. 배포
 
@@ -53,8 +55,9 @@ npx wrangler secret put TOKEN_SECRET    # 토큰 서명용 임의 문자열 32�
 npx wrangler deploy
 ```
 
-배포되면 `https://my-sync.<계정서브도메인>.workers.dev` 같은 URL 이 나온다.
+배포되면 `https://<name>.<계정서브도메인>.workers.dev` 같은 URL 이 나온다.
 이 URL 을 사이트의 **더보기 → 서버 동기화 → 서버 주소** 칸에 넣고 암호로 로그인하면 끝.
+(URL·암호는 브라우저 localStorage 에만 저장되고 저장소에는 커밋되지 않는다.)
 
 ---
 

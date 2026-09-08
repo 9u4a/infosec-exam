@@ -1535,7 +1535,7 @@ route('more', (app) => {
         <button class="btn sm" id="syncOut" style="color:var(--bad)">로그아웃</button>
       </div>` : `
       <label class="field"><span>서버 주소</span>
-        <input type="text" id="syncUrl" placeholder="https://my-sync.____.workers.dev" autocomplete="off" value="${esc(SYNC.cfg.url || '')}"></label>
+        <input type="text" id="syncUrl" placeholder="https://….workers.dev" autocomplete="off" value="${esc(SYNC.cfg.url || '')}"></label>
       <label class="field"><span>암호</span>
         <input type="password" id="syncPass" autocomplete="current-password"></label>
       <button class="btn primary sm" id="syncIn">로그인</button>
