@@ -25,6 +25,7 @@ notes/<영역>/<슬러그>.md        학습 노트. 프론트매터 + 마크다�
 cppg/                         CPPG(개인정보관리사) 트랙 — 아래 별도 섹션
 scripts/build.mjs             실기+meta+notes → bundle.js · cppg/ → cppg.js
 docs/                         GitHub Pages 발행 루트 (Settings→Pages→/docs)
+server/                       (선택) 학습기록 동기화 Cloudflare Worker — 아래 별도 섹션
 ```
 
 ## meta/N.json 스키마
@@ -154,6 +155,19 @@ cppg/자료/*.pdf               시행처·법령 원문 PDF(1차 사료). 법�
 
 집필 내용은 최종적으로 국가법령정보센터(law.go.kr) 현행 조문·시행처(CPO포럼) 자료로 교차 확인 필요 — 정답 보증 불가.
 
+## 서버 동기화 (선택 · `server/`)
+
+학습 기록을 기기 간에 잇기 위한 **아주 작은 백엔드**. GitHub Pages는 정적이라 별도 호스팅 필요.
+
+- **`server/worker.js`** — Cloudflare Worker. `POST /login`(공유 암호 → HMAC 서명 토큰) · `GET /state` · `PUT /state`(`{state, baseRev, force?}`, rev 불일치 시 409). KV 키 하나(`state:v1`)에 학습기록 JSON 통째로 보관. Secret: `PASSPHRASE`·`TOKEN_SECRET`, Var: `ALLOW_ORIGIN`. 배포는 `server/README.md`.
+- **프런트엔드(`docs/app.js` 의 `SYNC` 객체)**: 로그인 안 하면 `SYNC.on===false` → **기존과 100% 동일하게 localStorage 로만 동작**. 로그인 시 부팅에 `pull`(서버 상태 병합) → 이후 `store.save()` 마다 4초 디바운스 `push`. 오프라인이면 로컬로 동작하다 online·visible 이벤트에 재동기화.
+- **병합**(`mergeState`): 누적형(`results` attempts·`favorites`·`sessions`, cppg 포함)은 **합집합**(attempts 는 `t/g` 로 중복 제거), 스칼라(`settings`·`lastSummary`)는 `_mtime` 최신본. 진행 중 `session` 은 이 기기 우선. → 2기기 동시 사용해도 데이터 유실 최소, 충돌은 last-write-wins.
+- `store.save()` 가 `_mtime` 갱신 + `SYNC.schedulePush()`. `save({fromSync:true})` 는 둘 다 건너뜀(병합 반영 시).
+- `server/worker.js` 는 **빌드 대상 아님** — GitHub Pages 와 무관, 사용자가 `wrangler deploy` 로 별도 배포. `docs/` 에 넣지 말 것.
+- 검증: `scratchpad/sync.test.mjs` (Worker 단위 + jsdom 2기기 병합·409 충돌).
+
+⚠ 공유 암호 방식이라 암호를 아는 사람은 같은 기록을 공유한다(개인/소그룹용). KV Free 쓰기 한도 1,000/일 — 디바운스+무변경 skip 으로 충분하나 초과 시 D1 로 이전.
+
 ## 빌드 & 로컬 확인
 
 ```bash
@@ -180,7 +194,7 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 - **문항 직링크** `#/q/<qid>`: 통계·즐겨찾기·노트·검색의 단일 문항 클릭은 세션을 건드리지 않고 이 라우트로 이동. 같은 회차 이전/다음 이동.
 - **통합 검색** `#/search/<query>`: 문제·정답·해설·보충지문·노트 전체를 AND 부분일치로 검색(예상문제 포함). 결과에서 바로 세션 시작 가능. 입력은 `history.replaceState` 로 URL 동기화.
 - **모의고사** `#/mock`(하단 탭): 예상문제 18문항 실전 편성 + 180분 타이머 + 60점 합격 판정. 위 「예상문제」 섹션 참고. 세션 인프라(`route('session')`/`route('summary')`)를 재사용하며 `SESSION.kind==='mock'`·`durationMin` 으로 타이머·합격배너 분기.
-- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v17**).
+- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v18**).
 - **CPPG 트랙**: `#/cppg` 홈에서 연습문제(과목/노트/태그/오답/랜덤 범위, 즉시 공개 토글) ·
   모의고사(과목별 배분 100문항 + 120분 타이머 + 총점 60·과목별 40% 과락 판정) · 통계 ·
   노트. 연습·모의 세션 모두 `cppg.session` 에 영속(타이머 포함 복원). 마지막 트랙을

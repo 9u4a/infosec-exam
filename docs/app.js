@@ -49,9 +49,11 @@ const store = {
       }
     } catch (e) { console.warn('상태 불러오기 실패', e); }
   },
-  save() {
+  save(opts) {
+    if (!opts || !opts.fromSync) this.state._mtime = Date.now();
     try { localStorage.setItem(LS_KEY, JSON.stringify(this.state)); }
     catch (e) { console.warn('상태 저장 실패', e); }
+    if (SYNC && SYNC.on && (!opts || !opts.fromSync)) SYNC.schedulePush();
   },
   result(qid) {
     return this.state.results[qid] || (this.state.results[qid] = { attempts: [], memo: '' });
@@ -103,6 +105,166 @@ const store = {
   addSession(s) { this.state.sessions.unshift(s); this.save(); },
   reset() { this.state = DEFAULT_STATE(); this.save(); },
 };
+
+/* ============ 서버 동기화 (선택) ============
+   로그인하지 않으면 SYNC.on === false → 앱은 localStorage 로만 동작(기존과 동일).
+   로그인 시: 부팅에 서버 상태를 pull 해 병합, 이후 store.save() 마다 debounce push. */
+const SYNC_LS = 'infosec_sync';
+const SYNC = {
+  cfg: { url: '', token: '' },
+  rev: 0,
+  status: 'off',       // off | idle | syncing | error | offline
+  lastAt: 0,
+  _timer: null,
+  _pushed: '',
+  get on() { return !!(this.cfg.url && this.cfg.token); },
+  load() {
+    try { const c = JSON.parse(localStorage.getItem(SYNC_LS) || '{}'); this.cfg = { url: c.url || '', token: c.token || '' }; this.rev = +c.rev || 0; } catch (e) { /* noop */ }
+    if (this.on) this.status = 'idle';
+  },
+  _persist() { try { localStorage.setItem(SYNC_LS, JSON.stringify({ url: this.cfg.url, token: this.cfg.token, rev: this.rev })); } catch (e) { /* noop */ } },
+  async login(url, passphrase) {
+    url = String(url || '').trim().replace(/\/+$/, '');
+    if (!/^https?:\/\//.test(url)) throw new Error('서버 주소는 https:// 로 시작해야 합니다');
+    const r = await fetch(url + '/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ passphrase }) });
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      throw new Error(e.error === 'invalid_passphrase' ? '암호가 올바르지 않습니다'
+        : e.error === 'too_many_attempts' ? '로그인 시도가 너무 많습니다. 1분 후 다시 시도하세요'
+        : e.error === 'server_not_configured' ? '서버에 PASSPHRASE/TOKEN_SECRET 설정이 필요합니다'
+        : '로그인 실패 (HTTP ' + r.status + ')');
+    }
+    const { token } = await r.json();
+    this.cfg = { url, token }; this.rev = 0; this._pushed = ''; this._persist();
+    await this.pull();
+  },
+  logout() {
+    this.cfg = { url: '', token: '' }; this.rev = 0; this.status = 'off'; this._pushed = '';
+    try { localStorage.removeItem(SYNC_LS); } catch (e) { /* noop */ }
+    updateSyncUI();
+  },
+  async _req(path, opts) {
+    const r = await fetch(this.cfg.url + path, Object.assign({}, opts, { headers: Object.assign({}, opts && opts.headers, { Authorization: 'Bearer ' + this.cfg.token }) }));
+    if (r.status === 401) { this.logout(); toast('세션이 만료되었습니다. 다시 로그인하세요'); throw new Error('unauthorized'); }
+    return r;
+  },
+  async pull() {
+    if (!this.on) return;
+    this.status = 'syncing'; updateSyncUI();
+    try {
+      const data = await (await this._req('/state')).json();
+      if (data && data.state) {
+        store.state = mergeState(store.state, data.state);
+        store.state.settings = Object.assign(DEFAULT_STATE().settings, store.state.settings || {});
+        store.state.cppg = Object.assign(DEFAULT_STATE().cppg, store.state.cppg || {});
+        store.save({ fromSync: true });
+        rebindSessions();
+      }
+      this.rev = (data && data.rev) || 0; this._persist();
+      await this._push(true);            // 병합 결과를 서버에 반영
+      this.status = 'idle'; this.lastAt = Date.now();
+      if (typeof render === 'function') render();
+    } catch (e) {
+      if (e && e.message === 'unauthorized') return;
+      this.status = navigator.onLine ? 'error' : 'offline';
+      console.warn('sync pull 실패', e);
+    }
+    updateSyncUI();
+  },
+  schedulePush() {
+    if (!this.on) return;
+    this.status = 'syncing'; updateSyncUI();
+    clearTimeout(this._timer);
+    this._timer = setTimeout(() => this._push(), 4000);
+  },
+  async pushNow() { clearTimeout(this._timer); await this._push(true); },
+  async _push(force) {
+    if (!this.on) return;
+    const body = JSON.stringify(store.state);
+    if (!force && body === this._pushed) { this.status = 'idle'; updateSyncUI(); return; }
+    this.status = 'syncing'; updateSyncUI();
+    try {
+      let r = await this._req('/state', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state: store.state, baseRev: this.rev }) });
+      if (r.status === 409) {
+        const cur = await r.json();
+        store.state = mergeState(store.state, cur.state);
+        store.state.settings = Object.assign(DEFAULT_STATE().settings, store.state.settings || {});
+        store.state.cppg = Object.assign(DEFAULT_STATE().cppg, store.state.cppg || {});
+        store.save({ fromSync: true });
+        rebindSessions();
+        this.rev = cur.rev;
+        r = await this._req('/state', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state: store.state, baseRev: this.rev, force: true }) });
+      }
+      const out = await r.json();
+      if (!r.ok) throw new Error(out.error || ('HTTP ' + r.status));
+      this.rev = out.rev; this._pushed = JSON.stringify(store.state); this._persist();
+      this.status = 'idle'; this.lastAt = Date.now();
+    } catch (e) {
+      if (e && e.message === 'unauthorized') return;
+      this.status = navigator.onLine ? 'error' : 'offline';
+      console.warn('sync push 실패', e);
+    }
+    updateSyncUI();
+  },
+};
+
+/* 두 상태를 병합: 누적형(results attempts·favorites·sessions)은 합집합, 스칼라(settings 등)는 최근 수정본 */
+function mergeState(local, remote) {
+  local = local || {}; remote = remote || {};
+  const localNewer = (local._mtime || 0) >= (remote._mtime || 0);
+  const out = Object.assign(DEFAULT_STATE(), remote);
+  out.results = mergeResults(local.results, remote.results);
+  out.favorites = unionArr(remote.favorites, local.favorites);
+  out.sessions = mergeSessions(local.sessions, remote.sessions);
+  out.session = local.session || remote.session || null;   // 진행 중 세션은 이 기기 우선
+  out.settings = Object.assign(DEFAULT_STATE().settings, localNewer ? remote.settings : local.settings, localNewer ? local.settings : remote.settings);
+  out.lastSummary = localNewer ? (local.lastSummary || remote.lastSummary || null) : (remote.lastSummary || local.lastSummary || null);
+  const lc = local.cppg || {}, rc = remote.cppg || {};
+  out.cppg = {
+    results: mergeResults(lc.results, rc.results),
+    favorites: unionArr(rc.favorites, lc.favorites),
+    sessions: mergeSessions(lc.sessions, rc.sessions),
+    session: lc.session || rc.session || null,
+    lastSummary: localNewer ? (lc.lastSummary || rc.lastSummary || null) : (rc.lastSummary || lc.lastSummary || null),
+  };
+  out._mtime = Math.max(local._mtime || 0, remote._mtime || 0);
+  return out;
+}
+function unionArr(a, b) { return [...new Set([...(a || []), ...(b || [])])]; }
+function mergeResults(a, b) {
+  const out = {};
+  for (const src of [b || {}, a || {}]) {
+    for (const qid of Object.keys(src)) {
+      const r = src[qid] || {};
+      const t = out[qid] || (out[qid] = { attempts: [], memo: '' });
+      const seen = new Set(t.attempts.map((x) => x.t + '/' + x.g));
+      for (const at of r.attempts || []) { const k = at.t + '/' + at.g; if (!seen.has(k)) { seen.add(k); t.attempts.push(at); } }
+      if ((r.memo || '').length > t.memo.length) t.memo = r.memo;
+    }
+  }
+  for (const qid of Object.keys(out)) out[qid].attempts.sort((x, y) => x.t - y.t);
+  return out;
+}
+function mergeSessions(a, b) {
+  const byId = new Map();
+  for (const s of [...(b || []), ...(a || [])]) if (s && s.id != null && !byId.has(s.id)) byId.set(s.id, s);
+  return [...byId.values()].sort((x, y) => (y.startedAt || 0) - (x.startedAt || 0)).slice(0, 300);
+}
+// 병합 후 전역 SESSION/CSESSION 재바인딩 (진행 중 세션 복원)
+function rebindSessions() {
+  const s = store.state.session;
+  SESSION = (s && Array.isArray(s.qids) && s.qids.length) ? s : null;
+  store.state.session = SESSION;
+  const c = store.state.cppg.session;
+  CSESSION = (c && Array.isArray(c.ids) && c.ids.length) ? c : null;
+  store.state.cppg.session = CSESSION;
+}
+function updateSyncUI() {
+  const box = document.getElementById('syncState');
+  if (!box) return;
+  const label = { off: '미연결', idle: '동기화됨', syncing: '동기화 중…', error: '동기화 오류 (로컬엔 저장됨)', offline: '오프라인 (로컬 저장)' }[SYNC.status] || '';
+  box.textContent = (SYNC.on ? '✅ 연결됨 · ' : '') + label + (SYNC.on && SYNC.lastAt ? ' · ' + fmtWhen(SYNC.lastAt) : '');
+}
 
 /* ============ 파생 통계 ============ */
 function computeStats() {
@@ -1356,9 +1518,41 @@ route('more', (app) => {
   $('#theme', setBox).addEventListener('change', (e) => { set.theme = e.target.value; store.save(); applyTheme(); });
   app.appendChild(setBox);
 
+  // 서버 동기화 (선택)
+  const syncBox = el(`<div class="card stack"><h3>서버 동기화 <span class="muted small">선택</span></h3>
+    <p class="small muted">로그인하면 학습 기록이 서버에 저장되어 다른 기기·브라우저에서도 이어집니다. 로그인하지 않으면 지금처럼 이 브라우저에만 저장됩니다. 오프라인일 땐 로컬로 동작하다가 온라인이 되면 자동 동기화됩니다.</p>
+    <div id="syncState" class="small" style="font-weight:600"></div>
+    ${SYNC.on ? `
+      <div class="small muted">서버: ${esc(SYNC.cfg.url)}</div>
+      <div class="row tight">
+        <button class="btn sm" id="syncNow">지금 동기화</button>
+        <button class="btn sm" id="syncOut" style="color:var(--bad)">로그아웃</button>
+      </div>` : `
+      <label class="field"><span>서버 주소</span>
+        <input type="text" id="syncUrl" placeholder="https://my-sync.____.workers.dev" autocomplete="off" value="${esc(SYNC.cfg.url || '')}"></label>
+      <label class="field"><span>암호</span>
+        <input type="password" id="syncPass" autocomplete="current-password"></label>
+      <button class="btn primary sm" id="syncIn">로그인</button>
+      <p class="small muted">서버는 <code>server/</code> 폴더의 안내대로 한 번만 배포하면 됩니다.</p>`}
+  </div>`);
+  app.appendChild(syncBox);
+  updateSyncUI();
+  if (SYNC.on) {
+    $('#syncNow', syncBox).addEventListener('click', async () => { toast('동기화 중…'); await SYNC.pull(); toast('동기화 완료'); });
+    $('#syncOut', syncBox).addEventListener('click', () => { if (confirm('로그아웃합니다. 이 기기의 학습 기록은 그대로 남습니다.')) { SYNC.logout(); toast('로그아웃됨'); render(); } });
+  } else {
+    $('#syncIn', syncBox).addEventListener('click', async () => {
+      const btn = $('#syncIn', syncBox); const url = $('#syncUrl', syncBox).value; const pass = $('#syncPass', syncBox).value;
+      if (!url || !pass) { toast('서버 주소와 암호를 입력하세요'); return; }
+      btn.disabled = true; btn.textContent = '로그인 중…';
+      try { await SYNC.login(url, pass); toast('로그인·동기화 완료'); render(); }
+      catch (e) { toast(e.message || '로그인 실패'); btn.disabled = false; btn.textContent = '로그인'; }
+    });
+  }
+
   // 데이터 관리
-  const dataBox = el(`<div class="card stack"><h3>데이터 (기기 간 이동)</h3>
-    <p class="small muted">학습 기록은 이 브라우저에만 저장됩니다. 다른 기기로 옮기려면 내보낸 파일을 그 기기에서 가져오세요.</p>
+  const dataBox = el(`<div class="card stack"><h3>데이터 (파일로 이동)</h3>
+    <p class="small muted">${SYNC.on ? '서버 동기화와 별개로,' : ''} 학습 기록을 파일로 내보내거나 다른 기기에서 만든 파일을 가져올 수 있습니다.</p>
     <div class="row">
       <button class="btn sm" id="exp">내보내기 (JSON)</button>
       <button class="btn sm" id="imp">가져오기</button>
@@ -1370,7 +1564,7 @@ route('more', (app) => {
   $('#imp', dataBox).addEventListener('click', () => $('#impFile', dataBox).click());
   $('#impFile', dataBox).addEventListener('change', importData);
   $('#rst', dataBox).addEventListener('click', () => {
-    if (confirm('모든 학습 기록·즐겨찾기·메모를 삭제합니다. 계속할까요?')) { store.reset(); SESSION = null; CSESSION = null; toast('초기화됨'); render(); }
+    if (confirm(`모든 학습 기록·즐겨찾기·메모를 삭제합니다.${SYNC.on ? ' 서버에 저장된 기록도 함께 초기화됩니다.' : ''} 계속할까요?`)) { store.reset(); SESSION = null; CSESSION = null; toast('초기화됨'); render(); }
   });
   app.appendChild(dataBox);
 
@@ -2109,6 +2303,16 @@ if (store.state.cppg.session && Array.isArray(store.state.cppg.session.ids) && s
 if (!location.hash) location.hash = store.state.settings.track === 'cppg' ? '#/cppg' : '#/home';
 render();
 
+/* 서버 동기화 — 로그인되어 있으면 부팅에 서버 상태를 받아 병합 */
+SYNC.load();
+if (SYNC.on) SYNC.pull();
+window.addEventListener('online', () => { if (SYNC.on) SYNC.pull(); });
+document.addEventListener('visibilitychange', () => {
+  if (!SYNC.on) return;
+  if (document.hidden) SYNC.pushNow();                                 // 탭 숨김/닫힘 직전 대기분 flush
+  else if (Date.now() - SYNC.lastAt > 20000) SYNC.pull();              // 돌아오면 최신화
+});
+
 /* 서비스 워커 — 새 버전 감지 시 1회 자동 새로고침 */
 if ('serviceWorker' in navigator) {
   let reloading = false;
@@ -2129,3 +2333,6 @@ if ('serviceWorker' in navigator) {
     }).catch(() => {});
   });
 }
+
+/* 테스트용 노출 (스모크에서 병합·동기화 로직 검증) */
+try { window.__sync = { SYNC, mergeState, mergeResults, mergeSessions, store }; } catch (e) { /* noop */ }

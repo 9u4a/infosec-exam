@@ -53,10 +53,20 @@ cppg/quiz/<과목id>.json        CPPG 5지선다 문제
 cppg/자료/*.pdf                CPPG 법령 원문 PDF (1차 사료)
 scripts/build.mjs             모든 소스 → docs/data/bundle.js · docs/data/cppg.js
 docs/                         GitHub Pages 발행 루트
+server/                       (선택) 학습기록 동기화 Cloudflare Worker
 ```
 
 빌드 산출물 `docs/data/bundle.js`·`docs/data/cppg.js` 는 **커밋한다** (GitHub Pages는 빌드를 돌리지 않음).
 자세한 규칙과 스키마는 [`CLAUDE.md`](CLAUDE.md) 참고.
+
+### 서버 동기화 (선택)
+
+기본은 기기별 localStorage 저장이지만, **더보기 → 서버 동기화**에서 로그인하면 학습 기록이
+서버에 저장되어 다른 기기·브라우저에서도 이어집니다. 오프라인이면 로컬로 동작하다 온라인에 자동 동기화.
+
+- 아주 작은 Cloudflare Worker(`server/`) 하나를 무료로 배포 → 공유 암호로 로그인
+- 배포 방법: [`server/README.md`](server/README.md) (한 번만, `wrangler deploy`)
+- 로그인하지 않으면 지금과 완전히 동일하게 동작
 
 ---
 
