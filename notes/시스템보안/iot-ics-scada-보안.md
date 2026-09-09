@@ -3,6 +3,7 @@ title: IoT · 제어시스템(ICS/SCADA) 보안
 domain: 시스템보안
 questions: []
 tags: [IoT, SCADA, ICS, PLC, OT, 스턱스넷, 제어망분리]
+related: [네트워크보안/vlan-스위칭-nac-망분리, 시스템보안/클라우드-가상화-컨테이너-보안, 네트워크보안/apt-킬체인-악성코드]
 ---
 
 > 최신 정보보안기사 범위. 기출엔 스턱스넷 정도.

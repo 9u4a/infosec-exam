@@ -34,6 +34,38 @@ alert  tcp      any      any       ->    any      80        (msg:"..."; content:
 
 예: `content:"GET"; offset:0; depth:3;` → 페이로드 앞 3바이트에 "GET"
 
+### offset/depth(절대) vs distance/within(상대)
+
+```
+페이로드:  [0]........[offset]===검사구간(depth)===........
+2차 content:            [직전 매치]--distance--[검사시작]--within--
+```
+- `offset`/`depth` = 페이로드 **시작 기준 고정 위치**. 첫 content 위치 지정에.
+- `distance`/`within` = **직전 content 매치 끝 기준**. 여러 패턴의 상대 순서·간격 지정에.
+- 예: `content:"POST"; offset:0; depth:4; content:"/admin"; distance:0; within:20;`
+
+## 실기 룰 작성 예제
+
+```
+# 1) 웹 디렉터리 트래버설 시도
+alert tcp any any -> $HTTP_SERVERS 80 (msg:"Dir Traversal"; flow:to_server,established;
+  content:"../"; http_uri; nocase; sid:1000010;)
+
+# 2) SQL 인젝션 흔적 (UNION SELECT)
+alert tcp any any -> $HTTP_SERVERS 80 (msg:"SQLi UNION"; flow:to_server,established;
+  content:"union"; nocase; http_uri; content:"select"; nocase; distance:0; sid:1000011;)
+
+# 3) GET Flooding — 같은 출발지가 10초에 100회 초과
+alert tcp any any -> $HTTP_SERVERS 80 (msg:"HTTP GET Flooding"; flow:to_server,established;
+  content:"GET"; offset:0; depth:3;
+  detection_filter:track by_src, count 100, seconds 10; sid:1000012;)
+
+# 4) 특정 악성코드 시그니처 (바이너리)
+alert tcp any any -> any any (msg:"Malware Sig"; content:"|90 90 90 90 E8|"; sid:1000013;)
+```
+
+- 실기 채점 포인트: `flow:to_server,established`(정상 세션만 검사 → 성능·오탐↓), `http_uri`/`nocase`, `sid` ≥ 1000000, `detection_filter`(구 threshold)로 flooding 임계치.
+
 ## threshold / detection_filter
 
 ```

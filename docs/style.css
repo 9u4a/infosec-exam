@@ -312,6 +312,7 @@ a.pill:active { transform: translateY(1px); }
 .note-item-title { font-weight: 600; }
 .note-item-meta { display: block; margin-top: 6px; }
 .note-item-meta .pill { font-size: .74rem; }
+.note-item-meta .bar-track { height: 6px; max-width: 140px; margin-top: 5px; border-radius: 3px; }
 
 /* ============ 마크다운 (노트 · 해설 · 보충지문 공통) ============ */
 .markdown { font-size: .95rem; line-height: 1.75; white-space: normal; }

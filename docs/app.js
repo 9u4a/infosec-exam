@@ -272,6 +272,31 @@ function updateSyncUI() {
   box.textContent = (SYNC.on ? '✅ 연결됨 · ' : '') + label + (SYNC.on && SYNC.lastAt ? ' · ' + fmtWhen(SYNC.lastAt) : '');
 }
 
+/* 노트에 연결된 문항(기출+예상)의 학습 진도. store.result() 는 빈 엔트리를 만들므로
+   반드시 읽기 전용 store.lastGrade 만 사용한다. */
+function noteProgress(n) {
+  const ids = [...(n.questions || []), ...(n.predicted || [])];
+  const v = { o: 0, m: 0, x: 0 };
+  let done = 0;
+  for (const id of ids) {
+    const g = store.lastGrade(id);
+    if (!g) continue;
+    done++; v[g]++;
+  }
+  const rate = done ? Math.round((v.o / done) * 100) : null;
+  const weak = ids.length ? (v.x * 2 + v.m + (ids.length - done) * 0.5) / ids.length : 0;
+  return { total: ids.length, done, v, rate, weak, ids };
+}
+
+/* 마지막 채점이 ❌·🔺 이거나 아직 안 푼 문항 id 목록 */
+function noteWeakIds(n) {
+  const ids = [...(n.questions || []), ...(n.predicted || [])];
+  return ids.filter((id) => {
+    const g = store.lastGrade(id);
+    return g === 'x' || g === 'm' || !g;
+  });
+}
+
 /* ============ 파생 통계 ============ */
 function computeStats() {
   const perDomain = {};
@@ -1298,6 +1323,7 @@ function barBox(title, obj) {
 }
 
 /* ============ 노트 목록 ============ */
+let noteSort = 'default';   // 'default' | 'weak' | 'linked'
 route('notes', (app, args) => {
   app.appendChild(el(`<h1>학습 노트</h1>`));
   if (!DATA.notes.length) {
@@ -1326,6 +1352,11 @@ route('notes', (app, args) => {
         <option value="">태그 전체</option>
         ${allTags.map((t) => `<option value="${esc(t)}">#${esc(t)}</option>`).join('')}
       </select>
+      <select id="nsort" style="flex:1;min-width:110px">
+        <option value="default">기본순</option>
+        <option value="weak">취약한 순</option>
+        <option value="linked">연결 많은 순</option>
+      </select>
     </div>
   </div>`);
   app.appendChild(controls);
@@ -1334,7 +1365,9 @@ route('notes', (app, args) => {
 
   const nq = $('#nq', controls);
   const ntag = $('#ntag', controls);
+  const nsort = $('#nsort', controls);
   ntag.value = curTag;
+  nsort.value = noteSort;
 
   function syncChips() {
     controls.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c.dataset.cat === curCat));
@@ -1366,18 +1399,44 @@ route('notes', (app, args) => {
     if (f) tags.push('"' + esc(nq.value.trim()) + '"');
     listWrap.appendChild(el(`<p class="small muted" style="margin:6px 2px">${notes.length}개 노트${tags.length ? ' · ' + tags.join(' · ') : ''}</p>`));
     if (curCat === '반복출제') listWrap.appendChild(el(`<p class="small muted" style="margin:0 2px 8px">여러 회차에 반복 출제된 유형. 각 노트에서 회차별 실제 문항·정답을 펼쳐 비교하고, 핵심 정답을 암기하세요.</p>`));
+    if (noteSort === 'weak') listWrap.appendChild(el(`<p class="small muted" style="margin:0 2px 8px">가장 많이 틀리거나 아직 안 푼 문항이 많은 노트부터 표시합니다.</p>`));
     if (!notes.length) { listWrap.appendChild(el(`<p class="muted small">조건에 맞는 노트가 없습니다.</p>`)); return; }
+
+    const prog = new Map(notes.map((n) => [n.slug, noteProgress(n)]));
+    const noteEl = (n) => {
+      const p = prog.get(n.slug);
+      const qn = (n.questions || []).length, pn = (n.predicted || []).length;
+      const linkTxt = p.total
+        ? `연결 ${p.total}` + (qn && pn ? ` (기출 ${qn}·예상 ${pn})` : '')
+        : '연결 없음';
+      const progTxt = p.done
+        ? ` · ${p.done}/${p.total} 풀이 · 정답 ${p.rate}%`
+        : (p.total ? ' · 아직 안 품' : '');
+      return el(`<a class="note-item" href="#/note/${encodeURIComponent(n.slug)}">
+        <span class="note-item-title">${esc(n.title)}</span>
+        <span class="note-item-meta">${(n.tags || []).slice(0, 5).map((t) => `<span class="pill">${esc(t)}</span>`).join(' ')}
+          <span class="small muted">· ${linkTxt}${progTxt}</span>
+          ${p.done ? `<span class="bar-track">
+            <i class="o" style="width:${(p.v.o / p.total) * 100}%"></i>
+            <i class="m" style="width:${(p.v.m / p.total) * 100}%"></i>
+            <i class="x" style="width:${(p.v.x / p.total) * 100}%"></i></span>` : ''}
+        </span>
+      </a>`);
+    };
+
+    if (noteSort === 'weak' || noteSort === 'linked') {
+      const sorted = notes.slice().sort(noteSort === 'weak'
+        ? (a, b) => prog.get(b.slug).weak - prog.get(a.slug).weak || prog.get(b.slug).total - prog.get(a.slug).total
+        : (a, b) => prog.get(b.slug).total - prog.get(a.slug).total || a.slug.localeCompare(b.slug, 'ko'));
+      sorted.forEach((n) => listWrap.appendChild(noteEl(n)));
+      return;
+    }
 
     const byCat = {};
     notes.forEach((n) => (byCat[n.category] || (byCat[n.category] = [])).push(n));
     Object.entries(byCat).forEach(([cat, arr]) => {
       if (!curCat) listWrap.appendChild(el(`<div class="note-cat">${esc(cat)}</div>`));
-      arr.forEach((n) => {
-        listWrap.appendChild(el(`<a class="note-item" href="#/note/${encodeURIComponent(n.slug)}">
-          <span class="note-item-title">${esc(n.title)}</span>
-          <span class="note-item-meta">${(n.tags || []).slice(0, 5).map((t) => `<span class="pill">${esc(t)}</span>`).join(' ')} <span class="small muted">· 연결 ${n.questions.length}</span></span>
-        </a>`));
-      });
+      arr.forEach((n) => listWrap.appendChild(noteEl(n)));
     });
   }
 
@@ -1388,6 +1447,7 @@ route('notes', (app, args) => {
     syncChips(); syncHash(); draw();
   });
   ntag.addEventListener('change', () => { curTag = ntag.value; syncHash(); draw(); });
+  nsort.addEventListener('change', () => { noteSort = nsort.value; draw(); });
   nq.addEventListener('input', draw);
 
   syncChips();
@@ -1404,6 +1464,25 @@ route('note', (app, args) => {
   app.appendChild(el(`<div class="row tight" style="margin-bottom:8px">
     <a class="pill accent" href="#/notes/${encodeURIComponent(n.category)}">${esc(n.domain || n.category)}</a>
     ${(n.tags || []).map((t) => `<a class="pill" href="#/notes/tag/${encodeURIComponent(t)}">${esc(t)}</a>`).join('')}</div>`));
+
+  const prog = noteProgress(n);
+  if (prog.total) {
+    const card = el(`<div class="card stack" style="gap:8px">
+      <div class="small muted">📊 연결 ${prog.total}문항 · ${prog.done ? `${prog.done} 풀이 · 정답 ${prog.rate}%` : '아직 안 품'}</div>
+      ${prog.done ? `<span class="bar-track">
+        <i class="o" style="width:${(prog.v.o / prog.total) * 100}%"></i>
+        <i class="m" style="width:${(prog.v.m / prog.total) * 100}%"></i>
+        <i class="x" style="width:${(prog.v.x / prog.total) * 100}%"></i></span>` : ''}
+    </div>`);
+    const weakIds = noteWeakIds(n);
+    if (weakIds.length && weakIds.length < prog.total) {
+      const b = el(`<button class="btn sm">약한 문항만 풀기 (${weakIds.length})</button>`);
+      b.addEventListener('click', () => startSession(weakIds.slice(), `${n.title} 약한 문항 ${weakIds.length}`));
+      card.appendChild(b);
+    }
+    app.appendChild(card);
+  }
+
   const md = el(`<div class="card markdown"></div>`);
   md.innerHTML = window.marked ? window.marked.parse(n.md) : `<pre>${esc(n.md)}</pre>`;
   enhanceMarkdown(md);
@@ -1436,6 +1515,16 @@ route('note', (app, args) => {
   };
   qBox('연결된 기출 문항', n.questions, (id) => BY_QID.get(id), '연결 기출 모두 풀기');
   qBox('관련 예상문제', n.predicted, (id) => PQ_BY_ID.get(id), '이 노트 예상문제 풀기');
+
+  if (n.related && n.related.length) {
+    app.appendChild(el(`<div class="card"><h3>함께 보면 좋은 노트</h3>
+      <div class="row tight">${n.related.map((r) => {
+        const t = NOTE_BY_SLUG.get(r.slug); if (!t) return '';
+        return `<a class="pill accent" href="#/note/${encodeURIComponent(r.slug)}">${
+          t.category === '반복출제' ? '🔁 ' : '📎 '}${esc(t.title)}${
+          r.shared ? ` <span class="muted">${r.shared}</span>` : ''}</a>`;
+      }).join('')}</div></div>`));
+  }
 });
 
 /* ============ 단일 문항 (#/q/<qid>) ============ */

@@ -5,6 +5,27 @@ questions: [2-8, 3-3, 3-8, 5-3, 6-15, 9-2, 9-16, 10-15, 15-3, 15-4, 15-15, 18-9,
 tags: [DoS, DDoS, Smurf, SYN Flooding, Slowloris, DRDoS, 증폭공격]
 ---
 
+## 무엇을 고갈시키는가 (분류 축)
+
+| 고갈 대상 | 대표 공격 | 특징 |
+|---|---|---|
+| **네트워크 대역폭** | Smurf, DNS/NTP/Memcached 증폭, UDP Flooding | 반사·증폭으로 회선을 채움 → 상류(ISP)에서 막아야 함 |
+| **연결 테이블(half-open)** | SYN Flooding, Land | 소량 트래픽으로 백로그 큐만 채움 → 대역폭은 멀쩡 |
+| **소켓·커넥션(established)** | Slowloris, RUDY, Slow Read | 커넥션을 열어두고 안 놓음 → 동시연결 한도 소진 |
+| **서버 CPU·애플리케이션 자원** | HTTP GET Flooding, 캐시 우회 GET, 해시충돌 | 요청은 정상 형태, 처리 비용이 큼 → L7에서 판별 |
+
+- 시험 포인트: SYN Flooding은 "대역폭"이 아니라 **연결 큐** 고갈, Slowloris는 "대량 트래픽"이 아니라 **느린 소량**으로 커넥션 점유.
+
+## 증폭 배수 요약
+
+| 공격 | 트리거 | 증폭률(대략) |
+|---|---|---|
+| NTP monlist | `ntpdc -c monlist` | ~556배 |
+| DNS ANY | ANY/TXT 질의 | 28~54배 |
+| SSDP | M-SEARCH | ~30배 |
+| Memcached | UDP 11211 stats/get | 최대 ~51,000배 |
+| Smurf | 브로드캐스트 Echo | 브로드캐스트 도메인 호스트 수만큼 |
+
 ## 자원 소모형 (프로토콜 취약점)
 
 | 공격 | 원리 | 대응 |
@@ -62,6 +83,16 @@ GitHub 2018년 1.35Tbps 공격에 악용. UDP 11211 개방된 Memcached에 작�
 | **Slowloris** | HTTP **헤더** 미완성, 느리게 전송 → 커넥션 점유 | 헤더 타임아웃, 동시연결 제한 |
 | **RUDY (Slow POST)** — 15-15 | `Content-Length: 1000000` 처럼 큰 본문을 예고한 뒤 **본문을 1바이트씩** 느리게 전송 → 서버가 수신 완료까지 세션 유지 → 자원 소진 | Read/Connection 타임아웃 단축, 동일 IP 동시연결 수 제한(iptables), 최소 전송률 강제, 역방향 프록시 버퍼링 |
 | **Slow Read** | TCP 윈도우 0으로 응답을 질질 끌게 | 커넥션 타임아웃 |
+
+## SYN Flooding — 왜 SYN 쿠키가 근본 대응인가
+
+일반 TCP는 SYN을 받으면 **연결 정보를 백로그 큐에 먼저 할당**하고 SYN+ACK를 보낸 뒤 ACK를 기다린다(half-open). 공격자는 ACK를 안 보내 큐를 채운다. **SYN 쿠키**는 큐에 아무것도 저장하지 않고, 연결 상태를 시퀀스 번호 안에 암호학적으로 인코딩해 SYN+ACK로 돌려보낸다. 정상 클라이언트가 ACK로 그 번호+1을 되돌려주면 그때 비로소 연결을 만든다 → **저장 공간을 안 쓰므로 큐 고갈이 원천 차단**. 그 외: `tcp_max_syn_backlog` 확대, `tcp_synack_retries` 축소, 방화벽 SYN proxy.
+
+## 서술형 3줄 요약 답안
+
+- **DoS**는 시스템·네트워크 자원을 고갈시켜 정상 서비스를 방해하는 공격이고, **DDoS**는 다수 좀비(봇넷)에서 분산 수행, **DRDoS**는 출발지 IP를 피해자로 위조해 개방형 서버(DNS·NTP 등)의 응답을 피해자로 반사·증폭시키는 방식이다.
+- 대응은 계층별로 나뉜다 — 대역폭 공격은 **상류 ISP·클린존·CDN**, 연결 큐 공격은 **SYN 쿠키**, 느린 공격은 **타임아웃·동시연결 제한**, L7 공격은 **요청 임계치·CAPTCHA·WAF**.
+- 반사·증폭의 근본 대응은 **출발지 IP 검증**(BCP38 / Unicast RPF)과 **개방형 리졸버·monlist 차단**이다.
 
 ## DoS vs DDoS
 

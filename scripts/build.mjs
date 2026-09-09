@@ -137,6 +137,7 @@ function loadNotes(rounds) {
       tags: meta.tags || [],
       questions: refs,
       predicted: [],   // loadPredicted 가 채움 (예상문제 → 노트 역인덱스)
+      relatedManual: meta.related || [],   // linkRelated 가 소비하고 삭제
       md: body.trim(),
     });
   }
@@ -144,6 +145,51 @@ function loadNotes(rounds) {
     (SIL_EXTRA_CATS.includes(a.category) ? 1 : 0) - (SIL_EXTRA_CATS.includes(b.category) ? 1 : 0) ||
     a.slug.localeCompare(b.slug, 'ko'));
   return notes;
+}
+
+// 문항(기출+예상)을 공유하는 노트끼리 연관 링크를 만든다.
+// loadPredicted 로 note.predicted 가 채워진 뒤 호출해야 예상문제 공유도 집계된다.
+function linkRelated(notes, rounds, predicted) {
+  const bySlug = new Map(notes.map((n) => [n.slug, n]));
+  const pair = new Map();   // "a||b" -> 공유 문항 수
+  const bump = (ns) => {
+    for (let i = 0; i < ns.length; i++)
+      for (let j = i + 1; j < ns.length; j++) {
+        const k = [ns[i], ns[j]].sort().join('||');
+        pair.set(k, (pair.get(k) || 0) + 1);
+      }
+  };
+  for (const r of rounds) for (const q of r.questions) bump(q.notes || []);
+  for (const p of predicted) bump(p.notes || []);
+
+  const acc = new Map();   // slug -> Map(otherSlug -> shared)
+  const edge = (a, b, v) => {
+    if (!acc.has(a)) acc.set(a, new Map());
+    acc.get(a).set(b, v);
+  };
+  for (const [k, v] of pair) {
+    const [a, b] = k.split('||');
+    edge(a, b, v);
+    edge(b, a, v);
+  }
+
+  // 프론트매터 related: 는 양방향 연관으로 추가(공유 문항 수는 0으로 표시)
+  for (const n of notes) {
+    for (const s of n.relatedManual || []) {
+      if (!bySlug.has(s)) { warn(`notes/${n.slug}: related "${s}" 노트 없음`); continue; }
+      if (s === n.slug) continue;
+      if (!(acc.get(n.slug) || new Map()).has(s)) edge(n.slug, s, 0);
+      if (!(acc.get(s) || new Map()).has(n.slug)) edge(s, n.slug, 0);
+    }
+  }
+
+  for (const n of notes) {
+    n.related = [...(acc.get(n.slug) || new Map()).entries()]
+      .sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0], 'ko'))
+      .slice(0, 6)
+      .map(([slug, shared]) => ({ slug, shared }));
+    delete n.relatedManual;
+  }
 }
 
 // ---------- 3b. 예상문제 (기사 모의고사) ----------
@@ -339,6 +385,7 @@ function main() {
   applyMeta(rounds);
   const notes = loadNotes(rounds);
   const { items: predicted, perType: predType, perDomain: predDomain } = loadPredicted(notes, rounds);
+  linkRelated(notes, rounds, predicted);
 
   let total = 0, classified = 0, explained = 0, supplemented = 0;
   for (const r of rounds) for (const q of r.questions) {

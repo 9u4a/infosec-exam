@@ -3,6 +3,7 @@ title: SNMP · 네트워크 관리 (NMS)
 domain: 네트워크보안
 questions: [1-2, 6-2, 11-7, 21-2, 24-16, 27-10]
 tags: [SNMP, NMS, polling, trap, 커뮤니티스트링, SNMPv3, syslog]
+related: [네트워크보안/프로토콜-계층별-보안-총정리, 정보보안관리및법규/보안관제-siem-soar-tms]
 ---
 
 ## SNMP 개요 (27-10, 11-7)

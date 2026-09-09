@@ -11,4 +11,6 @@ tags: [Smurf, ICMP, DirectedBroadcast, 반사공격]
 - 원리: 공격자가 **출발지 IP를 피해자로 위조**한 `ICMP Echo Request`를 서브넷 **브로드캐스트 주소**로 전송 → 그 네트워크 전 호스트가 피해자에게 `ICMP Echo Reply` 폭주(반사·증폭 DoS).
 - 대응(방화벽 없이도): ① 라우터에서 외부 유입 **Directed Broadcast 차단** (`no ip directed-broadcast`) ② 호스트가 브로드캐스트로 온 **ICMP Echo Request에 응답 안 함** (`net.ipv4.icmp_echo_ignore_broadcasts=1`) ③ 출발지 위조 차단(ingress filtering, BCP38).
 
+**왜**: 브로드캐스트 1개 요청이 서브넷 호스트 수만큼의 Reply로 불어나고(증폭), 출발지가 위조돼 그 폭주가 전부 피해자에게 쏟아진다(반사). ICMP·브로드캐스트에 인증이 없어 가능.
+
 **함정**: (B)(C) 빈칸은 각각 **Directed Broadcast** / **ICMP Echo Request** 패킷. Fraggle(UDP 버전)과 구분.
