@@ -2101,15 +2101,38 @@ cRoute('quiz', (app) => {
   </div>`);
   app.appendChild(form);
   const scope = $('#cscope', form), csub = $('#csub', form);
+  const unseenN = (arr) => arr.reduce((n, q) => n + (cstore.attemptCount(q.id) ? 0 : 1), 0);
+  // 현재 하위선택(과목/노트/태그)에 해당하는 문제 목록
+  function subList(v, p) {
+    if (v === 'subject') return CQ.filter((q) => q.subject === p);
+    if (v === 'note') { const n = CNOTE_BY_SLUG.get(p); return (n ? n.quiz : []).map((id) => CQ_BY_ID.get(id)).filter(Boolean); }
+    if (v === 'tag') return CQ.filter((q) => (q.tags || []).includes(p));
+    return [];
+  }
   function drawSub() {
     csub.innerHTML = '';
     if (scope.value === 'subject') {
-      csub.appendChild(el(`<label class="field"><span>과목</span><select id="cp">${CSUBJ.map((s) => `<option value="${s.id}">${s.no}. ${esc(s.name)}</option>`).join('')}</select></label>`));
+      csub.appendChild(el(`<label class="field"><span>과목</span><select id="cp">${CSUBJ.map((s) => {
+        const all = CQ.filter((q) => q.subject === s.id);
+        return `<option value="${s.id}">${s.no}. ${esc(s.name)} (안 푼 ${unseenN(all)}/${all.length})</option>`;
+      }).join('')}</select></label>`));
     } else if (scope.value === 'note') {
       const notes = CPPG.notes.filter((n) => n.quiz.length);
-      csub.appendChild(el(`<label class="field"><span>노트</span><select id="cp">${notes.map((n) => `<option value="${esc(n.slug)}">${esc(n.title)} (${n.quiz.length})</option>`).join('')}</select></label>`));
+      csub.appendChild(el(`<label class="field"><span>노트</span><select id="cp">${notes.map((n) => {
+        const all = n.quiz.map((id) => CQ_BY_ID.get(id)).filter(Boolean);
+        return `<option value="${esc(n.slug)}">${esc(n.title)} (안 푼 ${unseenN(all)}/${n.quiz.length})</option>`;
+      }).join('')}</select></label>`));
     } else if (scope.value === 'tag') {
       csub.appendChild(el(`<label class="field"><span>태그</span><select id="cp">${allTags.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join('')}</select></label>`));
+    }
+    if (['subject', 'note', 'tag'].includes(scope.value)) {
+      csub.appendChild(el(`<label class="row" style="align-items:center;gap:6px;margin:0">
+        <input type="checkbox" id="conlyunseen" style="width:auto"><span class="small">안 푼 문제만</span>
+        <span class="small muted" id="cunseenhint" style="margin-left:auto"></span></label>`));
+      const cp = $('#cp', csub), hint = $('#cunseenhint', csub);
+      const upd = () => { const a = subList(scope.value, cp ? cp.value : null); hint.textContent = `안 푼 ${unseenN(a)} / 전체 ${a.length}`; };
+      if (cp) cp.addEventListener('change', upd);
+      upd();
     }
   }
   scope.addEventListener('change', drawSub); drawSub();
@@ -2125,6 +2148,13 @@ cRoute('quiz', (app) => {
     else if (v === 'fav') { list = store.state.cppg.favorites.map((id) => CQ_BY_ID.get(id)).filter(Boolean); label = '즐겨찾기'; }
     else if (v === 'unseen') { list = list.filter((q) => !cstore.attemptCount(q.id)); label = '안 푼 문제'; }
     else { label = '랜덤'; }
+
+    const onlyUnseen = $('#conlyunseen', csub);
+    if (onlyUnseen && onlyUnseen.checked) {
+      list = list.filter((q) => !cstore.attemptCount(q.id));
+      label += ' · 안 푼';
+      if (!list.length) { toast('안 푼 문제가 없습니다'); return; }
+    }
 
     if ($('#corder', form).value === 'shuffle' || v === 'random') shuffle(list);
     else list.sort((a, b) => a.subject.localeCompare(b.subject) || a.id.localeCompare(b.id));
