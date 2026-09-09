@@ -365,6 +365,18 @@ function enhanceMarkdown(root) {
 
 function qLabel(q) { return q.predicted ? `예상 · ${q.domain}` : `${q.round}회 ${q.no}번`; }
 
+/* 원본 JSON에 누락된 지문(로그·보기·코드 등)의 보충 자료 블록.
+   supplementSrc === 'provided' 는 실제 기출 지문을 확보한 것, 그 외는 정답 기반 재구성. */
+function supplementHtml(q) {
+  if (!q.supplement) return '';
+  const provided = q.supplementSrc === 'provided';
+  const cap = provided
+    ? '📄 지문 <span>· 원본 데이터 누락분 복원</span>'
+    : '🧩 지문 재구성 <span>· 원본 데이터 누락분</span>';
+  const md = window.marked ? window.marked.parse(q.supplement) : esc(q.supplement);
+  return `<div class="supplement${provided ? ' provided' : ''}"><span class="supp-cap">${cap}</span><div class="supp-body markdown">${md}</div></div>`;
+}
+
 /* 이 문항이 속한 「반복출제」 노트 (있으면) + 배지 링크 */
 function repeatNote(q) {
   const slug = (q.notes || []).find((s) => s.startsWith('반복출제/'));
@@ -444,7 +456,7 @@ function questionCard(q, opts = {}) {
       <span class="pill">${esc(q.domain)}</span>
       <button class="star ${store.isFav(q.qid) ? 'on' : ''}" title="즐겨찾기" aria-label="즐겨찾기">${store.isFav(q.qid) ? '★' : '☆'}</button>
     </div>
-    <div class="q-body">${esc(q.question)}${q.supplement ? `<div class="supplement"><span class="supp-cap">🧩 지문 재구성 <span>· 원본 데이터 누락분</span></span><div class="supp-body markdown">${window.marked ? window.marked.parse(q.supplement) : esc(q.supplement)}</div></div>` : ''}</div>
+    <div class="q-body">${esc(q.question)}${supplementHtml(q)}</div>
     ${rep ? `<a class="repeat-badge" href="#/note/${encodeURIComponent(rep.slug)}">🔁 ${rep.questions.length}회 반복 출제 · 회차별 비교 →</a>` : ''}
 
     <label class="field my-answer">
@@ -543,7 +555,7 @@ function reviewItem(q, grade, opts = {}) {
     built = true;
     body.innerHTML = `
       ${rep && !opts.hideRepeatBadge ? `<a class="repeat-badge" href="#/note/${encodeURIComponent(rep.slug)}">🔁 ${rep.questions.length}회 반복 출제 · 회차별 비교 →</a>` : ''}
-      <div class="q-body">${esc(q.question)}${q.supplement ? `<div class="supplement"><span class="supp-cap">🧩 지문 재구성 <span>· 원본 데이터 누락분</span></span><div class="supp-body markdown">${window.marked ? window.marked.parse(q.supplement) : esc(q.supplement)}</div></div>` : ''}</div>
+      <div class="q-body">${esc(q.question)}${supplementHtml(q)}</div>
       <div class="answer-wrap" style="border-top:none;margin-top:10px;padding-top:0">
         <div class="a-body">${renderAnswer(q.answer)}</div>
         ${q.explanation ? `<div class="expl"><b>💡 해설</b><div class="expl-body markdown">${window.marked ? window.marked.parse(q.explanation) : esc(q.explanation)}</div></div>` : ''}

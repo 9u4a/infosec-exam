@@ -45,6 +45,7 @@ function loadRounds() {
       domain: null,
       explanation: null,
       supplement: null,
+      supplementSrc: null,   // 'provided'(원본 지문 확보) | null(재구성)
       notes: [],
     }));
     rounds.push({ round, date, questions });
@@ -73,6 +74,7 @@ function applyMeta(rounds) {
       if (info.explanation) q.explanation = info.explanation;
       // 원본 지문(로그·설명문 등)이 누락된 문항의 보충 자료
       if (info.supplement) q.supplement = info.supplement;
+      if (info.supplementSrc) q.supplementSrc = info.supplementSrc;
     }
   }
 }
