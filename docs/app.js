@@ -506,7 +506,7 @@ function reviewItem(q, grade, opts = {}) {
   const d = el(`<details class="q-review">
     <summary>
       <span class="pill accent">${esc(qLabel(q))}</span>
-      <span class="rv-q">${esc(q.question.slice(0, 36))}</span>
+      <span class="rv-q">${esc(opts.summaryText || q.question.slice(0, 36))}</span>
       <span class="rv-g g-${grade || 'none'}">${grade ? GRADE_ICON[grade] + ' ' + GRADE_LABEL[grade] : '미채점'}</span>
     </summary>
     <div class="rv-body"></div>
@@ -523,9 +523,17 @@ function reviewItem(q, grade, opts = {}) {
         <div class="a-body">${renderAnswer(q.answer)}</div>
         ${q.explanation ? `<div class="expl"><b>💡 해설</b><div class="expl-body markdown">${window.marked ? window.marked.parse(q.explanation) : esc(q.explanation)}</div></div>` : ''}
         ${notesHtml ? `<div class="note-links">${notesHtml}</div>` : ''}
+        ${opts.memo ? `<label class="field" style="margin:10px 0 0"><span>💭 내 메모</span><textarea class="rv-memo" rows="2" placeholder="헷갈린 점, 암기 포인트 등">${esc((store.state.results[q.qid] || {}).memo || '')}</textarea></label>` : ''}
         <a class="btn sm" style="margin-top:4px" href="#/q/${encodeURIComponent(q.qid)}">이 문항만 크게 보기 →</a>
       </div>`;
     enhanceMarkdown(body);
+    const mt = $('.rv-memo', body);
+    if (mt) {
+      const grow = () => { mt.style.height = 'auto'; mt.style.height = mt.scrollHeight + 'px'; };
+      grow();
+      mt.addEventListener('input', grow);
+      mt.addEventListener('change', () => store.setMemo(q.qid, mt.value.trim()));
+    }
   });
   return d;
 }
@@ -585,6 +593,7 @@ route('home', (app) => {
     <a class="btn primary" href="#/solve">문제 풀기 →</a>
     ${PREDICTED.length ? '<a class="btn" href="#/mock">모의고사</a>' : ''}
     <a class="btn" href="#/stats">통계</a>
+    ${(store.state.favorites.length || Object.values(store.state.results).some((r) => r.memo)) ? '<a class="btn" href="#/saved">⭐ 저장</a>' : ''}
     ${store.state.sessions.length ? '<a class="btn" href="#/history">지난 기록</a>' : ''}
   </div>`));
 
@@ -1020,6 +1029,61 @@ route('history', (app) => {
   app.appendChild(el(`<p class="small muted center" style="margin-top:14px">문항 정보가 없는 옛 기록은 점수만 표시되고 열 수 없습니다.</p>`));
 });
 
+/* ============ 저장한 문항 (즐겨찾기 · 메모) ============ */
+let savedTab = 'fav';
+route('saved', (app) => {
+  app.appendChild(el(`<h1>저장한 문항</h1>`));
+  const favIds = store.state.favorites.filter((id) => anyQ(id));
+  const memoIds = Object.keys(store.state.results)
+    .filter((qid) => store.state.results[qid].memo && anyQ(qid));
+
+  const seg = el(`<div class="track-switch">
+    <a data-v="fav">⭐ 즐겨찾기 <span>${favIds.length}</span></a>
+    <a data-v="memo">💭 메모 <span>${memoIds.length}</span></a></div>`);
+  const wrap = el(`<div></div>`);
+
+  const draw = (v) => {
+    savedTab = v;
+    seg.querySelectorAll('a').forEach((a) => a.classList.toggle('on', a.dataset.v === v));
+    wrap.innerHTML = '';
+    const ids = v === 'memo' ? memoIds : favIds;
+    if (!ids.length) {
+      wrap.appendChild(el(`<div class="empty">${v === 'memo'
+        ? '메모가 없습니다.<br><span class="small">문제를 풀며 정답을 펼치면 메모를 남길 수 있어요. 여기서 바로 수정도 됩니다.</span>'
+        : '즐겨찾기가 없습니다.<br><span class="small">문제 카드의 ☆ 를 눌러 추가하세요.</span>'}</div>`));
+      return;
+    }
+    const box = el(`<div class="card"><h3>${v === 'memo' ? '메모한 문항' : '즐겨찾기'} (${ids.length}) <span class="muted small">눌러서 답·해설${v === 'memo' ? '·메모' : ''}</span></h3></div>`);
+    ids.forEach((qid) => {
+      const q = anyQ(qid); if (!q) return;
+      box.appendChild(reviewItem(q, store.lastGrade(qid), {
+        memo: true,
+        summaryText: v === 'memo' ? store.state.results[qid].memo : undefined,
+      }));
+    });
+    const btnRow = el(`<div class="row tight" style="margin-top:12px"></div>`);
+    const expand = el(`<button class="btn sm">모두 펼치기</button>`);
+    let allOpen = false;
+    expand.addEventListener('click', () => {
+      allOpen = !allOpen;
+      box.querySelectorAll('details.q-review').forEach((x) => { x.open = allOpen; });
+      expand.textContent = allOpen ? '모두 접기' : '모두 펼치기';
+    });
+    btnRow.appendChild(expand);
+    if (v === 'fav') {
+      const solve = el(`<button class="btn primary" style="flex:1">즐겨찾기 ${ids.length}문항 풀기</button>`);
+      solve.addEventListener('click', () => startSession(ids.slice(), `즐겨찾기 ${ids.length}문항`));
+      btnRow.appendChild(solve);
+    }
+    box.appendChild(btnRow);
+    wrap.appendChild(box);
+  };
+
+  seg.addEventListener('click', (e) => { const a = e.target.closest('a'); if (a) draw(a.dataset.v); });
+  app.append(seg, wrap);
+  draw(memoIds.length && !favIds.length ? 'memo' : savedTab);
+});
+
 /* ============ 모의고사 (예상문제 18문항 · 180분 · 60점) ============ */
 const mockSeen = (q) => store.attemptCount(q.qid) > 0;   // 예상문제 풀이 이력 유무
 
@@ -1345,26 +1409,32 @@ route('note', (app, args) => {
   enhanceMarkdown(md);
   app.appendChild(md);
 
-  const qBox = (title, ids, lookup, label, opts = {}) => {
+  const isRepeat = n.category === '반복출제';
+  const qBox = (title, ids, lookup, label) => {
     if (!ids || !ids.length) return;
-    const box = el(`<div class="card"><h3>${title} (${ids.length})${opts.expand ? ' <span class="muted small">눌러서 회차별 정답 비교</span>' : ''}</h3></div>`);
+    const box = el(`<div class="card"><h3>${title} (${ids.length}) <span class="muted small">눌러서 답·해설</span></h3></div>`);
+    let shown = 0;
     ids.forEach((qid) => {
       const q = lookup(qid); if (!q) return;
-      if (opts.expand) {
-        box.appendChild(reviewItem(q, store.lastGrade(qid), { hideRepeatBadge: true }));
-        return;
-      }
-      const item = el(`<div class="rank-item"><span class="pill accent">${esc(qLabel(q))}</span>
-        <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.question.slice(0, 36))}</span></div>`);
-      item.addEventListener('click', () => navigate('#/q/' + encodeURIComponent(qid)));
-      box.appendChild(item);
+      box.appendChild(reviewItem(q, store.lastGrade(qid), { hideRepeatBadge: isRepeat }));
+      shown++;
     });
-    const all = el(`<button class="btn primary wide" style="margin-top:10px">${label}</button>`);
+    if (!shown) return;
+    const btnRow = el(`<div class="row tight" style="margin-top:12px"></div>`);
+    const expand = el(`<button class="btn sm">모두 펼치기</button>`);
+    let allOpen = false;
+    expand.addEventListener('click', () => {
+      allOpen = !allOpen;
+      box.querySelectorAll('details.q-review').forEach((x) => { x.open = allOpen; });
+      expand.textContent = allOpen ? '모두 접기' : '모두 펼치기';
+    });
+    const all = el(`<button class="btn primary" style="flex:1">${label}</button>`);
     all.addEventListener('click', () => startSession(ids.filter((id) => lookup(id)), `${n.title} ${title} ${ids.length}문항`));
-    box.appendChild(all);
+    btnRow.append(expand, all);
+    box.appendChild(btnRow);
     app.appendChild(box);
   };
-  qBox('연결된 기출 문항', n.questions, (id) => BY_QID.get(id), '연결 기출 모두 풀기', { expand: n.category === '반복출제' });
+  qBox('연결된 기출 문항', n.questions, (id) => BY_QID.get(id), '연결 기출 모두 풀기');
   qBox('관련 예상문제', n.predicted, (id) => PQ_BY_ID.get(id), '이 노트 예상문제 풀기');
 });
 
@@ -1534,36 +1604,13 @@ route('search', (app, args) => {
 route('more', (app) => {
   app.appendChild(el(`<h1>더보기</h1>`));
 
-  // 즐겨찾기
-  const favBox = el(`<div class="card"><h3>즐겨찾기 (${store.state.favorites.length})</h3></div>`);
-  if (!store.state.favorites.length) favBox.appendChild(el(`<p class="muted small">문제 카드의 ☆ 를 눌러 추가하세요.</p>`));
-  else {
-    store.state.favorites.forEach((qid) => {
-      const q = anyQ(qid); if (!q) return;
-      const item = el(`<div class="rank-item"><span class="pill accent">${esc(qLabel(q))}</span>
-        <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.question.slice(0, 36))}</span></div>`);
-      item.addEventListener('click', () => navigate('#/q/' + encodeURIComponent(qid)));
-      favBox.appendChild(item);
-    });
-    favBox.appendChild(el(`<button class="btn sm" id="favAll" style="margin-top:8px">즐겨찾기 전체 풀기</button>`));
-  }
-  app.appendChild(favBox);
-  if ($('#favAll', app)) $('#favAll', app).addEventListener('click', () =>
-    startSession(store.state.favorites.filter((id) => anyQ(id)), `즐겨찾기 ${store.state.favorites.length}문항`));
-
-  // 메모 모아보기
-  const memoQids = Object.entries(store.state.results).filter(([, r]) => r.memo).map(([qid]) => qid);
-  const memoBox = el(`<div class="card"><h3>내 메모 (${memoQids.length})</h3></div>`);
-  if (!memoQids.length) memoBox.appendChild(el(`<p class="muted small">문제 풀이 중 남긴 메모가 여기 모입니다.</p>`));
-  memoQids.forEach((qid) => {
-    const q = anyQ(qid); if (!q) return;
-    const item = el(`<div class="rank-item" style="display:block">
-      <span class="pill accent">${esc(qLabel(q))}</span>
-      <div class="small" style="margin-top:4px">${esc(store.state.results[qid].memo)}</div></div>`);
-    item.addEventListener('click', () => navigate('#/q/' + encodeURIComponent(qid)));
-    memoBox.appendChild(item);
-  });
-  app.appendChild(memoBox);
+  // 바로가기 메뉴
+  const memoN = Object.values(store.state.results).filter((r) => r.memo).length;
+  app.appendChild(el(`<div class="card" style="padding:2px 12px">
+    <a class="menu-row" href="#/saved">⭐ 즐겨찾기 · 💭 메모 <span class="muted">${store.state.favorites.length} · ${memoN}</span></a>
+    <a class="menu-row" href="#/history">🕐 지난 풀이 기록 <span class="muted">${store.state.sessions.length}회</span></a>
+    <a class="menu-row" href="#/stats">📊 통계</a>
+  </div>`));
 
   // 설정
   const set = store.state.settings;
@@ -1633,8 +1680,7 @@ route('more', (app) => {
   });
   app.appendChild(dataBox);
 
-  app.appendChild(el(`<p class="small muted center" style="margin-top:20px">
-    <a href="#/history">지난 풀이 기록 ${store.state.sessions.length}회 ›</a> · 데이터 ${DATA.builtAt.slice(0, 10)}</p>`));
+  app.appendChild(el(`<p class="small muted center" style="margin-top:20px">데이터 ${DATA.builtAt.slice(0, 10)}</p>`));
 });
 
 function exportData() {
