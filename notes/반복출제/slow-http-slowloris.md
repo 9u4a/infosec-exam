@@ -1,0 +1,14 @@
+---
+title: Slow HTTP Header DoS (Slowloris)
+domain: 네트워크보안
+questions: [11-5, 18-9]
+tags: [Slowloris, SlowHTTP, CRLF, 커넥션고갈]
+---
+
+**11·18회 반복 출제.** 'HTTP 헤더의 CRLF를 조작해 연결을 장시간 유지, 가용성 저하' → 공격명.
+
+**핵심 정답**
+- **Slow HTTP Header DoS (Slowloris)**: HTTP 요청 헤더를 완성하지 않고(`\r\n\r\n` 미전송) 아주 느리게 조금씩 전송 → 서버 커넥션을 오래 점유 → **소수 연결로 커넥션 풀 고갈**.
+- 대응: 헤더 수신 **타임아웃**, 최소 데이터 전송률 요구, 동시연결 수 제한, 역방향 프록시(nginx).
+
+**함정**: RUDY(느린 POST 바디), Slow Read(수신 윈도우 0)와 같은 계열. 대역폭이 아니라 **연결 슬롯**을 고갈시킴.

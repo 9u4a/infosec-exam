@@ -105,6 +105,8 @@ function walk(dir, acc = []) {
   return acc;
 }
 
+const SIL_EXTRA_CATS = ['반복출제'];   // 실기 5영역이 아닌 정리용 카테고리 (노트 목록 맨 끝)
+
 function loadNotes(rounds) {
   const notes = [];
   if (!existsSync(NOTES_DIR)) return notes;
@@ -138,7 +140,9 @@ function loadNotes(rounds) {
       md: body.trim(),
     });
   }
-  notes.sort((a, b) => a.slug.localeCompare(b.slug, 'ko'));
+  notes.sort((a, b) =>
+    (SIL_EXTRA_CATS.includes(a.category) ? 1 : 0) - (SIL_EXTRA_CATS.includes(b.category) ? 1 : 0) ||
+    a.slug.localeCompare(b.slug, 'ko'));
   return notes;
 }
 

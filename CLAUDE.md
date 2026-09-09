@@ -67,6 +67,19 @@ tags: [로그, lastlog, btmp]
 - `questions:` 를 빌드가 역인덱싱해 각 기출 문항에 "관련 노트" 링크를 자동 생성.
   연결은 **노트 쪽에서만** 관리한다.
 
+### `notes/반복출제/` 카테고리 (2026-09-09)
+
+회차만 바꿔 반복 출제된 유형 정리. `SIL_EXTRA_CATS = ['반복출제']`(build.mjs) 에 등록돼
+노트 목록에서 **맨 끝**으로 정렬. domain 은 5영역 중 하나(필터용), `questions:` 는 그 주제를
+낸 모든 회차. 본문 = **핵심 정답 + 함정** (회차별 실제 문항·정답은 앱이 인라인 표시하므로 표 불필요).
+- 앱: `route('note')` 의 `qBox` 가 `category==='반복출제'` 이면 `.rank-item` 대신
+  `reviewItem(q, ...)` 지연펼침으로 렌더 → 회차별 정답 비교. `repeatNote(q)`/`repeatBadge(q)`
+  헬퍼가 `q.notes` 의 `반복출제/` 슬러그를 찾아 문항카드·`reviewItem` 에 **🔁 배지** 표시.
+  `noteLinksHtml(q)` 는 `반복출제/` 슬러그를 `📎` 목록에서 제외(🔁 와 중복 방지).
+- 생성: `scratchpad/repeat_clusters.mjs`(마커+트라이그램 클러스터 분석) →
+  `scratchpad/repeat_notes.json`(큐레이션) → `scratchpad/gen_repeat_notes.mjs` 로 `.md` 60개 생성.
+  현재 60주제 · 139문항 커버. 추가 시 같은 파이프라인.
+
 ## 예상문제 (기사 모의고사)
 
 `실기/` 원본과 **완전 별개**인 신규 예상 문항. 다음 시험 대비 실전 모의고사용.
@@ -204,7 +217,7 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 - **문항 직링크** `#/q/<qid>`: 통계·즐겨찾기·노트·검색의 단일 문항 클릭은 세션을 건드리지 않고 이 라우트로 이동. 같은 회차 이전/다음 이동.
 - **통합 검색** `#/search/<query>`: 문제·정답·해설·보충지문·노트 전체를 AND 부분일치로 검색(예상문제 포함). 결과에서 바로 세션 시작 가능. 입력은 `history.replaceState` 로 URL 동기화.
 - **모의고사** `#/mock`(하단 탭): 예상문제 18문항 실전 편성 + 180분 타이머 + 60점 합격 판정. 위 「예상문제」 섹션 참고. 세션 인프라(`route('session')`/`route('summary')`)를 재사용하며 `SESSION.kind==='mock'`·`durationMin` 으로 타이머·합격배너 분기.
-- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v21**).
+- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v22**).
 - **CPPG 트랙**: `#/cppg` 홈에서 연습문제(과목/노트/태그/오답/랜덤 범위, 즉시 공개 토글) ·
   모의고사(과목별 배분 100문항 + 120분 타이머 + 총점 60·과목별 40% 과락 판정) · 통계 ·
   노트. 연습·모의 세션 모두 `cppg.session` 에 영속(타이머 포함 복원). 마지막 트랙을

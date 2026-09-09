@@ -340,6 +340,25 @@ function enhanceMarkdown(root) {
 
 function qLabel(q) { return q.predicted ? `예상 · ${q.domain}` : `${q.round}회 ${q.no}번`; }
 
+/* 이 문항이 속한 「반복출제」 노트 (있으면) + 배지 링크 */
+function repeatNote(q) {
+  const slug = (q.notes || []).find((s) => s.startsWith('반복출제/'));
+  return slug ? NOTE_BY_SLUG.get(slug) : null;
+}
+function repeatBadge(q) {
+  const n = repeatNote(q);
+  if (!n) return null;
+  const el2 = el(`<a class="repeat-badge" href="#/note/${encodeURIComponent(n.slug)}">🔁 ${n.questions.length}회 반복 출제 · 회차별 비교 →</a>`);
+  return el2;
+}
+/* 📎 관련 노트 링크 HTML — 반복출제 슬러그는 제외(🔁 배지와 중복) */
+function noteLinksHtml(q) {
+  return (q.notes || []).filter((s) => !s.startsWith('반복출제/')).map((slug) => {
+    const n = NOTE_BY_SLUG.get(slug);
+    return n ? `<a href="#/note/${encodeURIComponent(slug)}">📎 ${esc(n.title)}</a>` : '';
+  }).join('');
+}
+
 /* 답안 텍스트에서 "정답" 접두어를 라벨로 분리 */
 function renderAnswer(ans) {
   const m = String(ans).match(/^\s*(정답\s*[:：]?)\s*([\s\S]*)$/);
@@ -390,10 +409,8 @@ function questionCard(q, opts = {}) {
   const sinceTs = opts.sessionStart || Date.now();
   const card = el(`<div class="card q-card"></div>`);
 
-  const notesHtml = (q.notes || []).map((slug) => {
-    const n = NOTE_BY_SLUG.get(slug);
-    return n ? `<a href="#/note/${encodeURIComponent(slug)}">📎 ${esc(n.title)}</a>` : '';
-  }).join('');
+  const notesHtml = noteLinksHtml(q);
+  const rep = repeatNote(q);
 
   card.innerHTML = `
     <div class="q-head">
@@ -403,6 +420,7 @@ function questionCard(q, opts = {}) {
       <button class="star ${store.isFav(q.qid) ? 'on' : ''}" title="즐겨찾기" aria-label="즐겨찾기">${store.isFav(q.qid) ? '★' : '☆'}</button>
     </div>
     <div class="q-body">${esc(q.question)}${q.supplement ? `<div class="supplement"><span class="supp-cap">🧩 지문 재구성 <span>· 원본 데이터 누락분</span></span><div class="supp-body markdown">${window.marked ? window.marked.parse(q.supplement) : esc(q.supplement)}</div></div>` : ''}</div>
+    ${rep ? `<a class="repeat-badge" href="#/note/${encodeURIComponent(rep.slug)}">🔁 ${rep.questions.length}회 반복 출제 · 회차별 비교 →</a>` : ''}
 
     <label class="field my-answer">
       <span>내 답 (선택 입력)</span>
@@ -482,11 +500,9 @@ function questionCard(q, opts = {}) {
 }
 
 /* 점수 화면 "다시 볼 문항" 행 — 눌러서 정답·해설만 인라인 확인 (읽기 전용) */
-function reviewItem(q, grade) {
-  const notesHtml = (q.notes || []).map((slug) => {
-    const n = NOTE_BY_SLUG.get(slug);
-    return n ? `<a href="#/note/${encodeURIComponent(slug)}">📎 ${esc(n.title)}</a>` : '';
-  }).join('');
+function reviewItem(q, grade, opts = {}) {
+  const notesHtml = noteLinksHtml(q);
+  const rep = repeatNote(q);
   const d = el(`<details class="q-review">
     <summary>
       <span class="pill accent">${esc(qLabel(q))}</span>
@@ -501,6 +517,7 @@ function reviewItem(q, grade) {
     if (!d.open || built) return;
     built = true;
     body.innerHTML = `
+      ${rep && !opts.hideRepeatBadge ? `<a class="repeat-badge" href="#/note/${encodeURIComponent(rep.slug)}">🔁 ${rep.questions.length}회 반복 출제 · 회차별 비교 →</a>` : ''}
       <div class="q-body">${esc(q.question)}${q.supplement ? `<div class="supplement"><span class="supp-cap">🧩 지문 재구성 <span>· 원본 데이터 누락분</span></span><div class="supp-body markdown">${window.marked ? window.marked.parse(q.supplement) : esc(q.supplement)}</div></div>` : ''}</div>
       <div class="answer-wrap" style="border-top:none;margin-top:10px;padding-top:0">
         <div class="a-body">${renderAnswer(q.answer)}</div>
@@ -1284,6 +1301,7 @@ route('notes', (app, args) => {
     if (curTag) tags.push('#' + esc(curTag));
     if (f) tags.push('"' + esc(nq.value.trim()) + '"');
     listWrap.appendChild(el(`<p class="small muted" style="margin:6px 2px">${notes.length}개 노트${tags.length ? ' · ' + tags.join(' · ') : ''}</p>`));
+    if (curCat === '반복출제') listWrap.appendChild(el(`<p class="small muted" style="margin:0 2px 8px">여러 회차에 반복 출제된 유형. 각 노트에서 회차별 실제 문항·정답을 펼쳐 비교하고, 핵심 정답을 암기하세요.</p>`));
     if (!notes.length) { listWrap.appendChild(el(`<p class="muted small">조건에 맞는 노트가 없습니다.</p>`)); return; }
 
     const byCat = {};
@@ -1327,11 +1345,15 @@ route('note', (app, args) => {
   enhanceMarkdown(md);
   app.appendChild(md);
 
-  const qBox = (title, ids, lookup, label) => {
+  const qBox = (title, ids, lookup, label, opts = {}) => {
     if (!ids || !ids.length) return;
-    const box = el(`<div class="card"><h3>${title} (${ids.length})</h3></div>`);
+    const box = el(`<div class="card"><h3>${title} (${ids.length})${opts.expand ? ' <span class="muted small">눌러서 회차별 정답 비교</span>' : ''}</h3></div>`);
     ids.forEach((qid) => {
       const q = lookup(qid); if (!q) return;
+      if (opts.expand) {
+        box.appendChild(reviewItem(q, store.lastGrade(qid), { hideRepeatBadge: true }));
+        return;
+      }
       const item = el(`<div class="rank-item"><span class="pill accent">${esc(qLabel(q))}</span>
         <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.question.slice(0, 36))}</span></div>`);
       item.addEventListener('click', () => navigate('#/q/' + encodeURIComponent(qid)));
@@ -1342,7 +1364,7 @@ route('note', (app, args) => {
     box.appendChild(all);
     app.appendChild(box);
   };
-  qBox('연결된 기출 문항', n.questions, (id) => BY_QID.get(id), '연결 기출 모두 풀기');
+  qBox('연결된 기출 문항', n.questions, (id) => BY_QID.get(id), '연결 기출 모두 풀기', { expand: n.category === '반복출제' });
   qBox('관련 예상문제', n.predicted, (id) => PQ_BY_ID.get(id), '이 노트 예상문제 풀기');
 });
 

@@ -240,6 +240,15 @@ label.field > span { display: block; font-size: .85rem; font-weight: 600; color:
 .q-review .rv-g.g-m { color: var(--maybe); }
 .q-review .rv-body { padding: 2px 2px 14px; }
 .q-review .rv-body .q-body { font-size: .98rem; }
+
+/* 반복출제 배지 링크 */
+.repeat-badge {
+  display: inline-block; margin: 8px 0 2px;
+  font-size: .82rem; font-weight: 600;
+  color: var(--accent); background: var(--accent-weak);
+  padding: 4px 10px; border-radius: 999px; text-decoration: none;
+}
+.repeat-badge:active { transform: translateY(1px); }
 .q-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 6px; margin-top: 8px; }
 .q-cell {
   min-height: 40px; border: 1px solid var(--border); border-radius: 8px;
