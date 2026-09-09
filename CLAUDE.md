@@ -199,11 +199,12 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 - **이어풀기**: 진행 중 세션은 localStorage(`session` 키)에 저장 → 앱 재실행·새로고침해도 홈의 "이어풀기" 카드로 재개. `finishSession()` 시 결과를 `lastSummary` 로 옮기고 세션 비움. 세션 화면에 문항 점프 그리드.
   - `startSession()` 이 **진행 중이던 세션을 버릴 때, 모의고사이거나 채점 흔적이 있으면 `recordCurrentSession()` 으로 `sessions` 에 기록**한다(중단해도 홈 "최근 모의고사"·지난 기록에 남음). `finishSession()` 도 이 함수를 재사용.
   - 홈 "최근 모의고사" 카드: 응시 횟수 · 최신 점수/합격 · **상대 시각(`fmtWhen`)** · 직전 점수들. 날짜는 `toISOString`(UTC) 대신 로컬 기준 `fmtDay`/`fmtWhen` 사용(밤 시간대 하루 어긋남 방지).
+- **점수 화면 "다시 볼 문항"**: 오답·애매·미채점 문항을 `<details class="q-review">` 로 나열 → 눌러서 **그 자리에서 정답·해설을 인라인 확인**(읽기 전용, 지연 빌드). 헬퍼 `reviewItem(q, grade)`. "모두 펼치기" 토글 + "이 문항 다시 풀기" 버튼. `route('summary')` 한 곳 → 라이브 요약·모의고사 결과·`#/summary/<id>` 모두 적용.
 - **지난 풀이 기록** `#/history`: 제출한 세션 목록(홈·더보기·요약 화면에서 진입). 각 항목 클릭 → `#/summary/<id>` 로 **그때 점수창을 그대로 다시 표시**. `finishSession()` 이 세션 레코드에 `qids` + `grades`(qid→⭕🔺❌) 스냅샷을 남기므로, 이후 같은 문항을 다르게 재채점해도 지난 점수창은 고정. 모의고사 이력 항목도 같은 방식으로 결과 재열람.
 - **문항 직링크** `#/q/<qid>`: 통계·즐겨찾기·노트·검색의 단일 문항 클릭은 세션을 건드리지 않고 이 라우트로 이동. 같은 회차 이전/다음 이동.
 - **통합 검색** `#/search/<query>`: 문제·정답·해설·보충지문·노트 전체를 AND 부분일치로 검색(예상문제 포함). 결과에서 바로 세션 시작 가능. 입력은 `history.replaceState` 로 URL 동기화.
 - **모의고사** `#/mock`(하단 탭): 예상문제 18문항 실전 편성 + 180분 타이머 + 60점 합격 판정. 위 「예상문제」 섹션 참고. 세션 인프라(`route('session')`/`route('summary')`)를 재사용하며 `SESSION.kind==='mock'`·`durationMin` 으로 타이머·합격배너 분기.
-- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v20**).
+- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v21**).
 - **CPPG 트랙**: `#/cppg` 홈에서 연습문제(과목/노트/태그/오답/랜덤 범위, 즉시 공개 토글) ·
   모의고사(과목별 배분 100문항 + 120분 타이머 + 총점 60·과목별 40% 과락 판정) · 통계 ·
   노트. 연습·모의 세션 모두 `cppg.session` 에 영속(타이머 포함 복원). 마지막 트랙을

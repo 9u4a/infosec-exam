@@ -481,6 +481,38 @@ function questionCard(q, opts = {}) {
   return card;
 }
 
+/* 점수 화면 "다시 볼 문항" 행 — 눌러서 정답·해설만 인라인 확인 (읽기 전용) */
+function reviewItem(q, grade) {
+  const notesHtml = (q.notes || []).map((slug) => {
+    const n = NOTE_BY_SLUG.get(slug);
+    return n ? `<a href="#/note/${encodeURIComponent(slug)}">📎 ${esc(n.title)}</a>` : '';
+  }).join('');
+  const d = el(`<details class="q-review">
+    <summary>
+      <span class="pill accent">${esc(qLabel(q))}</span>
+      <span class="rv-q">${esc(q.question.slice(0, 36))}</span>
+      <span class="rv-g g-${grade || 'none'}">${grade ? GRADE_ICON[grade] + ' ' + GRADE_LABEL[grade] : '미채점'}</span>
+    </summary>
+    <div class="rv-body"></div>
+  </details>`);
+  const body = $('.rv-body', d);
+  let built = false;
+  d.addEventListener('toggle', () => {
+    if (!d.open || built) return;
+    built = true;
+    body.innerHTML = `
+      <div class="q-body">${esc(q.question)}${q.supplement ? `<div class="supplement"><span class="supp-cap">🧩 지문 재구성 <span>· 원본 데이터 누락분</span></span><div class="supp-body markdown">${window.marked ? window.marked.parse(q.supplement) : esc(q.supplement)}</div></div>` : ''}</div>
+      <div class="answer-wrap" style="border-top:none;margin-top:10px;padding-top:0">
+        <div class="a-body">${renderAnswer(q.answer)}</div>
+        ${q.explanation ? `<div class="expl"><b>💡 해설</b><div class="expl-body markdown">${window.marked ? window.marked.parse(q.explanation) : esc(q.explanation)}</div></div>` : ''}
+        ${notesHtml ? `<div class="note-links">${notesHtml}</div>` : ''}
+        <a class="btn sm" style="margin-top:4px" href="#/q/${encodeURIComponent(q.qid)}">이 문항만 크게 보기 →</a>
+      </div>`;
+    enhanceMarkdown(body);
+  });
+  return d;
+}
+
 /* 트랙 전환 스위처 (홈 상단) */
 function trackSwitch(cur) {
   return el(`<div class="track-switch">
@@ -918,21 +950,26 @@ route('summary', (app, args) => {
     app.appendChild(box);
   }
 
-  // 틀린/애매한/미채점 문항 바로가기 (모의고사는 미채점도 포함)
-  const review = SUM.qids.filter((qid) => { const gr = gradeOf(qid); return gr === 'x' || gr === 'm' || (isMock && !gr); });
+  // 오답·애매·미채점 문항 — 눌러서 정답·해설을 이 화면에서 바로 확인
+  const review = SUM.qids.filter((qid) => { const gr = gradeOf(qid); return gr === 'x' || gr === 'm' || !gr; });
   if (review.length) {
-    const box = el(`<div class="card"><h3>다시 볼 문항 (${review.length})</h3></div>`);
+    const box = el(`<div class="card"><h3>다시 볼 문항 (${review.length}) <span class="muted small">눌러서 답·해설</span></h3></div>`);
     review.forEach((qid) => {
-      const q = anyQ(qid); if (!q) return; const gr = gradeOf(qid);
-      const item = el(`<div class="rank-item"><span class="pill accent">${esc(qLabel(q))}</span>
-        <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.question.slice(0, 36))}</span>
-        <span class="small ${gr === 'x' ? 'rank-x' : 'muted'}">${gr ? GRADE_LABEL[gr] : '미채점'}</span></div>`);
-      item.addEventListener('click', () => navigate('#/q/' + encodeURIComponent(q.qid)));
-      box.appendChild(item);
+      const q = anyQ(qid); if (!q) return;
+      box.appendChild(reviewItem(q, gradeOf(qid)));
     });
-    const again = el(`<button class="btn primary wide" style="margin-top:10px">이 문항 다시 풀기</button>`);
+    const btnRow = el(`<div class="row tight" style="margin-top:12px"></div>`);
+    const expand = el(`<button class="btn sm">모두 펼치기</button>`);
+    let allOpen = false;
+    expand.addEventListener('click', () => {
+      allOpen = !allOpen;
+      box.querySelectorAll('details.q-review').forEach((x) => { x.open = allOpen; });
+      expand.textContent = allOpen ? '모두 접기' : '모두 펼치기';
+    });
+    const again = el(`<button class="btn primary" style="flex:1">이 문항 다시 풀기</button>`);
     again.addEventListener('click', () => startSession(review, `${SUM.label} 복습`));
-    box.appendChild(again);
+    btnRow.append(expand, again);
+    box.appendChild(btnRow);
     app.appendChild(box);
   }
 

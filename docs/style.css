@@ -219,6 +219,27 @@ label.field > span { display: block; font-size: .85rem; font-weight: 600; color:
 .resume-card { border-color: var(--accent); background: var(--accent-weak); }
 .q-jump { margin-top: 14px; }
 .q-jump summary { cursor: pointer; padding: 6px 0; }
+
+/* 점수 화면 "다시 볼 문항" — 펼쳐서 답·해설 */
+.q-review { border-bottom: 1px solid var(--border); }
+.q-review > summary {
+  list-style: none; cursor: pointer;
+  display: flex; align-items: center; gap: 8px; padding: 10px 2px;
+}
+.q-review > summary::-webkit-details-marker { display: none; }
+.q-review > summary::before {
+  content: '▸'; flex: none; color: var(--text-dim); font-size: .8rem;
+}
+.q-review[open] > summary::before { content: '▾'; }
+.q-review .rv-q {
+  flex: 1; min-width: 0; font-size: .9rem;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.q-review .rv-g { flex: none; font-size: .8rem; color: var(--text-dim); }
+.q-review .rv-g.g-x { color: var(--bad); }
+.q-review .rv-g.g-m { color: var(--maybe); }
+.q-review .rv-body { padding: 2px 2px 14px; }
+.q-review .rv-body .q-body { font-size: .98rem; }
 .q-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 6px; margin-top: 8px; }
 .q-cell {
   min-height: 40px; border: 1px solid var(--border); border-radius: 8px;
