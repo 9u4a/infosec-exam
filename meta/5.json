@@ -65,7 +65,8 @@
     },
     "16": {
       "domain": "애플리케이션보안",
-      "explanation": "**Zone Transfer(AXFR)**: 슬레이브가 마스터에서 존 전체를 복제하는 정상 기능. (1) 1차 서버가 요청에 무응답 → 차단된 안전한 상태. (2) 임의 허용 시: 내부 호스트명·IP·구조가 통째로 노출(정찰), 반복 요청 시 DoS. (3) 대응: `allow-transfer { 신뢰 슬레이브 IP; };` 로 제한, 불필요하면 비활성화, TSIG로 인증. 5·11·23회 반복."
+      "explanation": "**Zone Transfer(AXFR)**: 슬레이브가 마스터에서 존 전체를 복제하는 정상 기능. (1) 1차 서버가 요청에 무응답 → 차단된 안전한 상태. (2) 임의 허용 시: 내부 호스트명·IP·구조가 통째로 노출(정찰), 반복 요청 시 DoS. (3) 대응: `allow-transfer { 신뢰 슬레이브 IP; };` 로 제한, 불필요하면 비활성화, TSIG로 인증. 5·11·23회 반복.",
+      "supplement": "DNS 서버로 Zone Transfer(AXFR)를 시도한 결과(재구성):\n```\n$ dig @ns1.target.com target.com AXFR\n; Transfer failed.          ← 1차(ns1) 네임서버: 요청에 응답하지 않음\n\n$ dig @ns2.target.com target.com AXFR\ntarget.com.       86400  IN  SOA   ns1.target.com. admin.target.com. ( ... )\ntarget.com.       86400  IN  NS    ns1.target.com.\ntarget.com.       86400  IN  NS    ns2.target.com.\nwww.target.com.   86400  IN  A     10.10.10.10\nmail.target.com.  86400  IN  A     10.10.10.20\ndev.target.com.   86400  IN  A     10.10.10.31\ndb.target.com.    86400  IN  A     10.10.10.40\n...                                 ← 2차(ns2): 존 레코드 전체가 그대로 전송됨\n```"
     }
   }
 }
