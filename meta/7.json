@@ -61,14 +61,12 @@
     "15": {
       "domain": "애플리케이션보안",
       "explanation": "HTTP 요청 보안 문제. ①**id/password가 GET 파라미터 평문** → URL·로그·Referer·브라우저 히스토리에 노출, 스니핑 취약(민감정보는 POST + HTTPS). ②쿠키가 평문 전송 → 세션 하이재킹(Secure 속성 필요). ③**HTTPS(443)에서 HTTP(80)로 전환** → 암호화 안 된 구간 발생. ④Cache-Control로 캐시 미사용 시 서버 부하.",
-      "supplement": "Source PORT: 443, Destination PORT: 80\n\n```\nGET /login.php HTTP/1.1\nHost: test.com\nConnection: keep-alive\nCookie: sEsz4sH5bClhslfOeJgjxdi==\nPragma: no-cache\nCache-Control: must-revalidate\nContent-length: 32\n\nid=admin&password=1234&act=login\n```",
-      "supplementSrc": "provided"
+      "question": "다음 HTTP Request 패킷을 분석하여 보안상 문제점을 서술하시오.\n\nSource PORT: 443, Destination PORT: 80\n\nGET /login.php HTTP/1.1\nHost: test.com\nConnection: keep-alive\nCookie: sEsz4sH5bClhslfOeJgjxdi==\nPragma: no-cache\nCache-Control: must-revalidate\nContent-length: 32\n\nid=admin&password=1234&act=login"
     },
     "16": {
       "domain": "시스템보안",
       "explanation": "**Shellshock**(CVE-2014-6271). (B) 원인: Bash가 환경변수에 담긴 **함수 정의 문자열(`() { ...; }`) 뒤에 붙은 명령까지 실행**하는 파싱 결함. (C) `env x='() { :;}; 명령' bash -c ...` 또는 CGI의 User-Agent 등을 통해 원격 명령 실행 → 흔히 공격자 서버로 리버스 셸 연결. 대응: Bash 패치, mod_cgi 비활성화, WAF. 7·29회 관련.",
-      "supplement": "취약 여부 확인 명령:\n\n```\n$ env x='() { :;}; echo vulnerable' bash -c \"echo test\"\n```",
-      "supplementSrc": "provided"
+      "question": "다음은 Bash 쉘 취약점과 관련된 내용이다. 물음에 답하시오.\n\n(A) 취약점 명칭을 쓰시오.\n(B) 취약점이 발생하는 원인을 서술하시오.\n(C) 공격 구문의 동작 결과를 서술하시오.\n\n취약 여부 확인 명령:\n\n$ env x='() { :;}; echo vulnerable' bash -c \"echo test\""
     }
   }
 }

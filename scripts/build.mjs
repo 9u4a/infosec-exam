@@ -56,6 +56,7 @@ function loadRounds() {
 }
 
 // ---------- 2. meta 병합 ----------
+let overridden = 0;   // meta 로 문제/정답을 교체한 문항 수
 function applyMeta(rounds) {
   const byRound = new Map(rounds.map((r) => [r.round, r]));
   if (!existsSync(META_DIR)) return;
@@ -73,6 +74,9 @@ function applyMeta(rounds) {
         q.domain = info.domain;
       }
       if (info.explanation) q.explanation = info.explanation;
+      // 원본이 재구성·paraphrase 라 실제 기출로 교체하는 경우 (실기/ 원본은 불변)
+      if (info.question) { q.question = info.question; overridden++; }
+      if (info.answer) q.answer = info.answer;
       // 원본 지문(로그·설명문 등)이 누락된 문항의 보충 자료
       if (info.supplement) q.supplement = info.supplement;
       if (info.supplementSrc) q.supplementSrc = info.supplementSrc;
@@ -437,6 +441,7 @@ function main() {
   console.log(`✔ ${rounds.length}개 회차 · ${total}문항`);
   console.log(`  영역 분류 ${classified}/${total} (${(classified / total * 100).toFixed(0)}%)`);
   console.log(`  해설 ${explained}/${total}`);
+  console.log(`  문제/정답 교체 ${overridden}건 (실제 기출로 복원)`);
   console.log(`  보충 지문 ${supplemented}건`);
   console.log(`  노트 ${notes.length}개`);
   if (mnemonics.length) {

@@ -410,12 +410,13 @@ function qLabel(q) { return q.predicted ? `예상 · ${q.domain}` : `${q.round}�
    supplementSrc === 'provided' 는 실제 기출 지문을 확보한 것, 그 외는 정답 기반 재구성. */
 function supplementHtml(q) {
   if (!q.supplement) return '';
-  const provided = q.supplementSrc === 'provided';
-  const cap = provided
-    ? '📄 지문 <span>· 원본 데이터 누락분 복원</span>'
-    : '🧩 지문 재구성 <span>· 원본 데이터 누락분</span>';
   const md = window.marked ? window.marked.parse(q.supplement) : esc(q.supplement);
-  return `<div class="supplement${provided ? ' provided' : ''}"><span class="supp-cap">${cap}</span><div class="supp-body markdown">${md}</div></div>`;
+  // 실제 기출 지문(이미지 등) — 문제의 일부로 이어서 표시, 별도 표식 없음
+  if (q.supplementSrc) {
+    return `<div class="supplement attached"><div class="supp-body markdown">${md}</div></div>`;
+  }
+  // 정답에서 역산한 재구성 예시 — 그대로 표식 유지
+  return `<div class="supplement"><span class="supp-cap">🧩 지문 재구성 <span>· 원본 데이터 누락분</span></span><div class="supp-body markdown">${md}</div></div>`;
 }
 
 /* 이 문항이 속한 「반복출제」 노트 (있으면) + 배지 링크 */

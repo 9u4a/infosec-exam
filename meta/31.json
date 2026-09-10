@@ -4,15 +4,18 @@
   "questions": {
     "1": {
       "domain": "시스템보안",
-      "explanation": "`/etc/passwd`의 2번째(패스워드) 필드에 **`x`** 가 있으면 실제 해시는 `/etc/shadow`에 있다는 뜻(shadow password 사용). passwd는 모든 사용자가 읽을 수 있어(644) 여기에 해시를 두면 오프라인 크래킹 대상이 되므로, root만 읽는 shadow(400/000)로 분리했다. 이 필드가 비어 있으면 패스워드 없이 로그인, `*`나 `!`면 로그인 잠금."
+      "explanation": "`/etc/passwd`의 2번째(패스워드) 필드에 **`x`** 가 있으면 실제 해시는 `/etc/shadow`에 있다는 뜻(shadow password 사용). passwd는 모든 사용자가 읽을 수 있어(644) 여기에 해시를 두면 오프라인 크래킹 대상이 되므로, root만 읽는 shadow(400/000)로 분리했다. 이 필드가 비어 있으면 패스워드 없이 로그인, `*`나 `!`면 로그인 잠금.",
+      "question": "/etc/passwd 파일 항목에서 /etc/shadow에 비밀번호가 암호화되어 저장되어 있을 때 패스워드 항목의 값을 쓰시오."
     },
     "2": {
       "domain": "네트워크보안",
-      "explanation": "**DNS 스푸핑**은 공격자가 정상 DNS 응답보다 먼저 위조 응답을 주입해 피해자(또는 리졸버 캐시)에 가짜 IP를 심는다. 캐시에 남으면 **DNS 캐시 포이즈닝**, 이를 통해 사용자를 가짜 사이트로 유도하면 **파밍(Pharming)**. 대응: DNSSEC(응답 전자서명), 재귀 질의 소스포트/TXID 랜덤화, 신뢰 DNS 사용."
+      "explanation": "**DNS 스푸핑**은 공격자가 정상 DNS 응답보다 먼저 위조 응답을 주입해 피해자(또는 리졸버 캐시)에 가짜 IP를 심는다. 캐시에 남으면 **DNS 캐시 포이즈닝**, 이를 통해 사용자를 가짜 사이트로 유도하면 **파밍(Pharming)**. 대응: DNSSEC(응답 전자서명), 재귀 질의 소스포트/TXID 랜덤화, 신뢰 DNS 사용.",
+      "question": "Man in the middle 방식의 유형으로써, DNS 서버보다 빠른 응답을 통해 DNS 응답을 조작하여 사용자가 의도하지 않은 웹사이트로 접속하게 만드는 공격 기법은 무엇인지 쓰시오."
     },
     "3": {
       "domain": "네트워크보안",
-      "explanation": "ICMP Echo Request(type 8)를 막아 ping 스캔·스머프 악용을 줄인다. `-p icmp --icmp-type echo-request -j DROP`. **DROP**은 응답 없이 폐기(스캐너에 정보 안 줌), **REJECT**는 ICMP unreachable을 회신(정상 사용자 편의). 보안 관점에선 외부는 DROP이 일반적."
+      "explanation": "ICMP Echo Request(type 8)를 막아 ping 스캔·스머프 악용을 줄인다. `-p icmp --icmp-type echo-request -j DROP`. **DROP**은 응답 없이 폐기(스캐너에 정보 안 줌), **REJECT**는 ICMP unreachable을 회신(정상 사용자 편의). 보안 관점에선 외부는 DROP이 일반적.",
+      "question": "외부 네트워크에서 리눅스 서버로의 ICMP 패킷 전송을 제한하기 위해 방화벽 설정 도구인 iptables를 사용하려고 한다. 외부에서 내부로 들어오는 Ping 패킷을 차단하기 위한 알맞은 속성값을 쓰시오.\n\niptables -A INPUT -p ( A ) --icmp-type ( B ) -j ( C )"
     },
     "4": {
       "domain": "시스템보안",
@@ -20,15 +23,19 @@
     },
     "5": {
       "domain": "시스템보안",
-      "explanation": "Windows 서비스별 로그 위치. **HTTPERR**(`%windir%\\System32\\LogFiles\\HTTPERR`): HTTP.sys 커널 드라이버가 남기는 연결 오류·타임아웃 로그. **DHCP**(`...\\LogFiles\\DHCP` 또는 `%windir%\\System32\\dhcp`): DHCP 서버의 임대 부여·거부 로그. IIS 접근 로그는 별도로 `...\\LogFiles\\W3SVC1`."
+      "explanation": "Windows 서비스별 로그 위치. **HTTPERR**(`%windir%\\System32\\LogFiles\\HTTPERR`): HTTP.sys 커널 드라이버가 남기는 연결 오류·타임아웃 로그. **DHCP**(`...\\LogFiles\\DHCP` 또는 `%windir%\\System32\\dhcp`): DHCP 서버의 임대 부여·거부 로그. IIS 접근 로그는 별도로 `...\\LogFiles\\W3SVC1`.",
+      "question": "윈도우 운영체제 환경에서 특정 서비스의 로그 파일 저장 경로이다. 밑줄 친 곳에 들어갈 로그 파일 경로를 쓰시오.\n\nIIS\n- %SystemRoot%\\system32\\LogFiles\\___①___\\\n- %SystemRoot%\\system32\\LogFiles\\W3SVC1\\\n- %SystemRoot%\\system32\\LogFiles\\MSFTPSVC1\\\n\nDHCP\n- %SystemRoot%\\System32\\___②___",
+      "answer": "① : HTTPERR\n② : DHCP"
     },
     "6": {
       "domain": "정보보안일반",
-      "explanation": "**해시 함수**의 특성: ①압축성(임의 길이 → 고정 길이) ②일방향성(출력에서 입력 역산 불가) ③약한 충돌 저항성(주어진 x에 대해 같은 해시의 x'를 못 찾음) ④강한 충돌 저항성(같은 해시의 임의 쌍을 못 찾음). 무결성 검증, 전자서명, 패스워드 저장(+salt), MAC에 사용. SHA-256/SHA-3. MD5·SHA-1은 충돌 발견되어 폐기 권고."
+      "explanation": "**해시 함수**의 특성: ①압축성(임의 길이 → 고정 길이) ②일방향성(출력에서 입력 역산 불가) ③약한 충돌 저항성(주어진 x에 대해 같은 해시의 x'를 못 찾음) ④강한 충돌 저항성(같은 해시의 임의 쌍을 못 찾음). 무결성 검증, 전자서명, 패스워드 저장(+salt), MAC에 사용. SHA-256/SHA-3. MD5·SHA-1은 충돌 발견되어 폐기 권고.",
+      "question": "임의 길이의 입력 데이터를 고정 길이의 데이터로 매핑하는 암호화 방식으로 MD5, SHA 알고리즘 등의 단방향으로 암호화를 수행하여 역계산은 불가능한 방식은 무엇인지 쓰시오."
     },
     "7": {
       "domain": "정보보안관리및법규",
-      "explanation": "위험관리 흐름: 위험 식별 → **위험 분석**(자산·위협·취약성으로 위험의 크기·가능성을 정성/정량 분석) → **위험 평가**(분석 결과에 우선순위를 매기고 수용 여부(DoA) 판단) → 대책 선정 → 대책 계획 수립 → **대책 구현**(실제 적용) → 사후관리. '분석'은 크기 산정, '평가'는 우선순위·수용 판단으로 구분."
+      "explanation": "위험관리 흐름: 위험 식별 → **위험 분석**(자산·위협·취약성으로 위험의 크기·가능성을 정성/정량 분석) → **위험 평가**(분석 결과에 우선순위를 매기고 수용 여부(DoA) 판단) → 대책 선정 → 대책 계획 수립 → **대책 구현**(실제 적용) → 사후관리. '분석'은 크기 산정, '평가'는 우선순위·수용 판단으로 구분.",
+      "question": "위험 관리 6단계에 관한 설명이다. 빈칸 (A), (B), (C)를 채우시오.\n\n위험 관리 전략 및 계획 수립 → ( A ) → ( B ) → 정보보호 대책 선정 → 정보보호 대책 계획 수립 → ( C )"
     },
     "8": {
       "domain": "애플리케이션보안",
@@ -37,20 +44,22 @@
     "9": {
       "domain": "애플리케이션보안",
       "explanation": "sendmail 릴레이/스팸 차단 3파일. **sendmail.cf**: 메인 설정(sendmail.mc를 컴파일해 생성). **access**: 도메인·IP별 RELAY/REJECT/DISCARD/OK 정책을 적는 텍스트 파일. **access.db**: `makemap hash access.db < access`로 만든 해시 DB(실제 참조본). 오픈 릴레이(무제한 중계)는 스팸 발송 경유지로 악용되므로 반드시 제한.",
-      "supplement": "```\n# cat /etc/mail/____①____ | grep \"R$W*\" | grep \"Relaying denied\"\nR$*   $#error $@5.7.1 $ : \"550 Relaying denied\"\n\n# cat /etc/mail/____②____\nlocalhost.localdomain   RELAY\nlocalhost               RELAY\n127.0.0.1               RELAY\nspam.com                REJECT\n\n# makemap hash /etc/mail/____③____ < /etc/mail/access\n```",
-      "supplementSrc": "provided"
+      "question": "sendmail 스팸 메일 및 릴레이 차단 설정에 관한 물음이다. 빈칸 (1), (2), (3)을 채우시오.\n\n# cat /etc/mail/____①____ | grep \"R$W*\" | grep \"Relaying denied\"\nR$*   $#error $@5.7.1 $ : \"550 Relaying denied\"\n\n# cat /etc/mail/____②____\nlocalhost.localdomain   RELAY\nlocalhost               RELAY\n127.0.0.1               RELAY\nspam.com                REJECT\n\n# makemap hash /etc/mail/____③____ < /etc/mail/access"
     },
     "10": {
       "domain": "애플리케이션보안",
-      "explanation": "**URL Rewrite 모듈**: IIS 확장으로, 정규식 패턴에 따라 요청 URL을 내부적으로 재작성하거나 클라이언트에 리디렉션(301/302)한다. HTTPS 강제, 정규 도메인 통일, 확장자 숨김 등에 쓰이며, 보안 관점에선 취약 경로 차단·헤더 제거에도 활용된다. Apache의 mod_rewrite에 대응."
+      "explanation": "**URL Rewrite 모듈**: IIS 확장으로, 정규식 패턴에 따라 요청 URL을 내부적으로 재작성하거나 클라이언트에 리디렉션(301/302)한다. HTTPS 강제, 정규 도메인 통일, 확장자 숨김 등에 쓰이며, 보안 관점에선 취약 경로 차단·헤더 제거에도 활용된다. Apache의 mod_rewrite에 대응.",
+      "question": "IIS 관리자에서 아웃바운드 필터링 설정으로 특정 HTTP 응답 헤더를 제거할 때 사용하는 모듈은 무엇인지 쓰시오."
     },
     "11": {
       "domain": "정보보안관리및법규",
-      "explanation": "**집적정보통신시설(IDC) 사업자**: 정보통신망법상 타인의 서비스 제공을 위해 다수의 서버를 한 곳에 모아 운영·관리하는 사업자. 물리적 출입통제, 항온항습·소방·이중전원, 침해사고 대응 등 별도의 보호조치 의무가 부과된다."
+      "explanation": "**집적정보통신시설(IDC) 사업자**: 정보통신망법상 타인의 서비스 제공을 위해 다수의 서버를 한 곳에 모아 운영·관리하는 사업자. 물리적 출입통제, 항온항습·소방·이중전원, 침해사고 대응 등 별도의 보호조치 의무가 부과된다.",
+      "question": "다음은 정보통신망법 제46조 내용이다. 괄호 ( ) 안에 공통으로 들어갈 용어를 쓰시오.\n\n① 다음 각 호의 어느 하나에 해당하는 정보통신서비스 제공자 중 정보통신시설의 규모 등이 대통령령으로 정하는 기준에 해당하는 자는 정보통신시설을 안정적으로 운영하기 위하여 대통령령으로 정하는 바에 따른 보호조치를 하여야 한다.\n\n- 타인의 정보통신서비스 제공을 위하여 집적된 정보통신시설을 운영·관리하는 자(이하 \"( )\"라 한다)\n- 자신의 정보통신서비스 제공을 위하여 직접 집적된 정보통신시설을 운영·관리하는 자\n\n② ( )는 집적된 정보통신시설의 멸실, 훼손, 그 밖의 운영장애로 발생한 피해를 보상하기 위하여 대통령령으로 정하는 바에 따라 보험에 가입하여야 한다.\n\n③ 과학기술정보통신부장관은 정기적으로 제1항에 따른 보호조치의 이행 여부를 점검하고, 보완이 필요한 사항에 대하여 ( ) 등에게 시정을 명할 수 있다. 다만, ( ) 등에 대하여 「방송통신발전 기본법」 제36조의2제2항에 따른 점검을 실시한 사항의 경우에는 제1항에 따른 보호조치의 이행 여부 점검 사항에서 제외한다.\n\n....(생략)...."
     },
     "12": {
       "domain": "정보보안관리및법규",
-      "explanation": "**SIEM**. 이기종 보안장비·서버의 로그/이벤트를 실시간 수집·정규화하고 **상관분석**으로 단일 이벤트만으로는 안 보이는 공격 시나리오를 탐지한다. SIM(로그 저장·분석)+SEM(실시간 이벤트 관리)의 결합. 31회 5번(SIEM)과 동일 개념이 반복 출제됨."
+      "explanation": "**SIEM**. 이기종 보안장비·서버의 로그/이벤트를 실시간 수집·정규화하고 **상관분석**으로 단일 이벤트만으로는 안 보이는 공격 시나리오를 탐지한다. SIM(로그 저장·분석)+SEM(실시간 이벤트 관리)의 결합. 31회 5번(SIEM)과 동일 개념이 반복 출제됨.",
+      "question": "서버 및 보안 시스템으로부터 생성되는 로그 데이터들을 빅데이터 기법을 활용, 상관분석, 포렌식 기능 제공, 지능적 위협에 대한 조기 경고 모니터링이 가능한 지능형 통합 분석 보안 시스템은 무엇인지 쓰시오."
     },
     "13": {
       "domain": "정보보안관리및법규",
@@ -66,19 +75,18 @@
     },
     "16": {
       "domain": "정보보안일반",
-      "explanation": "SSL/TLS 하이브리드 구조. **비대칭키**: ①서버 인증서 검증(CA 공개키로 서명 확인) ②세션키 재료(Premaster Secret) 안전 교환(RSA: 서버 공개키로 암호화 / (EC)DHE: 매개변수 교환 후 각자 계산, 순방향 비밀성 제공). **대칭키**: Change Cipher Spec 이후 실제 애플리케이션 데이터를 세션키로 암·복호화(속도). 무결성은 HMAC 또는 AEAD."
+      "explanation": "SSL/TLS 하이브리드 구조. **비대칭키**: ①서버 인증서 검증(CA 공개키로 서명 확인) ②세션키 재료(Premaster Secret) 안전 교환(RSA: 서버 공개키로 암호화 / (EC)DHE: 매개변수 교환 후 각자 계산, 순방향 비밀성 제공). **대칭키**: Change Cipher Spec 이후 실제 애플리케이션 데이터를 세션키로 암·복호화(속도). 무결성은 HMAC 또는 AEAD.",
+      "question": "OSI 7계층의 전송 계층(Transport Layer)에서 보안을 제공하는 SSL/TLS 핸드쉐이크 과정에 대한 설명이다. Client Hello와 Server Hello 단계가 완료된 이후, 비대칭키(공개키) 암호화 방식과 대칭키 암호화 방식이 각각 어느 단계에서 어떤 용도로 사용되는지 핵심 과정을 포함하여 서술하시오."
     },
     "17": {
       "domain": "애플리케이션보안",
       "explanation": "Fiddler 같은 로컬 프록시로 웹 취약점을 점검할 때, HTTPS는 기본적으로 암호화되어 내용이 안 보인다. **Decrypt HTTPS traffic** 옵션을 켜고 Fiddler 루트 인증서를 신뢰 저장소에 설치하면 프록시가 중간에서 복호화(MITM)해 요청/응답을 조작·검사할 수 있다. 여기서 점검 대상은 입력값이 응답에 반사되는지 확인하는 **XSS**. 대응: 서버측 입력검증(프록시 우회 대비), 출력 인코딩, 태그 화이트리스트.",
-      "supplement": "Fiddler 도구로 웹 애플리케이션을 점검한 결과가 다음과 같다.\n\n**[그림1] Fiddler Log / Session Inspector**\n```\n14:22:05:0125  HTTPS Decryption is currently switched off.\n14:22:05:0130  Click Tools > Fiddler Options > HTTPS to enable it.\n14:22:05:0210  [Handshake] A SSLv3-compatible ClientHello handshake was found.\n14:22:05:0215  Warning: Secure Protocol is downgraded or insecure (SSLv3 / TLS 1.0)\n\n[Request]\nCONNECT target.example.com:443 HTTP/1.1\nHost: target.example.com:443\nProxy-Connection: Keep-Alive\n\n[Response]\nHTTP/1.1 200 Connection Established\nFiddler Gateway: Direct\nNote: HTTPS decrypt disabled, Response body contains encrypted data.\n```\n\n**[그림2] 게시판 목록 응답 본문(복호화 후)**\n```\nHTTP/1.1 200 OK\nContent-Type: text/html; charset=euc-kr\n\n<div id=\"list_item\">\n  <div id=\"title\"><a href='view.php?num=110'>test1</a></div> ... 관리자 / 2026-04-12\n<div id=\"list_item\">\n  <div id=\"title\"><a href='view.php?num=111'>test2<script> alert(document.cookie) </script></a></div>\n<div id=\"list_item\">\n  <div id=\"title\"><a href='view.php?num=112'>test3<script>alert(document.cookie)</script></a></div>\n```\n\n① [그림1]에 대한 문제의 원인은 무엇인지 서술하시오.\n② [그림1]에 대한 문제 해결 방법은 무엇인지 서술하시오.\n③ [그림2]에서 확인되는 취약점을 서술하시오.\n④ 해당 취약점에 대한 대응 방안을 서술하시오.",
-      "supplementSrc": "provided"
+      "question": "Fiddler 도구로 웹 애플리케이션을 점검한 결과가 다음과 같다.\n\n[그림1] Fiddler Log / Session Inspector\n\n14:22:05:0125  HTTPS Decryption is currently switched off.\n14:22:05:0130  Click Tools > Fiddler Options > HTTPS to enable it.\n14:22:05:0210  [Handshake] A SSLv3-compatible ClientHello handshake was found.\n14:22:05:0215  Warning: Secure Protocol is downgraded or insecure (SSLv3 / TLS 1.0)\n\n[Request]\nCONNECT target.example.com:443 HTTP/1.1\nHost: target.example.com:443\nProxy-Connection: Keep-Alive\n\n[Response]\nHTTP/1.1 200 Connection Established\nFiddler Gateway: Direct\nNote: HTTPS decrypt disabled, Response body contains encrypted data.\n\n[그림2] 게시판 목록 응답 본문(복호화 후)\n\nHTTP/1.1 200 OK\nContent-Type: text/html; charset=euc-kr\n\n<div id=\"list_item\">\n  <div id=\"title\"><a href='view.php?num=110'>test1</a></div> ... 관리자 / 2026-04-12\n<div id=\"list_item\">\n  <div id=\"title\"><a href='view.php?num=111'>test2<script> alert(document.cookie) </script></a></div>\n<div id=\"list_item\">\n  <div id=\"title\"><a href='view.php?num=112'>test3<script>alert(document.cookie)</script></a></div>\n\n① [그림1]에 대한 문제의 원인은 무엇인지 서술하시오.\n② [그림1]에 대한 문제 해결 방법은 무엇인지 서술하시오.\n③ [그림2]에서 확인되는 취약점을 서술하시오.\n④ 해당 취약점에 대한 대응 방안을 서술하시오."
     },
     "18": {
       "domain": "애플리케이션보안",
       "explanation": "**CSRF**는 이미 인증된 사용자의 브라우저가 자동으로 쿠키를 실어 보내는 점을 악용해, 공격자가 만든 페이지에서 피해자 명의의 상태변경 요청(비밀번호 변경, 이체 등)을 유발한다. 서버가 '정상 폼에서 온 요청'과 '외부에서 위조된 요청'을 구분하지 못하는 것이 원인. 대응: 요청마다 검증하는 **CSRF 토큰**(세션 저장값과 대조), Referer/Origin 검증, 중요 기능 재인증, SameSite 쿠키. 쿠키(클라이언트 저장, 스니핑·변조 취약) vs 세션(서버 저장, 상대적으로 안전).",
-      "supplement": "다음 [보기]는 소프트웨어 취약점을 제거한 안전한 코드의 예시이다.\n\n**[그림1] 게시판 글쓰기 페이지 요청 처리**\n```\n@RequestMapping(\"/write.do\")\npublic String boardWrite(@ModelAttribute(\"BoardModel\") BoardModel boardModel,\n                         HttpSession session) {\n    // 난수 형태의 토큰을 생성하여 세션에 저장\n    session.setAttribute(\"SESSION_CSRF_TOKEN\", UUID.randomUUID().toString());\n    return \"/board/write\";\n}\n```\n\n**[그림2] 생성한 토큰을 입력 페이지에 히든 필드 값으로 전달**\n```\n<input type=\"hidden\" name=\"PARAM_CSRF_TOKEN\" value=\"${SESSION_CSRF_TOKEN}\" />\n```\n\n(1) 세션(Session)과 쿠키(Cookie)에 대해 서술하시오.\n(2) [보기]의 코드가 대응하는 취약점과 이를 이용한 공격 기법을 서술하시오.\n(3) 소프트웨어 개발 취약점을 추가로 보완하기 위한 방법을 서술하시오.",
-      "supplementSrc": "provided"
+      "question": "다음 [보기]는 소프트웨어 취약점을 제거한 안전한 코드의 예시이다.\n\n[그림1] 게시판 글쓰기 페이지 요청 처리\n\n@RequestMapping(\"/write.do\")\npublic String boardWrite(@ModelAttribute(\"BoardModel\") BoardModel boardModel,\n                         HttpSession session) {\n    // 난수 형태의 토큰을 생성하여 세션에 저장\n    session.setAttribute(\"SESSION_CSRF_TOKEN\", UUID.randomUUID().toString());\n    return \"/board/write\";\n}\n\n[그림2] 생성한 토큰을 입력 페이지에 히든 필드 값으로 전달\n\n<input type=\"hidden\" name=\"PARAM_CSRF_TOKEN\" value=\"${SESSION_CSRF_TOKEN}\" />\n\n(1) 세션(Session)과 쿠키(Cookie)에 대해 서술하시오.\n(2) [보기]의 코드가 대응하는 취약점과 이를 이용한 공격 기법을 서술하시오.\n(3) 소프트웨어 개발 취약점을 추가로 보완하기 위한 방법을 서술하시오."
     }
   }
 }

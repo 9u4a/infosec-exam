@@ -40,8 +40,10 @@ server/                       (선택) 학습기록 동기화 Cloudflare Worker 
     "5": {
       "domain": "시스템보안",
       "explanation": "선택. 마크다운 가능. 없으면 키 생략.",
-      "supplement": "선택. 원본 지문(로그·설명문 등)이 누락된 문항의 보충 자료. 마크다운. HTML 태그가 들어가면 코드펜스로 감쌀 것(marked 가 실제 태그로 렌더).",
-      "supplementSrc": "선택. \"provided\" = 실제 기출 지문을 확보해 넣음. 생략 = 정답 기반 재구성."
+      "question": "선택. 원본이 paraphrase·재구성본이라 실제 기출 문항 전문으로 교체할 때. plain text.",
+      "answer": "선택. 문항 형식이 바뀌어 정답 표기도 맞춰야 할 때만.",
+      "supplement": "선택. 이미지 지문 전용(로그·코드·보기는 question 에 합칠 것). \"![alt](img/rNqM.jpg)\".",
+      "supplementSrc": "선택. supplement 가 실제 기출이면 \"provided\"(표식 없이 문제에 이어 렌더). 생략 = 재구성 캡션."
     }
   }
 }
@@ -51,14 +53,17 @@ server/                       (선택) 학습기록 동기화 Cloudflare Worker 
   `시스템보안` · `네트워크보안` · `애플리케이션보안` · `정보보안일반` · `정보보안관리및법규`
 - 문항 번호(문자열 키)는 원본 `id` 와 일치해야 한다. 빌드가 검증하고 경고한다.
 - `explanation` 은 최신 회차(32→22회)부터 단계적으로 채운다.
-- `supplement`: 원본 실기 JSON에 참조 자료(로그·패킷·설명문·보기·코드)가 빠진 문항용.
-  - `supplementSrc` 없음(기본) → UI 캡션 "🧩 지문 재구성 · 원본 데이터 누락분"(주황). 정답에서 역산한 예시.
-  - `supplementSrc: "provided"` → 캡션 "📄 지문 · 원본 데이터 누락분 복원"(초록). 실제 기출 지문을 확보한 경우.
-  - 코드·HTML·로그는 반드시 ```` ``` ```` 코드펜스로 감싼다(marked 가 `<div>`·`<script>` 를 실제 태그로 렌더).
-  - 이미지 지문(Wireshark 캡처 등)은 `docs/img/rNqM.jpg` 로 두고 `![설명](img/rNqM.jpg)` 로 참조 + `docs/sw.js` SHELL 에 추가.
-  - 재구성이 불가능하면(정답만으로 특정 불가) 그 사실을 명시하는 문구를 넣는다.
+- **`question`/`answer` 교체**: `실기/N회/N.json` 원본이 실제 기출의 paraphrase·재구성본인 경우,
+  실제 기출을 확보하면 `meta.question` 으로 **문제 본문을 통째로 교체**한다(`실기/` 원본은 불변).
+  코드·로그·HTML·보기가 들어가도 `q.question` 은 `esc()` 로 렌더되므로 **코드펜스 불필요**.
+  형식이 바뀌어 정답 표기(빈칸 라벨 등)를 맞춰야 하면 `answer` 도 함께.
+- `supplement`: 이제 **이미지 지문 전용**(`![alt](img/rNqM.jpg)`). 로그·코드·보기는 `question` 에 합친다.
+  - 이미지 파일은 `docs/img/rNqM.jpg` + `docs/sw.js` SHELL 등록. `.supp-body img { max-width:100% }`.
+  - `supplementSrc: "provided"` → `.supplement.attached`(표식·색 없음, 문제에 이어 표시).
+  - `supplementSrc` 없음 → "🧩 지문 재구성" 캡션(정답 역산 예시, 원본 미확보). 현재 5회14 하나.
   - 헬퍼: `supplementHtml(q)` (app.js) — `questionCard`·`reviewItem` 공용.
-  - 현황: 31문항 보충(원본 확보 30 · 재구성 1[5회14]). 작업 이력 = 루트 `데이터정리_지문보충_작업목록.md`.
+- 현황: 문제/정답 교체 39건(29 지문 병합 + 10 문항 교체) · 이미지 지문 1 · 재구성 1[5회14].
+  작업 정리 = 루트 `데이터정리_지문보충_작업목록.md`.
 
 ## notes/ 프론트매터
 
@@ -180,7 +185,7 @@ cppg/자료/*.pdf               시행처·법령 원문 PDF(1차 사료). 법�
 
 빌드 산출물 `docs/data/cppg.js` (`window.CPPG_DATA`) 도 **커밋한다**. `cppg/` 를 고치면
 `node scripts/build.mjs` 재실행 → `cppg.js` 함께 커밋. 앱 셸 파일 변경 시 `docs/sw.js` 의
-`CACHE` 버전도 올린다 (현재 **v32**, 실기·CPPG 공용).
+`CACHE` 버전도 올린다 (현재 **v33**, 실기·CPPG 공용).
 
 ⚠ 개인정보보호법은 개정이 잦다. 주요 시행일:
 2020.8.5 데이터3법 / 2023.9.15 대개정 / 2024.3.15 일부(전송요구권·자동화결정·이동형영상기기) /
@@ -290,7 +295,7 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 - **통합 검색** `#/search/<query>`(탭 아님 — 홈 상단 `#homeSearch` 검색창·더보기 메뉴·`/` 단축키로 진입): 문제·정답·해설·보충지문·노트 전체를 AND 부분일치로 검색(예상문제 포함). 결과에서 바로 세션 시작 가능. 입력은 `history.replaceState` 로 URL 동기화.
 - **모의고사** `#/mock`(풀기 탭 세그먼트): 예상문제 18문항 실전 편성 + 180분 타이머 + 60점 합격 판정. 위 「예상문제」 섹션 참고. 세션 인프라(`route('session')`/`route('summary')`)를 재사용하며 `SESSION.kind==='mock'`·`durationMin` 으로 타이머·합격배너 분기.
 - **두음** `#/mnemonics`(하단 탭 📿): 위 「두음」 섹션 참고. 분류 칩 필터 · 검색 · 🙈 가리고 암기 토글. `mnemoCard()`.
-- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v32**).
+- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v33**).
 - **CPPG 트랙**: 하단 탭 **6개** — 홈 · 문제 · 노트 · 저장 · 통계 · 더보기 (실기와 같은 구성, 두음만 없음).
   - `모의고사` 는 `문제` 페이지 상단 세그먼트 `[연습문제 | 모의고사]`(`cQuizSeg()`, `.track-switch.sub-seg`)로 흡수.
     `#/cppg/mock` 라우트 유지. `render()` 의 `CPPG_TAB` 매핑으로 `mock→quiz`(문제 탭), `note→notes`(노트 탭) 활성.
