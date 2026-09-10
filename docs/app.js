@@ -469,7 +469,7 @@ function render() {
   if (store.state.settings.track !== track) { store.state.settings.track = track; store.save(); }
   tabbar.querySelectorAll('.tabs').forEach((g) => { g.hidden = g.dataset.track !== track; });
   // 라우트 → 하단 탭 매핑 (탭이 없는 라우트는 부모 탭을 활성화)
-  const SIL_TAB = { mock: 'solve', notes: 'more', note: 'more' };
+  const SIL_TAB = { mock: 'solve', note: 'notes' };
   const activeTab = track === 'cppg' ? (args[0] || '') : (SIL_TAB[path] || path);
   tabbar.querySelectorAll(`.tabs[data-track="${track}"] a`).forEach((a) => {
     const on = a.dataset.tab === activeTab;
@@ -762,12 +762,19 @@ route('home', (app) => {
     </div>
   `));
 
+  const searchBox = el(`<form class="home-search" style="margin-top:14px">
+    <input type="search" id="homeSearch" placeholder="🔍 문제·정답·해설·노트 검색" autocomplete="off" enterkeyhint="search">
+  </form>`);
+  searchBox.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const q = $('#homeSearch', searchBox).value.trim();
+    navigate(q ? '#/search/' + encodeURIComponent(q) : '#/search');
+  });
+  app.appendChild(searchBox);
+
   app.appendChild(el(`<div class="row" style="margin-top:14px">
     <a class="btn primary" href="#/solve">문제 풀기 →</a>
     ${PREDICTED.length ? '<a class="btn" href="#/mock">모의고사</a>' : ''}
-    ${MNEMONICS.length ? '<a class="btn" href="#/mnemonics">📿 두음</a>' : ''}
-    <a class="btn" href="#/stats">통계</a>
-    ${(store.state.favorites.length || Object.values(store.state.results).some((r) => r.memo)) ? '<a class="btn" href="#/saved">⭐ 저장</a>' : ''}
     ${store.state.sessions.length ? '<a class="btn" href="#/history">지난 기록</a>' : ''}
   </div>`));
 
@@ -2030,8 +2037,7 @@ route('more', (app) => {
   // 바로가기 메뉴
   const memoN = Object.values(store.state.results).filter((r) => r.memo).length;
   app.appendChild(el(`<div class="card" style="padding:2px 12px">
-    <a class="menu-row" href="#/notes">📓 학습 노트 <span class="muted">${DATA.notes.length}</span></a>
-    <a class="menu-row" href="#/mnemonics">📿 두음 암기 <span class="muted">${MNEMONICS.length}</span></a>
+    <a class="menu-row" href="#/search">🔍 통합 검색</a>
     <a class="menu-row" href="#/saved">⭐ 즐겨찾기 · 💭 메모 <span class="muted">${store.state.favorites.length} · ${memoN}</span></a>
     <a class="menu-row" href="#/history">🕐 지난 풀이 기록 <span class="muted">${store.state.sessions.length}회</span></a>
     <a class="menu-row" href="#/stats">📊 통계</a>

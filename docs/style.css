@@ -152,11 +152,13 @@ p { margin: .5em 0; }
   font-size: .78rem; font-weight: 600; white-space: nowrap;
 }
 .pill.accent { background: var(--accent-weak); color: var(--accent); }
-select, input[type="text"], input[type="number"], textarea {
+select, input[type="text"], input[type="number"], input[type="search"], input[type="date"], textarea {
   font: inherit; color: var(--text); background: var(--surface);
   border: 1px solid var(--border); border-radius: 9px; padding: 9px 11px;
   width: 100%;
 }
+input[type="search"] { -webkit-appearance: none; appearance: none; }
+.home-search input { padding: 11px 13px; }
 textarea { resize: vertical; min-height: 44px; }
 label.field { display: block; margin: 10px 0; }
 label.field > span { display: block; font-size: .85rem; font-weight: 600; color: var(--text-dim); margin-bottom: 4px; }
