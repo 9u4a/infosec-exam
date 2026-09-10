@@ -37,7 +37,8 @@
     "9": {
       "domain": "애플리케이션보안",
       "explanation": "sendmail 릴레이/스팸 차단 3파일. **sendmail.cf**: 메인 설정(sendmail.mc를 컴파일해 생성). **access**: 도메인·IP별 RELAY/REJECT/DISCARD/OK 정책을 적는 텍스트 파일. **access.db**: `makemap hash access.db < access`로 만든 해시 DB(실제 참조본). 오픈 릴레이(무제한 중계)는 스팸 발송 경유지로 악용되므로 반드시 제한.",
-      "supplement": "sendmail 스팸·릴레이 차단 설정에서 `Relaying denied` 규칙이 담긴 메인 설정 파일은 ( 1 )이다. 도메인·IP별로 RELAY/REJECT/DISCARD 정책을 텍스트로 기록하는 파일은 `/etc/mail/( 2 )` 이며, 이를 `makemap hash` 명령으로 변환하여 sendmail이 실제 참조하는 해시 DB 파일은 `/etc/mail/( 3 )` 이다."
+      "supplement": "```\n# cat /etc/mail/____①____ | grep \"R$W*\" | grep \"Relaying denied\"\nR$*   $#error $@5.7.1 $ : \"550 Relaying denied\"\n\n# cat /etc/mail/____②____\nlocalhost.localdomain   RELAY\nlocalhost               RELAY\n127.0.0.1               RELAY\nspam.com                REJECT\n\n# makemap hash /etc/mail/____③____ < /etc/mail/access\n```",
+      "supplementSrc": "provided"
     },
     "10": {
       "domain": "애플리케이션보안",
@@ -70,12 +71,14 @@
     "17": {
       "domain": "애플리케이션보안",
       "explanation": "Fiddler 같은 로컬 프록시로 웹 취약점을 점검할 때, HTTPS는 기본적으로 암호화되어 내용이 안 보인다. **Decrypt HTTPS traffic** 옵션을 켜고 Fiddler 루트 인증서를 신뢰 저장소에 설치하면 프록시가 중간에서 복호화(MITM)해 요청/응답을 조작·검사할 수 있다. 여기서 점검 대상은 입력값이 응답에 반사되는지 확인하는 **XSS**. 대응: 서버측 입력검증(프록시 우회 대비), 출력 인코딩, 태그 화이트리스트.",
-      "supplement": "점검 상황(재구성): 피들러(Fiddler)로 대상 사이트를 점검하던 중, 사이트가 HTTPS로 서비스되어 요청·응답 본문이 암호문으로만 보이고 파라미터를 확인·변조할 수 없었다. 점검 대상 항목은 게시판 입력값이 응답 화면에 그대로 출력되는지 확인하는 것이다."
+      "supplement": "Fiddler 도구로 웹 애플리케이션을 점검한 결과가 다음과 같다.\n\n**[그림1] Fiddler Log / Session Inspector**\n```\n14:22:05:0125  HTTPS Decryption is currently switched off.\n14:22:05:0130  Click Tools > Fiddler Options > HTTPS to enable it.\n14:22:05:0210  [Handshake] A SSLv3-compatible ClientHello handshake was found.\n14:22:05:0215  Warning: Secure Protocol is downgraded or insecure (SSLv3 / TLS 1.0)\n\n[Request]\nCONNECT target.example.com:443 HTTP/1.1\nHost: target.example.com:443\nProxy-Connection: Keep-Alive\n\n[Response]\nHTTP/1.1 200 Connection Established\nFiddler Gateway: Direct\nNote: HTTPS decrypt disabled, Response body contains encrypted data.\n```\n\n**[그림2] 게시판 목록 응답 본문(복호화 후)**\n```\nHTTP/1.1 200 OK\nContent-Type: text/html; charset=euc-kr\n\n<div id=\"list_item\">\n  <div id=\"title\"><a href='view.php?num=110'>test1</a></div> ... 관리자 / 2026-04-12\n<div id=\"list_item\">\n  <div id=\"title\"><a href='view.php?num=111'>test2<script> alert(document.cookie) </script></a></div>\n<div id=\"list_item\">\n  <div id=\"title\"><a href='view.php?num=112'>test3<script>alert(document.cookie)</script></a></div>\n```\n\n① [그림1]에 대한 문제의 원인은 무엇인지 서술하시오.\n② [그림1]에 대한 문제 해결 방법은 무엇인지 서술하시오.\n③ [그림2]에서 확인되는 취약점을 서술하시오.\n④ 해당 취약점에 대한 대응 방안을 서술하시오.",
+      "supplementSrc": "provided"
     },
     "18": {
       "domain": "애플리케이션보안",
       "explanation": "**CSRF**는 이미 인증된 사용자의 브라우저가 자동으로 쿠키를 실어 보내는 점을 악용해, 공격자가 만든 페이지에서 피해자 명의의 상태변경 요청(비밀번호 변경, 이체 등)을 유발한다. 서버가 '정상 폼에서 온 요청'과 '외부에서 위조된 요청'을 구분하지 못하는 것이 원인. 대응: 요청마다 검증하는 **CSRF 토큰**(세션 저장값과 대조), Referer/Origin 검증, 중요 기능 재인증, SameSite 쿠키. 쿠키(클라이언트 저장, 스니핑·변조 취약) vs 세션(서버 저장, 상대적으로 안전).",
-      "supplement": "[비밀번호 변경 폼 — 취약 코드] (재구성)\n```html\n<form action=\"/user/changePassword\" method=\"POST\">\n  <input type=\"password\" name=\"newPassword\">\n  <input type=\"submit\" value=\"변경\">\n</form>\n```\n서버는 세션의 로그인 여부만 확인하고, 요청에 포함된 토큰 등 출처 검증은 하지 않는다."
+      "supplement": "다음 [보기]는 소프트웨어 취약점을 제거한 안전한 코드의 예시이다.\n\n**[그림1] 게시판 글쓰기 페이지 요청 처리**\n```\n@RequestMapping(\"/write.do\")\npublic String boardWrite(@ModelAttribute(\"BoardModel\") BoardModel boardModel,\n                         HttpSession session) {\n    // 난수 형태의 토큰을 생성하여 세션에 저장\n    session.setAttribute(\"SESSION_CSRF_TOKEN\", UUID.randomUUID().toString());\n    return \"/board/write\";\n}\n```\n\n**[그림2] 생성한 토큰을 입력 페이지에 히든 필드 값으로 전달**\n```\n<input type=\"hidden\" name=\"PARAM_CSRF_TOKEN\" value=\"${SESSION_CSRF_TOKEN}\" />\n```\n\n(1) 세션(Session)과 쿠키(Cookie)에 대해 서술하시오.\n(2) [보기]의 코드가 대응하는 취약점과 이를 이용한 공격 기법을 서술하시오.\n(3) 소프트웨어 개발 취약점을 추가로 보완하기 위한 방법을 서술하시오.",
+      "supplementSrc": "provided"
     }
   }
 }

@@ -1,5 +1,5 @@
 /* 오프라인 지원. 앱 셸을 바꾸면 CACHE 버전을 올리세요 (data/bundle.js 는 네트워크 우선이라 무관). */
-const CACHE = 'infosec-sil-v26';
+const CACHE = 'infosec-sil-v27';
 const SHELL = [
   './',
   './index.html',
@@ -12,6 +12,7 @@ const SHELL = [
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',
+  './img/r10q15.jpg',
 ];
 
 self.addEventListener('install', (e) => {

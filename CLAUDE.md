@@ -52,8 +52,11 @@ server/                       (선택) 학습기록 동기화 Cloudflare Worker 
 - `supplement`: 원본 실기 JSON에 참조 자료(로그·패킷·설명문·보기·코드)가 빠진 문항용.
   - `supplementSrc` 없음(기본) → UI 캡션 "🧩 지문 재구성 · 원본 데이터 누락분"(주황). 정답에서 역산한 예시.
   - `supplementSrc: "provided"` → 캡션 "📄 지문 · 원본 데이터 누락분 복원"(초록). 실제 기출 지문을 확보한 경우.
+  - 코드·HTML·로그는 반드시 ```` ``` ```` 코드펜스로 감싼다(marked 가 `<div>`·`<script>` 를 실제 태그로 렌더).
+  - 이미지 지문(Wireshark 캡처 등)은 `docs/img/rNqM.jpg` 로 두고 `![설명](img/rNqM.jpg)` 로 참조 + `docs/sw.js` SHELL 에 추가.
   - 재구성이 불가능하면(정답만으로 특정 불가) 그 사실을 명시하는 문구를 넣는다.
   - 헬퍼: `supplementHtml(q)` (app.js) — `questionCard`·`reviewItem` 공용.
+  - 현황: 31문항 보충(원본 확보 30 · 재구성 1[5회14]). 작업 이력 = 루트 `데이터정리_지문보충_작업목록.md`.
 
 ## notes/ 프론트매터
 
@@ -155,7 +158,7 @@ cppg/자료/*.pdf               시행처·법령 원문 PDF(1차 사료). 법�
 
 빌드 산출물 `docs/data/cppg.js` (`window.CPPG_DATA`) 도 **커밋한다**. `cppg/` 를 고치면
 `node scripts/build.mjs` 재실행 → `cppg.js` 함께 커밋. 앱 셸 파일 변경 시 `docs/sw.js` 의
-`CACHE` 버전도 올린다 (현재 **v26**, 실기·CPPG 공용).
+`CACHE` 버전도 올린다 (현재 **v27**, 실기·CPPG 공용).
 
 ⚠ 개인정보보호법은 개정이 잦다. 주요 시행일:
 2020.8.5 데이터3법 / 2023.9.15 대개정 / 2024.3.15 일부(전송요구권·자동화결정·이동형영상기기) /
@@ -238,7 +241,7 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 - **문항 직링크** `#/q/<qid>`: 통계·즐겨찾기·노트·검색의 단일 문항 클릭은 세션을 건드리지 않고 이 라우트로 이동. 같은 회차 이전/다음 이동.
 - **통합 검색** `#/search/<query>`: 문제·정답·해설·보충지문·노트 전체를 AND 부분일치로 검색(예상문제 포함). 결과에서 바로 세션 시작 가능. 입력은 `history.replaceState` 로 URL 동기화.
 - **모의고사** `#/mock`(하단 탭): 예상문제 18문항 실전 편성 + 180분 타이머 + 60점 합격 판정. 위 「예상문제」 섹션 참고. 세션 인프라(`route('session')`/`route('summary')`)를 재사용하며 `SESSION.kind==='mock'`·`durationMin` 으로 타이머·합격배너 분기.
-- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v26**).
+- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v27**).
 - **CPPG 트랙**: `#/cppg` 홈에서 연습문제(과목/노트/태그/오답/즐겨찾기/안 푼/랜덤 범위, 즉시 공개 토글) ·
   모의고사(과목별 배분 100문항 + 120분 타이머 + 총점 60·과목별 40% 과락 판정) · 통계 ·
   - 과목/노트/태그 범위엔 **"안 푼 문제만"** 체크박스(`#conlyunseen`, `cstore.attemptCount(id)===0` 필터) + 하위 셀렉트 옵션에 `안 푼 N/전체 M` 카운트. 전역 `안 푼 문제` 범위는 그대로 유지.
