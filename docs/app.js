@@ -82,6 +82,7 @@ const store = {
     return null;
   },
   setMemo(qid, memo) { this.result(qid).memo = memo; this.save(); },
+  setAns(qid, ans) { this.result(qid).ans = ans; this.save(); },
   isFav(qid) { return this.state.favorites.includes(qid); },
   toggleFav(qid) {
     const i = this.state.favorites.indexOf(qid);
@@ -245,10 +246,11 @@ function mergeResults(a, b) {
   for (const src of [b || {}, a || {}]) {
     for (const qid of Object.keys(src)) {
       const r = src[qid] || {};
-      const t = out[qid] || (out[qid] = { attempts: [], memo: '' });
+      const t = out[qid] || (out[qid] = { attempts: [], memo: '', ans: '' });
       const seen = new Set(t.attempts.map((x) => x.t + '/' + x.g));
       for (const at of r.attempts || []) { const k = at.t + '/' + at.g; if (!seen.has(k)) { seen.add(k); t.attempts.push(at); } }
       if ((r.memo || '').length > t.memo.length) t.memo = r.memo;
+      if ((r.ans || '').length > (t.ans || '').length) t.ans = r.ans;   // memo 와 같은 "긴 쪽 우선"
     }
   }
   for (const qid of Object.keys(out)) out[qid].attempts.sort((x, y) => x.t - y.t);
@@ -493,6 +495,10 @@ function questionCard(q, opts = {}) {
   const notesHtml = noteLinksHtml(q);
   const rep = repeatNote(q);
 
+  const savedAns = (store.state.results[q.qid] || {}).ans || '';
+  const inSession = !!opts.sessionStart;
+  const initialAns = inSession ? '' : savedAns;   // 세션 중엔 빈칸(인출 연습), 복습 문맥이면 프리필
+
   card.innerHTML = `
     <div class="q-head">
       <span class="pill accent">${esc(qLabel(q))}</span>
@@ -502,6 +508,11 @@ function questionCard(q, opts = {}) {
     </div>
     <div class="q-body">${esc(q.question)}${supplementHtml(q)}</div>
     ${rep ? `<a class="repeat-badge" href="#/note/${encodeURIComponent(rep.slug)}">🔁 ${rep.questions.length}회 반복 출제 · 회차별 비교 →</a>` : ''}
+
+    <label class="field my-answer">
+      <span>✍️ 내 답 (선택 입력)${inSession && savedAns ? ' <a href="#" class="load-ans">지난 답안 불러오기</a>' : ''}</span>
+      <textarea class="my-ans" rows="3" placeholder="여기에 답을 적어 보세요">${esc(initialAns)}</textarea>
+    </label>
 
     <div class="reveal-slot"></div>
   `;
@@ -514,6 +525,30 @@ function questionCard(q, opts = {}) {
     star.classList.toggle('on', on);
     star.setAttribute('aria-pressed', on);
     star.textContent = on ? '★' : '☆';
+  });
+
+  // 내 답 저장 (input 디바운스 + blur). 빈 답으로 빈 엔트리는 만들지 않음.
+  const myAnsEl = $('.my-ans', card);
+  const saveAns = (v) => {
+    v = v.trim();
+    if (!v && !store.state.results[q.qid]) return;
+    store.setAns(q.qid, v);
+  };
+  let ansTimer = null;
+  myAnsEl.addEventListener('input', () => {
+    myAnsEl.style.height = 'auto'; myAnsEl.style.height = myAnsEl.scrollHeight + 'px';
+    clearTimeout(ansTimer);
+    ansTimer = setTimeout(() => saveAns(myAnsEl.value), 600);
+  });
+  const flushAns = () => { clearTimeout(ansTimer); saveAns(myAnsEl.value); };
+  myAnsEl.addEventListener('change', flushAns);
+  myAnsEl.addEventListener('blur', flushAns);
+  const loadLink = $('.load-ans', card);
+  if (loadLink) loadLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    myAnsEl.value = (store.state.results[q.qid] || {}).ans || '';
+    myAnsEl.dispatchEvent(new Event('input'));
+    loadLink.remove();
   });
 
   let answerEl = null;

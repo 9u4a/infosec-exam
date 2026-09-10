@@ -183,6 +183,9 @@ label.field > span { display: block; font-size: .85rem; font-weight: 600; color:
 
 .rv-reveal-slot { margin-top: 10px; }
 .rv-reveal-slot .reveal-btn { margin: 0; }
+.my-answer { margin-top: 14px; }
+.my-answer .load-ans { font-weight: 400; font-size: .8rem; margin-left: 6px; }
+.my-ans { font-family: inherit; min-height: 60px; }
 .a-body {
   white-space: pre-wrap; word-break: keep-all;
   font-size: 1rem; line-height: 1.75;

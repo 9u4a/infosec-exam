@@ -185,7 +185,7 @@ cppg/자료/*.pdf               시행처·법령 원문 PDF(1차 사료). 법�
 
 빌드 산출물 `docs/data/cppg.js` (`window.CPPG_DATA`) 도 **커밋한다**. `cppg/` 를 고치면
 `node scripts/build.mjs` 재실행 → `cppg.js` 함께 커밋. 앱 셸 파일 변경 시 `docs/sw.js` 의
-`CACHE` 버전도 올린다 (현재 **v35**, 실기·CPPG 공용).
+`CACHE` 버전도 올린다 (현재 **v36**, 실기·CPPG 공용).
 
 ⚠ 개인정보보호법은 개정이 잦다. 주요 시행일:
 2020.8.5 데이터3법 / 2023.9.15 대개정 / 2024.3.15 일부(전송요구권·자동화결정·이동형영상기기) /
@@ -219,7 +219,7 @@ cppg/자료/*.pdf               시행처·법령 원문 PDF(1차 사료). 법�
 - **`server/worker.js`** — Cloudflare Worker. `POST /login`(공유 암호 → HMAC 서명 토큰) · `GET /state` · `PUT /state`(`{state, baseRev, force?}`, rev 불일치 시 409). KV 키 하나(`state:v1`)에 학습기록 JSON 통째로 보관. Secret: `PASSPHRASE`·`TOKEN_SECRET`, Var: `ALLOW_ORIGIN`. 배포는 `server/README.md`.
 - **프런트엔드(`docs/app.js` 의 `SYNC` 객체)**: 로그인 안 하면 `SYNC.on===false` → **기존과 100% 동일하게 localStorage 로만 동작**. 로그인 시 부팅에 `pull`(서버 상태 병합) → 이후 `store.save()` 마다 4초 디바운스 `push`. 오프라인이면 로컬로 동작하다 online·visible 이벤트에 재동기화.
 - **병합**(`mergeState`): 누적형(`results` attempts·`favorites`·`sessions`, cppg 포함)은 **합집합**(attempts 는 `t/g` 로 중복 제거), 스칼라(`settings`·`lastSummary`)는 `_mtime` 최신본. 진행 중 `session` 은 이 기기 우선. → 2기기 동시 사용해도 데이터 유실 최소, 충돌은 last-write-wins.
-  - `results[qid].memo` 는 문항별 mtime 이 없어 **"긴 쪽 우선"** 병합 — 편집으로 줄이면 짧은 쪽이 질 수 있음(알려진 한계).
+  - `results[qid].memo`·`results[qid].ans` 는 문항별 mtime 이 없어 **"긴 쪽 우선"** 병합 — 편집으로 줄이면 짧은 쪽이 질 수 있음(알려진 한계).
 - `store.save()` 가 `_mtime` 갱신 + `SYNC.schedulePush()`. `save({fromSync:true})` 는 둘 다 건너뜀(병합 반영 시).
 - `server/worker.js` 는 **빌드 대상 아님** — GitHub Pages 와 무관, 사용자가 `wrangler deploy` 로 별도 배포. `docs/` 에 넣지 말 것.
 - 검증: `scratchpad/sync.test.mjs` (Worker 단위 + jsdom 2기기 병합·409 충돌).
@@ -265,7 +265,9 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 - 제출(summary) 자가채점 점수: 2023 배점(단답 3 / 서술 12 / 실무 16점). **⭕로 채점한 문항만 만점 가산**(유형 무관, 부분점수 없음), 🔺·❌는 0점. 유형별 breakdown + "애매함까지 정답 시 최대점" 표시.
 - 통계: 문항별 오답 횟수 랭킹, 회차·영역·유형별 정답률, 회독 수.
 - 즐겨찾기(★), 오답만/애매함만/즐겨찾기만 필터로 재풀이.
-- 정답 카드는 **모범답안(`.a-body`) + 해설 + 관련 노트 + 채점 버튼 + 메모** 만 표시(내 답 입력·비교 기능 없음).
+- **내 답 입력**: 문제 카드에 `.my-ans` textarea(`store.setAns` → `results[qid].ans`, input 디바운스+blur 저장).
+  세션 중엔 빈칸, 복습 문맥(`#/q` 등)이면 프리필. 정답을 펼치면 **모범답안(`.a-body`)만** 나옴 —
+  내 답 ↔ 모범답안 나란히 비교 위젯은 없음(입력한 답은 위 textarea 에 그대로 있음).
 - **오늘 복습할 문항**(망각곡선): `reviewDueAt(qid)`/`dueQids()` 가 `attempts` 만으로 파생(저장·동기화 변경 없음).
   마지막 채점 등급 × 연속 횟수로 재복습 간격 결정 — `DUE_DAYS = { x:[1,3,7,14], m:[3,7,14,30], o:[14,30,60,120] }`(일).
   홈에 `🔁 오늘 복습할 문항 N` 카드(상위 20문항 `startSession`), `#/solve` 범위에 `오늘 복습` 옵션. 기출만 대상.
@@ -294,7 +296,7 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 - **통합 검색** `#/search/<query>`(탭 아님 — 홈 상단 `#homeSearch` 검색창·더보기 메뉴·`/` 단축키로 진입): 문제·정답·해설·보충지문·노트 전체를 AND 부분일치로 검색(예상문제 포함). 결과에서 바로 세션 시작 가능. 입력은 `history.replaceState` 로 URL 동기화.
 - **모의고사** `#/mock`(풀기 탭 세그먼트): 예상문제 18문항 실전 편성 + 180분 타이머 + 60점 합격 판정. 위 「예상문제」 섹션 참고. 세션 인프라(`route('session')`/`route('summary')`)를 재사용하며 `SESSION.kind==='mock'`·`durationMin` 으로 타이머·합격배너 분기.
 - **두음** `#/mnemonics`(하단 탭 📿): 위 「두음」 섹션 참고. 분류 칩 필터 · 검색 · 🙈 가리고 암기 토글. `mnemoCard()`.
-- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v35**).
+- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v36**).
 - **CPPG 트랙**: 하단 탭 **6개** — 홈 · 문제 · 노트 · 저장 · 통계 · 더보기 (실기와 같은 구성, 두음만 없음).
   - `모의고사` 는 `문제` 페이지 상단 세그먼트 `[연습문제 | 모의고사]`(`cQuizSeg()`, `.track-switch.sub-seg`)로 흡수.
     `#/cppg/mock` 라우트 유지. `render()` 의 `CPPG_TAB` 매핑으로 `mock→quiz`(문제 탭), `note→notes`(노트 탭) 활성.
