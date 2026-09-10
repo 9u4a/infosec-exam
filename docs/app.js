@@ -470,7 +470,10 @@ function render() {
   tabbar.querySelectorAll('.tabs').forEach((g) => { g.hidden = g.dataset.track !== track; });
   // 라우트 → 하단 탭 매핑 (탭이 없는 라우트는 부모 탭을 활성화)
   const SIL_TAB = { mock: 'solve', note: 'notes' };
-  const activeTab = track === 'cppg' ? (args[0] || '') : (SIL_TAB[path] || path);
+  const CPPG_TAB = { mock: 'quiz', note: 'notes' };
+  const activeTab = track === 'cppg'
+    ? (CPPG_TAB[args[0]] || args[0] || '')
+    : (SIL_TAB[path] || path);
   tabbar.querySelectorAll(`.tabs[data-track="${track}"] a`).forEach((a) => {
     const on = a.dataset.tab === activeTab;
     a.classList.toggle('active', on);
@@ -860,7 +863,7 @@ function examPaceCard(examDate, o) {
 
 /* 풀기 페이지 상단 세그먼트 — [문제 풀기 | 모의고사] */
 function solveSeg(mode) {
-  const seg = el(`<div class="track-switch">
+  const seg = el(`<div class="track-switch sub-seg">
     <a data-v="solve" class="${mode === 'solve' ? 'on' : ''}">문제 풀기</a>
     <a data-v="mock" class="${mode === 'mock' ? 'on' : ''}">모의고사</a>
   </div>`);
@@ -2476,7 +2479,46 @@ cRoute('home', (app) => {
   app.appendChild(el(`<p class="small muted center" style="margin-top:24px">데이터 생성 ${CPPG.builtAt.slice(0, 10)} · 문제 ${CQ.length} · 노트 ${CPPG.notes.length}</p>`));
 });
 
+/* CPPG 문제 페이지 상단 세그먼트 — [연습문제 | 모의고사] */
+function cQuizSeg(mode) {
+  const seg = el(`<div class="track-switch sub-seg">
+    <a data-v="quiz" class="${mode === 'quiz' ? 'on' : ''}">연습문제</a>
+    <a data-v="mock" class="${mode === 'mock' ? 'on' : ''}">모의고사</a>
+  </div>`);
+  seg.addEventListener('click', (e) => {
+    const a = e.target.closest('a');
+    if (a && a.dataset.v !== mode) navigate(a.dataset.v === 'mock' ? '#/cppg/mock' : '#/cppg/quiz');
+  });
+  return seg;
+}
+
+/* CPPG 저장 — 즐겨찾기 문제 */
+cRoute('saved', (app) => {
+  app.appendChild(el('<h1>CPPG 저장한 문제</h1>'));
+  const favs = store.state.cppg.favorites.filter((id) => CQ_BY_ID.has(id));
+  if (!favs.length) {
+    app.appendChild(el('<div class="empty">즐겨찾기가 없습니다.<br><span class="small">문제 카드의 ☆ 를 눌러 추가하세요.</span></div>'));
+    return;
+  }
+  const box = el(`<div class="card"><h3>즐겨찾기 (${favs.length}) <span class="muted small">눌러서 문제 보기</span></h3></div>`);
+  favs.forEach((id) => {
+    const it = CQ_BY_ID.get(id); if (!it) return;
+    const a = cstore.lastAttempt(id);
+    const item = el(`<div class="rank-item">
+      <span class="pill accent">${esc(subjNo(it.subject))}</span>
+      <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.stem.slice(0, 42))}</span>
+      ${a ? `<span class="small ${a.ok ? 'muted' : 'rank-x'}">${a.ok ? '⭕' : '❌'}</span>` : ''}</div>`);
+    item.addEventListener('click', () => navigate('#/cppg/q/' + encodeURIComponent(id)));
+    box.appendChild(item);
+  });
+  const b = el(`<button class="btn primary wide" style="margin-top:10px">즐겨찾기 ${favs.length}문항 풀기</button>`);
+  b.addEventListener('click', () => cStart(favs.slice(), `즐겨찾기 ${favs.length}문항`, { reveal: true }));
+  box.appendChild(b);
+  app.appendChild(box);
+});
+
 cRoute('quiz', (app) => {
+  app.appendChild(cQuizSeg('quiz'));
   app.appendChild(el('<h1>CPPG 문제 풀기</h1>'));
   const allTags = [...new Set(CQ.flatMap((q) => q.tags || []))].sort((a, b) => a.localeCompare(b, 'ko'));
   const form = el(`<div class="card stack">
@@ -2566,6 +2608,7 @@ cRoute('quiz', (app) => {
 });
 
 cRoute('mock', (app) => {
+  app.appendChild(cQuizSeg('mock'));
   app.appendChild(el('<h1>CPPG 모의고사</h1>'));
   const short = [];
   CSUBJ.forEach((s) => { const have = CQ.filter((q) => q.subject === s.id).length; if (have < s.count) short.push(`${s.no}과목 ${have}/${s.count}`); });
@@ -2888,21 +2931,12 @@ cRoute('q', (app, rest) => {
 cRoute('more', (app) => {
   app.appendChild(el('<h1>CPPG 더보기</h1>'));
   const st = store.state.cppg;
-  const favBox = el(`<div class="card"><h3>즐겨찾기 (${st.favorites.length})</h3></div>`);
-  if (!st.favorites.length) favBox.appendChild(el('<p class="muted small">문제 카드의 ☆ 를 눌러 추가하세요.</p>'));
-  else {
-    st.favorites.forEach((id) => {
-      const it = CQ_BY_ID.get(id); if (!it) return;
-      const item = el(`<div class="rank-item"><span class="pill accent">${esc(subjNo(it.subject))}</span>
-        <span class="small" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.stem.slice(0, 40))}</span></div>`);
-      item.addEventListener('click', () => navigate('#/cppg/q/' + encodeURIComponent(id)));
-      favBox.appendChild(item);
-    });
-    const b = el('<button class="btn sm" style="margin-top:8px">즐겨찾기 전체 풀기</button>');
-    b.addEventListener('click', () => cStart(st.favorites.filter((id) => CQ_BY_ID.has(id)), `즐겨찾기 ${st.favorites.length}문항`, { reveal: true }));
-    favBox.appendChild(b);
-  }
-  app.appendChild(favBox);
+
+  app.appendChild(el(`<div class="card" style="padding:2px 12px">
+    <a class="menu-row" href="#/cppg/saved">⭐ 즐겨찾기 <span class="muted">${st.favorites.length}</span></a>
+    <a class="menu-row" href="#/cppg/notes">📓 학습 노트 <span class="muted">${(CPPG.notes || []).length}</span></a>
+    <a class="menu-row" href="#/cppg/stats">📊 통계</a>
+  </div>`));
 
   const setBox = el(`<div class="card stack"><h3>설정</h3>
     <label class="field"><span>시험일 (D-day · 하루 권장 페이스)</span>

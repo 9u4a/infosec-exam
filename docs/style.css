@@ -442,6 +442,9 @@ a.pill:active { transform: translateY(1px); }
   font-size: .78rem; font-weight: 700;
 }
 .track-switch a.on[data-v] span { background: rgba(255,255,255,.28); }
+/* 페이지 안 하위 세그먼트(풀기·모의고사) — 트랙 스위처와 시각적으로 구분 */
+.track-switch.sub-seg { margin-top: -2px; }
+.track-switch.sub-seg a { font-size: .85rem; padding: 7px 10px; border-radius: 8px; }
 
 /* 더보기 메뉴 행 */
 .menu-row {
