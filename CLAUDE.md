@@ -158,7 +158,7 @@ cppg/자료/*.pdf               시행처·법령 원문 PDF(1차 사료). 법�
 
 빌드 산출물 `docs/data/cppg.js` (`window.CPPG_DATA`) 도 **커밋한다**. `cppg/` 를 고치면
 `node scripts/build.mjs` 재실행 → `cppg.js` 함께 커밋. 앱 셸 파일 변경 시 `docs/sw.js` 의
-`CACHE` 버전도 올린다 (현재 **v28**, 실기·CPPG 공용).
+`CACHE` 버전도 올린다 (현재 **v29**, 실기·CPPG 공용).
 
 ⚠ 개인정보보호법은 개정이 잦다. 주요 시행일:
 2020.8.5 데이터3법 / 2023.9.15 대개정 / 2024.3.15 일부(전송요구권·자동화결정·이동형영상기기) /
@@ -253,7 +253,7 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 - **이어풀기**: 진행 중 세션은 localStorage(`session` 키)에 저장 → 앱 재실행·새로고침해도 홈의 "이어풀기" 카드로 재개. `finishSession()` 시 결과를 `lastSummary` 로 옮기고 세션 비움. 세션 화면에 문항 점프 그리드.
   - `startSession()` 이 **진행 중이던 세션을 버릴 때, 모의고사이거나 채점 흔적이 있으면 `recordCurrentSession()` 으로 `sessions` 에 기록**한다(중단해도 홈 "최근 모의고사"·지난 기록에 남음). `finishSession()` 도 이 함수를 재사용.
   - 홈 "최근 모의고사" 카드: 응시 횟수 · 최신 점수/합격 · **상대 시각(`fmtWhen`)** · 직전 점수들. 날짜는 `toISOString`(UTC) 대신 로컬 기준 `fmtDay`/`fmtWhen` 사용(밤 시간대 하루 어긋남 방지).
-- **점수 화면 "다시 볼 문항"**: 오답·애매·미채점 문항을 `<details class="q-review">` 로 나열 → 눌러서 **그 자리에서 정답·해설을 인라인 확인**(읽기 전용, 지연 빌드). 헬퍼 `reviewItem(q, grade, opts)` — `opts.memo`(편집 textarea)·`opts.summaryText`(요약줄 대체)·`opts.hideRepeatBadge`. "모두 펼치기" 토글 + "이 문항 다시 풀기" 버튼. `route('summary')` 한 곳 → 라이브 요약·모의고사 결과·`#/summary/<id>` 모두 적용.
+- **점수 화면 "다시 볼 문항"**: 오답·애매·미채점 문항을 `<details class="q-review">` 로 나열 → 헬퍼 `reviewItem(q, grade, opts)`. 펼치면 **먼저 문제(+지문·내 답·메모)만** 보이고, `정답·해설 보기 ▼` 를 한 번 더 눌러야 정답·해설·관련노트가 열린다(2단계 인출 연습, 읽기 전용, 지연 빌드). `settings.alwaysShowAnswer` 켜져 있으면 자동 펼침. `opts.memo`(편집 textarea)·`opts.summaryText`(요약줄 대체)·`opts.hideRepeatBadge`. "모두 펼치기"(details 만 열림) + "이 문항만 크게 보기" 링크. `route('summary')` 한 곳 → 라이브 요약·모의고사 결과·`#/summary/<id>` 모두 적용. 저장 탭·노트 상세의 펼침 행도 동일.
 - **노트 상세**의 "연결된 기출 문항"·"관련 예상문제" 목록도 `reviewItem` 펼침 행(카테고리 무관) — 노트 안에서 답·해설 바로 확인 + "모두 펼치기" + "모두 풀기".
 - **노트 학습 진도**: `noteProgress(n)`(읽기 전용 — `store.lastGrade` 만, `store.result()` 금지)가 연결 문항(기출+예상)의 채점 이력을 집계.
   - 노트 목록: 항목마다 `연결 N (기출·예상)` + 풀이 수·정답률 + 진도 막대(`barTrack`). `#nsort` 셀렉트 — `기본순`/`취약한 순`(`weak` 가중치 = 오답2·애매1·미풀이0.5)/`연결 많은 순`. 전역 정렬 시 카테고리 그룹 헤더 없이 평평하게. 선택값은 모듈 스코프 `noteSort` 에 기억(해시 미반영).
@@ -263,7 +263,7 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 - **문항 직링크** `#/q/<qid>`: 통계·즐겨찾기·노트·검색의 단일 문항 클릭은 세션을 건드리지 않고 이 라우트로 이동. 같은 회차 이전/다음 이동.
 - **통합 검색** `#/search/<query>`: 문제·정답·해설·보충지문·노트 전체를 AND 부분일치로 검색(예상문제 포함). 결과에서 바로 세션 시작 가능. 입력은 `history.replaceState` 로 URL 동기화.
 - **모의고사** `#/mock`(하단 탭): 예상문제 18문항 실전 편성 + 180분 타이머 + 60점 합격 판정. 위 「예상문제」 섹션 참고. 세션 인프라(`route('session')`/`route('summary')`)를 재사용하며 `SESSION.kind==='mock'`·`durationMin` 으로 타이머·합격배너 분기.
-- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v28**).
+- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v29**).
 - **CPPG 트랙**: `#/cppg` 홈에서 연습문제(과목/노트/태그/오답/즐겨찾기/안 푼/랜덤 범위, 즉시 공개 토글) ·
   모의고사(과목별 배분 100문항 + 120분 타이머 + 총점 60·과목별 40% 과락 판정) · 통계 ·
   - 과목/노트/태그 범위엔 **"안 푼 문제만"** 체크박스(`#conlyunseen`, `cstore.attemptCount(id)===0` 필터) + 하위 셀렉트 옵션에 `안 푼 N/전체 M` 카운트. 전역 `안 푼 문제` 범위는 그대로 유지.

@@ -194,6 +194,8 @@ label.field > span { display: block; font-size: .85rem; font-weight: 600; color:
 .ac-pane.model > b { color: var(--ok); }
 .ac-text { white-space: pre-wrap; word-break: keep-all; font-size: .97rem; line-height: 1.7; }
 .rv-mine { margin-bottom: 10px; }
+.rv-reveal-slot { margin-top: 10px; }
+.rv-reveal-slot .reveal-btn { margin: 0; }
 .a-body {
   white-space: pre-wrap; word-break: keep-all;
   font-size: 1rem; line-height: 1.75;

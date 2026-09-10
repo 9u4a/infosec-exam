@@ -641,10 +641,11 @@ function questionCard(q, opts = {}) {
   return card;
 }
 
-/* 점수 화면 "다시 볼 문항" 행 — 눌러서 정답·해설만 인라인 확인 (읽기 전용) */
+/* 점수 화면 "다시 볼 문항" · 저장 탭 행 — 펼치면 먼저 문제만, 다시 눌러야 정답·해설 (읽기 전용) */
 function reviewItem(q, grade, opts = {}) {
   const notesHtml = noteLinksHtml(q);
   const rep = repeatNote(q);
+  const myAns = (store.state.results[q.qid] || {}).ans || '';
   const d = el(`<details class="q-review">
     <summary>
       <span class="pill accent">${esc(qLabel(q))}</span>
@@ -661,14 +662,30 @@ function reviewItem(q, grade, opts = {}) {
     body.innerHTML = `
       ${rep && !opts.hideRepeatBadge ? `<a class="repeat-badge" href="#/note/${encodeURIComponent(rep.slug)}">🔁 ${rep.questions.length}회 반복 출제 · 회차별 비교 →</a>` : ''}
       <div class="q-body">${esc(q.question)}${supplementHtml(q)}</div>
-      <div class="answer-wrap" style="border-top:none;margin-top:10px;padding-top:0">
-        ${(store.state.results[q.qid] || {}).ans ? `<div class="ac-pane mine rv-mine"><b>✍️ 내 답</b><div class="ac-text">${esc(store.state.results[q.qid].ans)}</div></div>` : ''}
-        <div class="a-body">${renderAnswer(q.answer)}</div>
-        ${q.explanation ? `<div class="expl"><b>💡 해설</b><div class="expl-body markdown">${window.marked ? window.marked.parse(q.explanation) : esc(q.explanation)}</div></div>` : ''}
-        ${notesHtml ? `<div class="note-links">${notesHtml}</div>` : ''}
-        ${opts.memo ? `<label class="field" style="margin:10px 0 0"><span>💭 내 메모</span><textarea class="rv-memo" rows="2" placeholder="헷갈린 점, 암기 포인트 등">${esc((store.state.results[q.qid] || {}).memo || '')}</textarea></label>` : ''}
-        <a class="btn sm" style="margin-top:4px" href="#/q/${encodeURIComponent(q.qid)}">이 문항만 크게 보기 →</a>
-      </div>`;
+      ${myAns ? `<div class="ac-pane mine rv-mine"><b>✍️ 내 답</b><div class="ac-text">${esc(myAns)}</div></div>` : ''}
+      ${opts.memo ? `<label class="field" style="margin:10px 0 0"><span>💭 내 메모</span><textarea class="rv-memo" rows="2" placeholder="헷갈린 점, 암기 포인트 등">${esc((store.state.results[q.qid] || {}).memo || '')}</textarea></label>` : ''}
+      <div class="rv-reveal-slot"></div>
+      <a class="btn sm" style="margin-top:8px" href="#/q/${encodeURIComponent(q.qid)}">이 문항만 크게 보기 →</a>`;
+
+    const answerEl = el(`<div class="answer-wrap" style="border-top:none;margin-top:10px;padding-top:0">
+      <div class="a-body">${renderAnswer(q.answer)}</div>
+      ${q.explanation ? `<div class="expl"><b>💡 해설</b><div class="expl-body markdown">${window.marked ? window.marked.parse(q.explanation) : esc(q.explanation)}</div></div>` : ''}
+      ${notesHtml ? `<div class="note-links">${notesHtml}</div>` : ''}
+    </div>`);
+    const rbtn = el(`<button class="btn primary wide reveal-btn" aria-expanded="false">정답·해설 보기 ▼</button>`);
+    let shown = false;
+    const setShown = (next) => {
+      shown = next;
+      answerEl.hidden = !shown;
+      rbtn.textContent = shown ? '정답·해설 닫기 ▲' : '정답·해설 보기 ▼';
+      rbtn.classList.toggle('open', shown);
+      rbtn.setAttribute('aria-expanded', shown);
+    };
+    rbtn.addEventListener('click', () => setShown(!shown));
+    const slot = $('.rv-reveal-slot', body);
+    slot.append(rbtn, answerEl);
+    setShown(store.state.settings.alwaysShowAnswer);
+
     enhanceMarkdown(body);
     const mt = $('.rv-memo', body);
     if (mt) {
