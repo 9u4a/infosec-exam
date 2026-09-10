@@ -174,13 +174,10 @@ label.field > span { display: block; font-size: .85rem; font-weight: 600; color:
   white-space: pre-wrap; word-break: keep-all;
   font-size: 1.05rem; line-height: 1.75;
 }
-.supplement { display: block; white-space: normal; margin-top: 14px; padding: 12px 0 4px 14px; border-left: 3px solid var(--accent); }
-.supp-cap { display: block; font-size: .74rem; font-weight: 700; color: var(--accent); letter-spacing: .02em; margin-bottom: 6px; }
-.supp-cap span { font-weight: 400; color: var(--text-dim); }
+/* 이미지 지문 — 문제 본문에 자연스럽게 이어붙임 (표식·색 구분 없음) */
+.supplement { display: block; white-space: normal; margin-top: 8px; }
 .supp-body { font-size: .95rem; }
 .supp-body img { display: block; max-width: 100%; height: auto; margin: 8px 0; border: 1px solid var(--border); border-radius: 4px; }
-/* 실제 기출 지문 — 문제 본문에 자연스럽게 이어붙임 (표식·색 구분 없음) */
-.supplement.attached { margin-top: 8px; padding: 0; border-left: none; }
 .reveal-btn.open { background: var(--surface); color: var(--text-dim); border-color: var(--border); }
 .answer-wrap { margin-top: 16px; border-top: 1px dashed var(--border); padding-top: 14px; }
 

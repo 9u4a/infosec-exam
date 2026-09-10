@@ -404,17 +404,12 @@ function enhanceMarkdown(root) {
 
 function qLabel(q) { return q.predicted ? `예상 · ${q.domain}` : `${q.round}회 ${q.no}번`; }
 
-/* 원본 JSON에 누락된 지문(로그·보기·코드 등)의 보충 자료 블록.
-   supplementSrc === 'provided' 는 실제 기출 지문을 확보한 것, 그 외는 정답 기반 재구성. */
+/* 이미지 지문(Wireshark 캡처 등) 전용 블록 — 문제의 일부로 이어서 표시, 별도 표식 없음.
+   로그·코드·보기 지문은 meta.question 에 합쳐 두므로 여기 오지 않는다. */
 function supplementHtml(q) {
   if (!q.supplement) return '';
   const md = window.marked ? window.marked.parse(q.supplement) : esc(q.supplement);
-  // 실제 기출 지문(이미지 등) — 문제의 일부로 이어서 표시, 별도 표식 없음
-  if (q.supplementSrc) {
-    return `<div class="supplement attached"><div class="supp-body markdown">${md}</div></div>`;
-  }
-  // 정답에서 역산한 재구성 예시 — 그대로 표식 유지
-  return `<div class="supplement"><span class="supp-cap">🧩 지문 재구성 <span>· 원본 데이터 누락분</span></span><div class="supp-body markdown">${md}</div></div>`;
+  return `<div class="supplement attached"><div class="supp-body markdown">${md}</div></div>`;
 }
 
 /* 이 문항이 속한 「반복출제」 노트 (있으면) + 배지 링크 */
@@ -438,9 +433,9 @@ function noteLinksHtml(q) {
 
 /* 답안 텍스트에서 "정답" 접두어를 라벨로 분리 */
 function renderAnswer(ans) {
-  const m = String(ans).match(/^\s*(정답\s*[:：]?)\s*([\s\S]*)$/);
-  if (m) return `<span class="a-label">정답</span> ${esc(m[2])}`;
-  return esc(ans);
+  // 회차마다 "정답:", "정답 A :", 값만 등 제각각 → 접두어를 벗기고 항상 라벨을 앞에 붙여 통일
+  const s = String(ans).trim().replace(/^정답\s*[:：]?\s*/, '');
+  return `<span class="a-label">정답</span> ${esc(s)}`;
 }
 
 /* ============ 라우터 ============ */

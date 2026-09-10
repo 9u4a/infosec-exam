@@ -41,9 +41,9 @@ server/                       (선택) 학습기록 동기화 Cloudflare Worker 
       "domain": "시스템보안",
       "explanation": "선택. 마크다운 가능. 없으면 키 생략.",
       "question": "선택. 원본이 paraphrase·재구성본이라 실제 기출 문항 전문으로 교체할 때. plain text.",
-      "answer": "선택. 문항 형식이 바뀌어 정답 표기도 맞춰야 할 때만.",
-      "supplement": "선택. 이미지 지문 전용(로그·코드·보기는 question 에 합칠 것). \"![alt](img/rNqM.jpg)\".",
-      "supplementSrc": "선택. supplement 가 실제 기출이면 \"provided\"(표식 없이 문제에 이어 렌더). 생략 = 재구성 캡션."
+      "answer": "선택. 오탈자·형식(빈칸 라벨 등)을 맞춰야 할 때. \"정답\" 접두어는 붙이지 말 것(값만).",
+      "supplement": "선택. 이미지 지문 전용. \"![alt](img/rNqM.jpg)\". supplementSrc:\"provided\" 함께.",
+      "supplementSrc": "이미지 supplement 에 \"provided\" 로만 사용."
     }
   }
 }
@@ -52,18 +52,18 @@ server/                       (선택) 학습기록 동기화 Cloudflare Worker 
 - `domain` 고정 5값 중 하나 (실기 출제 영역):
   `시스템보안` · `네트워크보안` · `애플리케이션보안` · `정보보안일반` · `정보보안관리및법규`
 - 문항 번호(문자열 키)는 원본 `id` 와 일치해야 한다. 빌드가 검증하고 경고한다.
-- `explanation` 은 최신 회차(32→22회)부터 단계적으로 채운다.
-- **`question`/`answer` 교체**: `실기/N회/N.json` 원본이 실제 기출의 paraphrase·재구성본인 경우,
+- `explanation` 은 최신 회차(32→22회)부터 단계적으로 채운다. 옛 회차 법규 문항은 「현행/종전 병기 규칙」 적용.
+- **`question`/`answer` 교체**: `실기/N회/N.json` 원본이 실제 기출의 paraphrase·재구성본(1~12·30~32회)인 경우,
   실제 기출을 확보하면 `meta.question` 으로 **문제 본문을 통째로 교체**한다(`실기/` 원본은 불변).
   코드·로그·HTML·보기가 들어가도 `q.question` 은 `esc()` 로 렌더되므로 **코드펜스 불필요**.
-  형식이 바뀌어 정답 표기(빈칸 라벨 등)를 맞춰야 하면 `answer` 도 함께.
-- `supplement`: 이제 **이미지 지문 전용**(`![alt](img/rNqM.jpg)`). 로그·코드·보기는 `question` 에 합친다.
-  - 이미지 파일은 `docs/img/rNqM.jpg` + `docs/sw.js` SHELL 등록. `.supp-body img { max-width:100% }`.
-  - `supplementSrc: "provided"` → `.supplement.attached`(표식·색 없음, 문제에 이어 표시).
-  - `supplementSrc` 없음 → "🧩 지문 재구성" 캡션(정답 역산 예시, 원본 미확보). 현재 5회14 하나.
-  - 헬퍼: `supplementHtml(q)` (app.js) — `questionCard`·`reviewItem` 공용.
-- 현황: 문제/정답 교체 39건(29 지문 병합 + 10 문항 교체) · 이미지 지문 1 · 재구성 1[5회14].
-  작업 정리 = 루트 `데이터정리_지문보충_작업목록.md`.
+  오탈자 수정·정답 표기 정렬에도 `answer` override 사용.
+- **정답 표기**: `renderAnswer()`(app.js) 가 `^정답\s*[:：]?` 접두어를 벗기고 항상 `정답` 라벨을 붙여
+  통일 렌더한다. 새 `meta.answer` 는 **값만**(접두어·라벨 없이) 적는다.
+- `supplement`: **이미지 지문 전용**(`![alt](img/rNqM.jpg)` + `supplementSrc:"provided"`). 로그·코드·보기는
+  `question` 에 합친다. 이미지 파일은 `docs/img/rNqM.jpg` + `docs/sw.js` SHELL 등록.
+  `supplementHtml(q)`(app.js) 가 `.supplement`(표식·색 없음)로 렌더. 현재 10회15 하나.
+- 현황: 문제/정답 교체 **42건**(29 지문 병합 + 10 문항 교체[31회] + 5회14 병합 + 오탈자 2) · 이미지 지문 1.
+  옛 회차 법규 해설 ~10건에 현행/종전 병기 추가. 작업 정리 = 루트 `데이터정리_지문보충_작업목록.md`.
 
 ## notes/ 프론트매터
 
@@ -185,7 +185,7 @@ cppg/자료/*.pdf               시행처·법령 원문 PDF(1차 사료). 법�
 
 빌드 산출물 `docs/data/cppg.js` (`window.CPPG_DATA`) 도 **커밋한다**. `cppg/` 를 고치면
 `node scripts/build.mjs` 재실행 → `cppg.js` 함께 커밋. 앱 셸 파일 변경 시 `docs/sw.js` 의
-`CACHE` 버전도 올린다 (현재 **v34**, 실기·CPPG 공용).
+`CACHE` 버전도 올린다 (현재 **v35**, 실기·CPPG 공용).
 
 ⚠ 개인정보보호법은 개정이 잦다. 주요 시행일:
 2020.8.5 데이터3법 / 2023.9.15 대개정 / 2024.3.15 일부(전송요구권·자동화결정·이동형영상기기) /
@@ -196,7 +196,9 @@ cppg/자료/*.pdf               시행처·법령 원문 PDF(1차 사료). 법�
 **현행/종전 병기 규칙** — 개정으로 기출과 현행법이 갈리는 논점은 노트·해설에 둘 다 적는다.
 **CPPG 트랙뿐 아니라 실기 `notes/정보보안관리및법규/` 에도 동일하게 적용**한다(노트 상단에
 `> 기준 시점: 2026-09 …` 한 줄 + 논점별 현행/종전 2줄). 실기는 출제 당시 기준으로 채점되므로
-**옛 회차의 정답 = 종전** 값임을 명시하고 현행은 참고로 둔다:
+**옛 회차의 정답 = 종전** 값임을 명시하고 현행은 참고로 둔다. 현재 실기 법규 노트 17개 전부
+기준 시점 한 줄 표기 완료, 구조화 병기는 4개(안전성확보조치·개인정보보호법-핵심·정보보호-법률-총정리·
+수집이용-처리방침-영향평가 등) + 옛 회차 법규 해설 ~10건:
 ```
 ### 인터넷망 차단조치
 - **현행(2026-09)**: 위험분석 결과에 따른 자율 시행 (2025.10.31 고시 개정)
@@ -292,7 +294,7 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 - **통합 검색** `#/search/<query>`(탭 아님 — 홈 상단 `#homeSearch` 검색창·더보기 메뉴·`/` 단축키로 진입): 문제·정답·해설·보충지문·노트 전체를 AND 부분일치로 검색(예상문제 포함). 결과에서 바로 세션 시작 가능. 입력은 `history.replaceState` 로 URL 동기화.
 - **모의고사** `#/mock`(풀기 탭 세그먼트): 예상문제 18문항 실전 편성 + 180분 타이머 + 60점 합격 판정. 위 「예상문제」 섹션 참고. 세션 인프라(`route('session')`/`route('summary')`)를 재사용하며 `SESSION.kind==='mock'`·`durationMin` 으로 타이머·합격배너 분기.
 - **두음** `#/mnemonics`(하단 탭 📿): 위 「두음」 섹션 참고. 분류 칩 필터 · 검색 · 🙈 가리고 암기 토글. `mnemoCard()`.
-- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v34**).
+- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v35**).
 - **CPPG 트랙**: 하단 탭 **6개** — 홈 · 문제 · 노트 · 저장 · 통계 · 더보기 (실기와 같은 구성, 두음만 없음).
   - `모의고사` 는 `문제` 페이지 상단 세그먼트 `[연습문제 | 모의고사]`(`cQuizSeg()`, `.track-switch.sub-seg`)로 흡수.
     `#/cppg/mock` 라우트 유지. `render()` 의 `CPPG_TAB` 매핑으로 `mock→quiz`(문제 탭), `note→notes`(노트 탭) 활성.

@@ -4,7 +4,8 @@
   "questions": {
     "1": {
       "domain": "네트워크보안",
-      "explanation": "**Smurf**: 피해자 IP로 위조한 ICMP Echo Request를 서브넷 브로드캐스트 주소로 보내면, 해당 네트워크의 모든 호스트가 피해자에게 Echo Reply를 쏟아붓는 **증폭(reflection)** DoS. 반사 서버(중계자)가 되지 않으려면 라우터에서 **directed broadcast** 를 차단하고(`no ip directed-broadcast`), 외부에서 오는 **ICMP echo request** 를 차단한다."
+      "explanation": "**Smurf**: 피해자 IP로 위조한 ICMP Echo Request를 서브넷 브로드캐스트 주소로 보내면, 해당 네트워크의 모든 호스트가 피해자에게 Echo Reply를 쏟아붓는 **증폭(reflection)** DoS. 반사 서버(중계자)가 되지 않으려면 라우터에서 **directed broadcast** 를 차단하고(`no ip directed-broadcast`), 외부에서 오는 **ICMP echo request** 를 차단한다.",
+      "answer": "Smurf, Directed Broadcast, ICMP echo request"
     },
     "2": {
       "domain": "애플리케이션보안",
