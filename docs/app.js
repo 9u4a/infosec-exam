@@ -31,7 +31,7 @@ const DEFAULT_STATE = () => ({
   sessions: [],        // [{ id, startedAt, endedAt, scopeLabel, graded: {o,m,x} }]
   session: null,       // 진행 중 세션 { qids, label, idx, startedAt }
   lastSummary: null,   // 마지막 제출 결과 { label, qids, startedAt, graded:{o,m,x} }
-  settings: { alwaysShowAnswer: false, theme: 'auto', track: 'sil' },
+  settings: { alwaysShowAnswer: false, theme: 'auto', track: 'sil', examDate: '', cppgExamDate: '' },
   // CPPG(개인정보관리사) 트랙 — 학습기록 완전 분리
   cppg: { results: {}, favorites: [], sessions: [], session: null, lastSummary: null },
 });
@@ -79,6 +79,7 @@ const store = {
     return null;
   },
   setMemo(qid, memo) { this.result(qid).memo = memo; this.save(); },
+  setAns(qid, ans) { this.result(qid).ans = ans; this.save(); },
   isFav(qid) { return this.state.favorites.includes(qid); },
   toggleFav(qid) {
     const i = this.state.favorites.indexOf(qid);
@@ -242,10 +243,11 @@ function mergeResults(a, b) {
   for (const src of [b || {}, a || {}]) {
     for (const qid of Object.keys(src)) {
       const r = src[qid] || {};
-      const t = out[qid] || (out[qid] = { attempts: [], memo: '' });
+      const t = out[qid] || (out[qid] = { attempts: [], memo: '', ans: '' });
       const seen = new Set(t.attempts.map((x) => x.t + '/' + x.g));
       for (const at of r.attempts || []) { const k = at.t + '/' + at.g; if (!seen.has(k)) { seen.add(k); t.attempts.push(at); } }
       if ((r.memo || '').length > t.memo.length) t.memo = r.memo;
+      if ((r.ans || '').length > (t.ans || '').length) t.ans = r.ans;   // 문항별 mtime 없음 → memo 와 같은 "긴 쪽 우선"
     }
   }
   for (const qid of Object.keys(out)) out[qid].attempts.sort((x, y) => x.t - y.t);
@@ -297,6 +299,27 @@ function noteWeakIds(n) {
   });
 }
 
+/* ============ 복습 스케줄 (망각곡선) — attempts 만으로 파생, 저장·동기화 변경 없음 ============ */
+// 마지막 채점 등급별 재복습 간격(일). 같은 등급이 연속될수록 간격을 늘린다.
+const DUE_DAYS = { x: [1, 3, 7, 14], m: [3, 7, 14, 30], o: [14, 30, 60, 120] };
+function reviewDueAt(qid) {
+  const a = (store.state.results[qid] || {}).attempts;
+  if (!a || !a.length) return null;                 // 미풀이는 '진도'지 '복습'이 아니다
+  const last = a[a.length - 1];
+  let streak = 0;
+  for (let i = a.length - 1; i >= 0 && a[i].g === last.g; i--) streak++;
+  const tab = DUE_DAYS[last.g] || DUE_DAYS.m;
+  return last.t + tab[Math.min(streak - 1, tab.length - 1)] * 86400000;
+}
+function dueQids() {                                 // 기출만 (예상문제는 모의고사 풀로 따로 관리)
+  const now = Date.now();
+  return QUESTIONS
+    .map((q) => ({ qid: q.qid, due: reviewDueAt(q.qid) }))
+    .filter((x) => x.due && x.due <= now)
+    .sort((x, y) => x.due - y.due)                   // 가장 오래 밀린 것부터
+    .map((x) => x.qid);
+}
+
 /* ============ 파생 통계 ============ */
 function computeStats() {
   const perDomain = {};
@@ -325,7 +348,7 @@ function computeStats() {
     perType[q.type][last]++;
     for (const a of r.attempts) {
       attemptsTotal++;
-      const key = new Date(a.t).toISOString().slice(0, 10);
+      const key = dayKey(a.t);
       dayMap[key] = (dayMap[key] || 0) + 1;
     }
   }
@@ -344,6 +367,21 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const el = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const pct = (n, d) => (d ? Math.round((n / d) * 100) : 0);
+
+// 로컬 기준 YYYY-MM-DD (일별 집계 키). toISOString 은 UTC 라 KST 새벽(00~09시)이 전날로 샌다.
+function dayKey(ts) {
+  const d = ts == null ? new Date() : new Date(ts), p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+// dayMap(키: dayKey) 에서 오늘(또는 어제)부터 역방향으로 이어지는 학습 연속일 수
+function streakDays(dayMap) {
+  if (!dayMap) return 0;
+  let n = 0;
+  const d = new Date();
+  if (!dayMap[dayKey(d.getTime())]) d.setDate(d.getDate() - 1);   // 오늘 아직 안 했으면 어제부터
+  while (dayMap[dayKey(d.getTime())]) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
 
 function toast(msg) {
   const t = el(`<div class="toast">${esc(msg)}</div>`);
@@ -428,7 +466,11 @@ function render() {
   if (store.state.settings.track !== track) { store.state.settings.track = track; store.save(); }
   tabbar.querySelectorAll('.tabs').forEach((g) => { g.hidden = g.dataset.track !== track; });
   const activeTab = track === 'cppg' ? (args[0] || '') : path;
-  tabbar.querySelectorAll(`.tabs[data-track="${track}"] a`).forEach((a) => a.classList.toggle('active', a.dataset.tab === activeTab));
+  tabbar.querySelectorAll(`.tabs[data-track="${track}"] a`).forEach((a) => {
+    const on = a.dataset.tab === activeTab;
+    a.classList.toggle('active', on);
+    if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+  });
 }
 window.addEventListener('hashchange', render);
 
@@ -449,19 +491,24 @@ function questionCard(q, opts = {}) {
   const notesHtml = noteLinksHtml(q);
   const rep = repeatNote(q);
 
+  const savedAns = (store.state.results[q.qid] || {}).ans || '';
+  const inSession = !!opts.sessionStart;
+  const initialAns = inSession ? '' : savedAns;         // 세션 중엔 빈칸(인출 연습), 복습 문맥이면 프리필
+  const longHint = (q.type === '서술형' || q.type === '실무형') ? ' · 권장 3~5줄' : '';
+
   card.innerHTML = `
     <div class="q-head">
       <span class="pill accent">${esc(qLabel(q))}</span>
       <span class="pill">${esc(q.type)}</span>
       <span class="pill">${esc(q.domain)}</span>
-      <button class="star ${store.isFav(q.qid) ? 'on' : ''}" title="즐겨찾기" aria-label="즐겨찾기">${store.isFav(q.qid) ? '★' : '☆'}</button>
+      <button class="star ${store.isFav(q.qid) ? 'on' : ''}" title="즐겨찾기" aria-label="즐겨찾기" aria-pressed="${store.isFav(q.qid)}">${store.isFav(q.qid) ? '★' : '☆'}</button>
     </div>
     <div class="q-body">${esc(q.question)}${supplementHtml(q)}</div>
     ${rep ? `<a class="repeat-badge" href="#/note/${encodeURIComponent(rep.slug)}">🔁 ${rep.questions.length}회 반복 출제 · 회차별 비교 →</a>` : ''}
 
     <label class="field my-answer">
-      <span>내 답 (선택 입력)</span>
-      <textarea rows="2" placeholder="여기에 답을 적어보고 아래에서 정답과 비교하세요"></textarea>
+      <span>✍️ 내 답 (선택 입력) <span class="ans-count"></span>${inSession && savedAns ? ' <a href="#" class="load-ans">지난 답안 불러오기</a>' : ''}</span>
+      <textarea class="my-ans" rows="3" placeholder="여기에 답을 적어보고 아래에서 정답과 비교하세요">${esc(initialAns)}</textarea>
     </label>
 
     <div class="reveal-slot"></div>
@@ -473,27 +520,70 @@ function questionCard(q, opts = {}) {
     store.toggleFav(q.qid);
     const on = store.isFav(q.qid);
     star.classList.toggle('on', on);
+    star.setAttribute('aria-pressed', on);
     star.textContent = on ? '★' : '☆';
   });
 
+  // ── 내 답: 저장(디바운스) · 글자수 · 비교 블록 실시간 동기화 ──
+  const myAnsEl = $('.my-ans', card);
+  const countEl = $('.ans-count', card);
+  let acTextEl = null;      // 정답 펼치면 생성되는 비교 블록의 "내 답" 칸
+  let answerEl = null;
+  const saveAns = (v) => {
+    v = v.trim();
+    if (!v && !store.state.results[q.qid]) return;   // 빈 답으로 빈 엔트리를 만들지 않음
+    store.setAns(q.qid, v);
+  };
+  const syncAns = () => {
+    const v = myAnsEl.value.trim();
+    countEl.textContent = v ? `${v.length}자${longHint}` : '';
+    if (acTextEl) acTextEl.textContent = v || '(비어 있음)';
+    else if (answerEl && v && !$('.ans-compare', answerEl)) { rebuildAnswer(); }
+  };
+  let ansTimer = null;
+  myAnsEl.addEventListener('input', () => {
+    myAnsEl.style.height = 'auto'; myAnsEl.style.height = myAnsEl.scrollHeight + 'px';
+    syncAns();
+    clearTimeout(ansTimer);
+    ansTimer = setTimeout(() => saveAns(myAnsEl.value), 600);
+  });
+  const flushAns = () => { clearTimeout(ansTimer); saveAns(myAnsEl.value); };
+  myAnsEl.addEventListener('change', flushAns);
+  myAnsEl.addEventListener('blur', flushAns);
+  const loadLink = $('.load-ans', card);
+  if (loadLink) loadLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    myAnsEl.value = (store.state.results[q.qid] || {}).ans || '';
+    myAnsEl.dispatchEvent(new Event('input'));
+    loadLink.remove();
+  });
+
   function buildAnswer() {
-    const r = store.result(q.qid);
+    const r = store.state.results[q.qid] || {};   // 읽기 전용 — store.result() 는 빈 엔트리를 만듦
     const priorN = store.attemptCount(q.qid);
     const priorLast = store.lastGrade(q.qid);
     const priorX = store.wrongCount(q.qid);
     const histHtml = priorN
       ? `<div class="grade-hist small">지난 채점 ${GRADE_ICON[priorLast] || ''} <b>${GRADE_LABEL[priorLast] || '-'}</b> · ${priorN}회 풀이${priorX ? ` · 누적 오답 ${priorX}회` : ''}</div>`
       : '';
+    const myV = myAnsEl.value.trim();
+    const modelBody = `<div class="a-body">${renderAnswer(q.answer)}</div>`;
+    const answerBlock = myV
+      ? `<div class="ans-compare">
+           <div class="ac-pane mine"><b>✍️ 내 답</b><div class="ac-text">${esc(myV)}</div></div>
+           <div class="ac-pane model"><b>✅ 모범답안</b>${modelBody}</div>
+         </div>`
+      : modelBody;
     const wrap = el(`
       <div class="answer-wrap">
-        <div class="a-body">${renderAnswer(q.answer)}</div>
+        ${answerBlock}
         ${q.explanation ? `<div class="expl"><b>💡 해설</b><div class="expl-body markdown">${window.marked ? window.marked.parse(q.explanation) : esc(q.explanation)}</div></div>` : ''}
         ${notesHtml ? `<div class="note-links">${notesHtml}</div>` : ''}
         ${histHtml}
         <div class="grade-row">
-          <button class="btn" data-g="o"><span class="g-ico">⭕</span>맞음</button>
-          <button class="btn" data-g="m"><span class="g-ico">🔺</span>애매함</button>
-          <button class="btn" data-g="x"><span class="g-ico">❌</span>틀림</button>
+          <button class="btn" data-g="o" aria-pressed="false"><span class="g-ico">⭕</span>맞음</button>
+          <button class="btn" data-g="m" aria-pressed="false"><span class="g-ico">🔺</span>애매함</button>
+          <button class="btn" data-g="x" aria-pressed="false"><span class="g-ico">❌</span>틀림</button>
         </div>
         <label class="field" style="margin-bottom:0">
           <span>💭 내 메모</span>
@@ -501,10 +591,15 @@ function questionCard(q, opts = {}) {
         </label>
       </div>
     `);
+    acTextEl = $('.ac-text', wrap);
     const gr = $('.grade-row', wrap);
     const paint = () => {
       const cur = store.lastGradeSince(q.qid, sinceTs);   // 이번 풀이에서 매긴 것만 하이라이트
-      gr.querySelectorAll('.btn').forEach((b) => b.classList.toggle('sel', b.dataset.g === cur));
+      gr.querySelectorAll('.btn').forEach((b) => {
+        const on = b.dataset.g === cur;
+        b.classList.toggle('sel', on);
+        b.setAttribute('aria-pressed', on);
+      });
     };
     paint();
     gr.querySelectorAll('.btn').forEach((b) => b.addEventListener('click', () => {
@@ -519,8 +614,16 @@ function questionCard(q, opts = {}) {
     return wrap;
   }
 
-  const toggleBtn = el(`<button class="btn primary wide reveal-btn"></button>`);
-  let answerEl = null;
+  function rebuildAnswer() {
+    if (!answerEl) return;
+    const wasHidden = answerEl.hidden;
+    const next = buildAnswer();
+    next.hidden = wasHidden;
+    answerEl.replaceWith(next);
+    answerEl = next;
+  }
+
+  const toggleBtn = el(`<button class="btn primary wide reveal-btn" aria-expanded="false"></button>`);
   let shown = false;
   function setShown(next) {
     shown = next;
@@ -528,9 +631,11 @@ function questionCard(q, opts = {}) {
     if (answerEl) answerEl.hidden = !shown;
     toggleBtn.textContent = shown ? '정답 닫기 ▲' : '정답 보기 ▼';
     toggleBtn.classList.toggle('open', shown);
+    toggleBtn.setAttribute('aria-expanded', shown);
   }
   toggleBtn.addEventListener('click', () => setShown(!shown));
   slot.appendChild(toggleBtn);
+  syncAns();
   setShown(revealed);
   enhanceMarkdown(card);
   return card;
@@ -557,6 +662,7 @@ function reviewItem(q, grade, opts = {}) {
       ${rep && !opts.hideRepeatBadge ? `<a class="repeat-badge" href="#/note/${encodeURIComponent(rep.slug)}">🔁 ${rep.questions.length}회 반복 출제 · 회차별 비교 →</a>` : ''}
       <div class="q-body">${esc(q.question)}${supplementHtml(q)}</div>
       <div class="answer-wrap" style="border-top:none;margin-top:10px;padding-top:0">
+        ${(store.state.results[q.qid] || {}).ans ? `<div class="ac-pane mine rv-mine"><b>✍️ 내 답</b><div class="ac-text">${esc(store.state.results[q.qid].ans)}</div></div>` : ''}
         <div class="a-body">${renderAnswer(q.answer)}</div>
         ${q.explanation ? `<div class="expl"><b>💡 해설</b><div class="expl-body markdown">${window.marked ? window.marked.parse(q.explanation) : esc(q.explanation)}</div></div>` : ''}
         ${notesHtml ? `<div class="note-links">${notesHtml}</div>` : ''}
@@ -577,17 +683,20 @@ function reviewItem(q, grade, opts = {}) {
 
 /* 트랙 전환 스위처 (홈 상단) */
 function trackSwitch(cur) {
-  return el(`<div class="track-switch">
+  const box = el(`<div class="track-switch">
     <a href="#/home" class="${cur === 'sil' ? 'on' : ''}">정보보안기사 실기</a>
     <a href="#/cppg" class="${cur === 'cppg' ? 'on' : ''}">CPPG 개인정보관리사</a>
   </div>`);
+  const cppgLink = box.children[1];
+  cppgLink.addEventListener('pointerenter', () => { ensureCppg(); }, { once: true });
+  return box;
 }
 
 /* ============ 홈 ============ */
 route('home', (app) => {
   app.appendChild(trackSwitch('sil'));
   const s = computeStats();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dayKey();
   const todayCount = s.dayMap[today] || 0;
 
   const weak = Object.entries(s.perDomain)
@@ -618,6 +727,11 @@ route('home', (app) => {
     app.appendChild(rc);
   }
 
+  const paceCard = examPaceCard(store.state.settings.examDate, {
+    unsolved: QUESTIONS.length - s.doneTotal, todayCount, streak: streakDays(s.dayMap),
+  });
+  if (paceCard) app.appendChild(paceCard);
+
   app.appendChild(el(`
     <div class="stat-grid">
       <div class="card"><div class="big">${todayCount}</div><div class="muted small">오늘 푼 문항</div></div>
@@ -633,6 +747,22 @@ route('home', (app) => {
     ${(store.state.favorites.length || Object.values(store.state.results).some((r) => r.memo)) ? '<a class="btn" href="#/saved">⭐ 저장</a>' : ''}
     ${store.state.sessions.length ? '<a class="btn" href="#/history">지난 기록</a>' : ''}
   </div>`));
+
+  const due = dueQids();
+  if (due.length) {
+    const dv = { o: 0, m: 0, x: 0 };
+    due.forEach((qid) => { const g = store.lastGrade(qid); if (g) dv[g]++; });
+    const box = el(`<div class="card"><h3>🔁 오늘 복습할 문항 <span class="muted small">${due.length}</span></h3>
+      <div class="bar-row"><span class="bar-label">등급 구성</span>${barTrack(dv)}<span class="bar-num">${due.length}</span></div>
+      <div class="row tight" style="margin-top:8px"><button class="btn primary sm" id="dueGo">복습 시작 →</button></div>
+      <p class="small muted" style="margin-top:6px">망각곡선 간격 · ❌ 1→3→7일 · 🔺 3→7→14일 · ⭕ 14→30→60일</p>
+    </div>`);
+    $('#dueGo', box).addEventListener('click', () => {
+      const ids = dueQids().slice(0, 20);
+      startSession(ids, `오늘 복습 ${ids.length}문항`);
+    });
+    app.appendChild(box);
+  }
 
   const mockHist = store.state.sessions.filter((s) => s.kind === 'mock');
   const lastMock = mockHist[0];
@@ -679,6 +809,25 @@ function barTrack(v) {
   </span>`;
 }
 
+/* D-day · 하루 권장 페이스 · 연속 학습일 — 실기·CPPG 공용. 시험일 미설정이면 null. */
+function examPaceCard(examDate, o) {
+  if (!examDate) return null;
+  const d0 = new Date(examDate + 'T00:00:00').getTime();
+  if (isNaN(d0)) return null;
+  const dLeft = Math.ceil((d0 - Date.now()) / 86400000);
+  const target = dLeft > 0 && o.unsolved > 0 ? Math.ceil(o.unsolved / dLeft) : 0;
+  const dLabel = dLeft > 1 ? `D-${dLeft}` : dLeft === 1 ? '내일' : dLeft === 0 ? 'D-DAY' : '시험 종료';
+  const done = Math.max(0, o.todayCount || 0);
+  const bar = target
+    ? `<div class="bar-row"><span class="bar-label">오늘 ${done}/${target}</span>${barTrack({ o: Math.min(done, target), m: 0, x: Math.max(0, target - done) })}</div>`
+    : `<div class="small muted">오늘 ${done}문항 학습</div>`;
+  return el(`<div class="card dday-card">
+    <div class="dday-top"><b>🗓 ${dLabel}</b><span class="muted small">${examDate}</span><span class="dday-streak">🔥 연속 ${o.streak}일</span></div>
+    ${dLeft > 0 ? `<div class="small muted">미풀이 ${o.unsolved}문항 · 남은 ${dLeft}일${target ? ` → 하루 약 ${target}문항` : ''}</div>` : ''}
+    ${bar}
+  </div>`);
+}
+
 /* ============ 풀기: 범위 선택 ============ */
 route('solve', (app) => {
   app.appendChild(el(`<h1>문제 풀기</h1>`));
@@ -690,6 +839,7 @@ route('solve', (app) => {
       <option value="domain">영역별</option>
       <option value="type">유형별</option>
       <option value="predicted">예상문제 (모의고사용)</option>
+      <option value="due">오늘 복습 (망각곡선)</option>
       <option value="wrong">오답만 (마지막이 틀림)</option>
       <option value="maybe">애매함만 (마지막이 애매함)</option>
       <option value="fav">즐겨찾기만</option>
@@ -722,7 +872,7 @@ route('solve', (app) => {
     const v = scopeSel.value;
     sub.innerHTML = '';
     // '예상문제 포함'은 회차별·즐겨찾기·예상문제 범위에는 의미 없음
-    predWrap.hidden = ['round', 'fav', 'predicted'].includes(v);
+    predWrap.hidden = ['round', 'fav', 'predicted', 'due'].includes(v);
     if (v === 'round') {
       sub.appendChild(el(`<label class="field"><span>회차</span><select id="p">
         ${DATA.rounds.map((r) => `<option value="${r.round}">${r.round}회 (${r.date})</option>`).reverse().join('')}
@@ -752,6 +902,7 @@ route('solve', (app) => {
     else if (v === 'domain') { list = p ? list.filter((q) => q.domain === p) : list; label = p || '전체 영역'; }
     else if (v === 'predicted') { list = p ? list.filter((q) => q.domain === p) : list; label = `예상문제${p ? ' ' + p : ''}`; }
     else if (v === 'type') { list = p ? list.filter((q) => q.type === p) : list; label = p || '전체 유형'; }
+    else if (v === 'due') { const set = new Set(dueQids()); list = QUESTIONS.filter((q) => set.has(q.qid)); label = '오늘 복습'; }
     else if (v === 'wrong') { list = list.filter((q) => store.lastGrade(q.qid) === 'x'); label = '오답'; }
     else if (v === 'maybe') { list = list.filter((q) => store.lastGrade(q.qid) === 'm'); label = '애매함'; }
     else if (v === 'fav') { list = store.state.favorites.map((id) => anyQ(id)).filter(Boolean); label = '즐겨찾기'; }
@@ -852,7 +1003,8 @@ route('session', (app) => {
   const grid = $('.q-grid', jump);
   qids.forEach((qid, i) => {
     const g = sessionGrade(qid);
-    const b = el(`<button class="q-cell ${g ? 'g-' + g : ''} ${i === idx ? 'cur' : ''}">${i + 1}</button>`);
+    const glab = g ? ' · ' + GRADE_LABEL[g] : '';
+    const b = el(`<button class="q-cell ${g ? 'g-' + g : ''} ${i === idx ? 'cur' : ''}" aria-label="${i + 1}번${glab}"${i === idx ? ' aria-current="true"' : ''}>${i + 1}</button>`);
     b.addEventListener('click', () => { SESSION.idx = i; saveSession(); render(); });
     grid.appendChild(b);
   });
@@ -1269,7 +1421,7 @@ route('stats', (app) => {
   const heat = el(`<div class="card"><h3>최근 14일 학습량</h3><div class="heat"></div></div>`);
   const hc = $('.heat', heat);
   const days = [];
-  for (let i = 13; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(d.toISOString().slice(0, 10)); }
+  for (let i = 13; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(dayKey(d.getTime())); }
   const max = Math.max(1, ...days.map((d) => s.dayMap[d] || 0));
   days.forEach((d) => {
     const n = s.dayMap[d] || 0;
@@ -1726,9 +1878,24 @@ route('more', (app) => {
         <option value="light" ${set.theme === 'light' ? 'selected' : ''}>라이트</option>
         <option value="dark" ${set.theme === 'dark' ? 'selected' : ''}>다크</option>
       </select></label>
+    <label class="field"><span>시험일 (D-day · 하루 권장 페이스)</span>
+      <input type="date" id="examDate" value="${esc(set.examDate || '')}"></label>
   </div>`);
   $('#showAns', setBox).addEventListener('change', (e) => { set.alwaysShowAnswer = e.target.checked; store.save(); });
   $('#theme', setBox).addEventListener('change', (e) => { set.theme = e.target.value; store.save(); applyTheme(); });
+  $('#examDate', setBox).addEventListener('change', (e) => { set.examDate = e.target.value; store.save(); });
+
+  if (window.matchMedia && window.matchMedia('(min-width: 900px)').matches) {
+    app.appendChild(el(`<div class="card"><h3>키보드 단축키 <span class="muted small">PC</span></h3>
+      <div class="small muted" style="line-height:1.9">
+        <code>1</code> <code>2</code> <code>3</code> 채점(맞음·애매·틀림) / 객관식 보기 ·
+        <code>←</code> <code>→</code> 이전·다음 문항 ·
+        <code>Space</code> 정답 펼치기 ·
+        <code>f</code> 즐겨찾기 ·
+        <code>/</code> 검색 ·
+        <code>?</code> 이 목록
+      </div></div>`));
+  }
   app.appendChild(setBox);
 
   // 서버 동기화 (선택)
@@ -1819,14 +1986,43 @@ function importData(e) {
 /* ==================================================================
    CPPG (개인정보관리사) 트랙 — 5지선다 객관식 · 자동채점 · 모의고사
    ================================================================== */
-const CPPG = window.CPPG_DATA || null;
-const CQ = CPPG ? CPPG.quiz : [];
-const CQ_BY_ID = new Map(CQ.map((q) => [q.id, q]));
-const CSUBJ = CPPG ? CPPG.subjects : [];
-const CSUBJ_BY_ID = new Map(CSUBJ.map((s) => [s.id, s]));
-const CNOTE_BY_SLUG = new Map(CPPG ? CPPG.notes.map((n) => [n.slug, n]) : []);
-const CCFG = (CPPG && CPPG.config) || { passTotal: 60, passPerSubjectPct: 40, durationMin: 120, totalQuestions: 100 };
+/* cppg.js 는 지연 로드된다 (index.html 에 <script> 없음). route('cppg') 관문이 ensureCppg() 를
+   기다렸다가 initCppg() 로 아래 바인딩을 채운 뒤에야 CPPG 화면을 그린다. sw.js SHELL 은 유지 —
+   서비스워커가 백그라운드로 미리 받아두므로 오프라인·2회차부터는 캐시 히트. */
+let CPPG = window.CPPG_DATA || null;
+let CQ = CPPG ? CPPG.quiz : [];
+let CQ_BY_ID = new Map(CQ.map((q) => [q.id, q]));
+let CSUBJ = CPPG ? CPPG.subjects : [];
+let CSUBJ_BY_ID = new Map(CSUBJ.map((s) => [s.id, s]));
+let CNOTE_BY_SLUG = new Map(CPPG ? CPPG.notes.map((n) => [n.slug, n]) : []);
+let CCFG = (CPPG && CPPG.config) || { passTotal: 60, passPerSubjectPct: 40, durationMin: 120, totalQuestions: 100 };
 const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
+
+function initCppg() {
+  CPPG = window.CPPG_DATA || null;
+  if (!CPPG) return false;
+  CQ = CPPG.quiz || [];
+  CQ_BY_ID = new Map(CQ.map((q) => [q.id, q]));
+  CSUBJ = CPPG.subjects || [];
+  CSUBJ_BY_ID = new Map(CSUBJ.map((s) => [s.id, s]));
+  CNOTE_BY_SLUG = new Map((CPPG.notes || []).map((n) => [n.slug, n]));
+  CCFG = CPPG.config || CCFG;
+  return true;
+}
+
+let _cppgPromise = null;
+function ensureCppg() {
+  if (CPPG) return Promise.resolve(true);
+  if (_cppgPromise) return _cppgPromise;
+  _cppgPromise = new Promise((resolve) => {
+    const sc = document.createElement('script');
+    sc.src = 'data/cppg.js';
+    sc.onload = () => resolve(initCppg());
+    sc.onerror = () => { _cppgPromise = null; resolve(false); };
+    document.head.appendChild(sc);
+  });
+  return _cppgPromise;
+}
 const subjNo = (sid) => { const s = CSUBJ_BY_ID.get(sid); return s ? s.no + '과목' : sid; };
 const subjName = (sid) => { const s = CSUBJ_BY_ID.get(sid); return s ? s.name : sid; };
 
@@ -2023,7 +2219,15 @@ route('cppg', (app, args) => {
   clearInterval(CTIMER); CTIMER = null;
   app.appendChild(trackSwitch('cppg'));
   if (!CPPG) {
-    app.appendChild(el('<div class="empty">CPPG 데이터가 아직 없습니다.<br><span class="small"><code>cppg/</code> 폴더 작성 후 <code>node scripts/build.mjs</code></span></div>'));
+    if (window.CPPG_DATA) initCppg();   // 스크립트는 이미 있는데 init 전인 경우
+  }
+  if (!CPPG) {
+    app.appendChild(el('<div class="card"><p class="muted">CPPG 데이터를 불러오는 중…</p></div>'));
+    ensureCppg().then((ok) => {
+      if (ok) render();
+      else app.replaceChildren(trackSwitch('cppg'),
+        el('<div class="empty">CPPG 데이터를 불러오지 못했습니다.<br><span class="small">새로고침하거나 네트워크를 확인해 주세요.</span></div>'));
+    });
     return;
   }
   const sub = args[0] || 'home';
@@ -2052,6 +2256,13 @@ cRoute('home', (app) => {
   const done = Object.keys(st.results).filter((id) => CQ_BY_ID.has(id) && st.results[id].attempts.length).length;
   const graded = CQ.map((q) => cstore.lastAttempt(q.id)).filter(Boolean);
   const rate = graded.length ? pct(graded.filter((a) => a.ok).length, graded.length) : 0;
+  const cDayMap = {};
+  Object.values(st.results).forEach((r) => r.attempts.forEach((a) => { const k = dayKey(a.t); cDayMap[k] = (cDayMap[k] || 0) + 1; }));
+  const cPaceCard = examPaceCard(store.state.settings.cppgExamDate, {
+    unsolved: CQ.length - done, todayCount: cDayMap[dayKey()] || 0, streak: streakDays(cDayMap),
+  });
+  if (cPaceCard) app.appendChild(cPaceCard);
+
   app.appendChild(el(`<div class="stat-grid">
     <div class="card"><div class="big">${done}<span class="muted" style="font-size:1rem">/${CQ.length}</span></div><div class="muted small">푼 문제</div></div>
     <div class="card"><div class="big">${rate}%</div><div class="muted small">정답률</div></div>
@@ -2337,11 +2548,11 @@ cRoute('stats', (app) => {
 
   // 14일 학습량
   const dayMap = {};
-  Object.values(st.results).forEach((r) => r.attempts.forEach((a) => { const k = new Date(a.t).toISOString().slice(0, 10); dayMap[k] = (dayMap[k] || 0) + 1; }));
+  Object.values(st.results).forEach((r) => r.attempts.forEach((a) => { const k = dayKey(a.t); dayMap[k] = (dayMap[k] || 0) + 1; }));
   const heat = el('<div class="card"><h3>최근 14일 학습량</h3><div class="heat"></div></div>');
   const hc = $('.heat', heat);
   const days = [];
-  for (let i = 13; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(d.toISOString().slice(0, 10)); }
+  for (let i = 13; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(dayKey(d.getTime())); }
   const mx = Math.max(1, ...days.map((d) => dayMap[d] || 0));
   days.forEach((d) => { const n = dayMap[d] || 0; hc.appendChild(el(`<i class="${n ? 'has' : ''}" style="height:${Math.max(3, (n / mx) * 100)}%" title="${d}: ${n}"></i>`)); });
   app.appendChild(heat);
@@ -2515,6 +2726,13 @@ cRoute('more', (app) => {
   }
   app.appendChild(favBox);
 
+  const setBox = el(`<div class="card stack"><h3>설정</h3>
+    <label class="field"><span>시험일 (D-day · 하루 권장 페이스)</span>
+      <input type="date" id="cExamDate" value="${esc(store.state.settings.cppgExamDate || '')}"></label>
+  </div>`);
+  $('#cExamDate', setBox).addEventListener('change', (e) => { store.state.settings.cppgExamDate = e.target.value; store.save(); });
+  app.appendChild(setBox);
+
   const rBox = el('<div class="card stack"><h3>데이터</h3><p class="small muted">CPPG 학습기록만 초기화합니다. 정보보안기사 기록은 그대로 유지됩니다.</p>'
     + '<button class="btn sm" id="cppgReset" style="color:var(--bad)">CPPG 학습기록 초기화</button></div>');
   $('#cppgReset', rBox).addEventListener('click', () => {
@@ -2526,6 +2744,32 @@ cRoute('more', (app) => {
   app.appendChild(rBox);
   app.appendChild(el(`<p class="small muted center" style="margin-top:20px">세션 ${st.sessions.length}회 · 데이터 ${CPPG.builtAt.slice(0, 10)}</p>`));
 });
+
+/* ============ 키보드 단축키 (PC 회독용) ============
+   render() 가 매번 DOM 을 새로 그리므로 상태를 들지 않고 현재 화면의 컨트롤을 클릭한다. */
+function installShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    if (e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable]')) return;
+    const app = document.getElementById('app');
+    if (!app) return;
+    const click = (sel, root = app) => { const b = root.querySelector(sel); if (b) { b.click(); return true; } return false; };
+    switch (e.key) {
+      case '1': case '2': case '3': case '4': case '5': {
+        const choices = app.querySelector('.choice-list');
+        if (choices) { const b = choices.children[+e.key - 1]; if (b) b.click(); return; }
+        if (+e.key <= 3) { const g = ['o', 'm', 'x'][+e.key - 1]; click(`.grade-row .btn[data-g="${g}"]`); }
+        return;
+      }
+      case 'ArrowLeft': if (app.querySelector('.q-jump') && click('.nav-row button:first-child:not([disabled])')) e.preventDefault(); return;
+      case 'ArrowRight': if (app.querySelector('.q-jump') && click('.nav-row button:last-child:not([disabled])')) e.preventDefault(); return;
+      case ' ': if (click('.reveal-btn')) e.preventDefault(); return;
+      case 'f': click('.q-card .star'); return;
+      case '/': e.preventDefault(); navigate('#/search'); return;
+      case '?': toast('1·2·3 채점/보기 · ←→ 이전·다음 · Space 정답 · f 즐겨찾기 · / 검색'); return;
+    }
+  });
+}
 
 /* ============ 부팅 ============ */
 store.load();
@@ -2543,7 +2787,10 @@ if (store.state.cppg.session && Array.isArray(store.state.cppg.session.ids) && s
   store.state.cppg.session = null;
 }
 if (!location.hash) location.hash = store.state.settings.track === 'cppg' ? '#/cppg' : '#/home';
+// CPPG 트랙으로 부팅하거나 이미 #/cppg 로 들어왔으면 지연 번들을 미리 당겨둔다 (관문이 같은 Promise 를 기다림)
+if (store.state.settings.track === 'cppg' || location.hash.startsWith('#/cppg')) ensureCppg();
 render();
+installShortcuts();
 
 /* 서버 동기화 — 로그인되어 있으면 부팅에 서버 상태를 받아 병합 */
 SYNC.load();
@@ -2577,4 +2824,4 @@ if ('serviceWorker' in navigator) {
 }
 
 /* 테스트용 노출 (스모크에서 병합·동기화 로직 검증) */
-try { window.__sync = { SYNC, mergeState, mergeResults, mergeSessions, store }; } catch (e) { /* noop */ }
+try { window.__sync = { SYNC, mergeState, mergeResults, mergeSessions, store, dayKey, streakDays, computeStats, dueQids, reviewDueAt, ensureCppg }; } catch (e) { /* noop */ }

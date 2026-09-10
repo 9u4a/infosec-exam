@@ -158,7 +158,7 @@ cppg/자료/*.pdf               시행처·법령 원문 PDF(1차 사료). 법�
 
 빌드 산출물 `docs/data/cppg.js` (`window.CPPG_DATA`) 도 **커밋한다**. `cppg/` 를 고치면
 `node scripts/build.mjs` 재실행 → `cppg.js` 함께 커밋. 앱 셸 파일 변경 시 `docs/sw.js` 의
-`CACHE` 버전도 올린다 (현재 **v27**, 실기·CPPG 공용).
+`CACHE` 버전도 올린다 (현재 **v28**, 실기·CPPG 공용).
 
 ⚠ 개인정보보호법은 개정이 잦다. 주요 시행일:
 2020.8.5 데이터3법 / 2023.9.15 대개정 / 2024.3.15 일부(전송요구권·자동화결정·이동형영상기기) /
@@ -190,6 +190,7 @@ cppg/자료/*.pdf               시행처·법령 원문 PDF(1차 사료). 법�
 - **`server/worker.js`** — Cloudflare Worker. `POST /login`(공유 암호 → HMAC 서명 토큰) · `GET /state` · `PUT /state`(`{state, baseRev, force?}`, rev 불일치 시 409). KV 키 하나(`state:v1`)에 학습기록 JSON 통째로 보관. Secret: `PASSPHRASE`·`TOKEN_SECRET`, Var: `ALLOW_ORIGIN`. 배포는 `server/README.md`.
 - **프런트엔드(`docs/app.js` 의 `SYNC` 객체)**: 로그인 안 하면 `SYNC.on===false` → **기존과 100% 동일하게 localStorage 로만 동작**. 로그인 시 부팅에 `pull`(서버 상태 병합) → 이후 `store.save()` 마다 4초 디바운스 `push`. 오프라인이면 로컬로 동작하다 online·visible 이벤트에 재동기화.
 - **병합**(`mergeState`): 누적형(`results` attempts·`favorites`·`sessions`, cppg 포함)은 **합집합**(attempts 는 `t/g` 로 중복 제거), 스칼라(`settings`·`lastSummary`)는 `_mtime` 최신본. 진행 중 `session` 은 이 기기 우선. → 2기기 동시 사용해도 데이터 유실 최소, 충돌은 last-write-wins.
+  - `results[qid].memo`·`results[qid].ans`(내 답안 텍스트)는 문항별 mtime 이 없어 **"긴 쪽 우선"** — 편집으로 줄이면 짧은 쪽이 질 수 있음(알려진 한계).
 - `store.save()` 가 `_mtime` 갱신 + `SYNC.schedulePush()`. `save({fromSync:true})` 는 둘 다 건너뜀(병합 반영 시).
 - `server/worker.js` 는 **빌드 대상 아님** — GitHub Pages 와 무관, 사용자가 `wrangler deploy` 로 별도 배포. `docs/` 에 넣지 말 것.
 - 검증: `scratchpad/sync.test.mjs` (Worker 단위 + jsdom 2기기 병합·409 충돌).
@@ -202,6 +203,13 @@ cppg/자료/*.pdf               시행처·법령 원문 PDF(1차 사료). 법�
 node scripts/build.mjs                       # bundle.js 재생성 (참조 오류 시 경고)
 python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// 은 불가)
 ```
+
+- `docs/index.html` 은 `bundle.js` 만 즉시 로드한다. **`cppg.js`(약 830KB)는 지연 로드** —
+  `app.js` 의 `ensureCppg()` 가 `<script>` 를 주입하고 `route('cppg')` 관문이 이를 기다렸다가
+  `initCppg()` 로 CPPG 바인딩(`CPPG`·`CQ`·`CQ_BY_ID`·`CSUBJ`·`CSUBJ_BY_ID`·`CNOTE_BY_SLUG`·`CCFG`, 전부 `let`)을 채운다.
+  `docs/sw.js` SHELL 에는 `cppg.js` 를 **그대로 둔다**(SW 가 백그라운드 프리캐시 → 오프라인·2회차는 캐시 히트).
+- 일별 학습량 집계 키는 **`dayKey(ts)`**(로컬 `YYYY-MM-DD`), 표시는 `fmtDay`/`fmtWhen`.
+  `toISOString()` 은 UTC 라 KST 새벽이 전날로 새므로 **집계에 쓰지 않는다**(내보내기 파일명만 예외).
 
 ## 배포
 
@@ -224,6 +232,20 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 - 제출(summary) 자가채점 점수: 2023 배점(단답 3 / 서술 12 / 실무 16점). **⭕로 채점한 문항만 만점 가산**(유형 무관, 부분점수 없음), 🔺·❌는 0점. 유형별 breakdown + "애매함까지 정답 시 최대점" 표시.
 - 통계: 문항별 오답 횟수 랭킹, 회차·영역·유형별 정답률, 회독 수.
 - 즐겨찾기(★), 오답만/애매함만/즐겨찾기만 필터로 재풀이.
+- **내 답안 작성**: 문제 카드의 `.my-ans` textarea → `store.setAns(qid)` 로 `results[qid].ans` 에 저장
+  (입력 600ms 디바운스 + blur 즉시, 빈 답이면 엔트리 안 만듦). 정답을 펼치면 `.ans-compare` 로
+  **내 답 ↔ 모범답안 나란히**(700px+ 2열). 세션 중엔 빈칸으로 시작(인출 연습, "지난 답안 불러오기" 링크),
+  세션 밖(`#/q`·저장 탭 등 복습 문맥)이면 프리필. `reviewItem` 도 저장된 답을 읽기전용으로 표시.
+- **오늘 복습할 문항**(망각곡선): `reviewDueAt(qid)`/`dueQids()` 가 `attempts` 만으로 파생(저장·동기화 변경 없음).
+  마지막 채점 등급 × 연속 횟수로 재복습 간격 결정 — `DUE_DAYS = { x:[1,3,7,14], m:[3,7,14,30], o:[14,30,60,120] }`(일).
+  홈에 `🔁 오늘 복습할 문항 N` 카드(상위 20문항 `startSession`), `#/solve` 범위에 `오늘 복습` 옵션. 기출만 대상.
+- **시험 대비**: `settings.examDate`(실기)·`settings.cppgExamDate`(CPPG) — 더보기 설정의 `<input type=date>`.
+  설정 시 홈에 `examPaceCard` — `D-N` · 미풀이/남은일 → 하루 권장 문항 · 오늘 진행 막대 · `streakDays()` 연속 학습일.
+- **키보드 단축키**(PC, `installShortcuts()` 부팅 1회 등록 · `min-width:900px` 에서 더보기에 안내):
+  `1`·`2`·`3` 채점(맞음·애매·틀림) 또는 객관식 보기 · `←`/`→` 이전·다음(점프 그리드 있는 세션 화면만) ·
+  `Space` 정답 펼치기 · `f` 즐겨찾기 · `/` 검색 · `?` 도움말. 입력창 포커스·한글 조합 중엔 무반응.
+  접근성: `.grade-row .btn`·`.star` `aria-pressed`, `.reveal-btn` `aria-expanded`, `.q-cell`·탭 `aria-current`,
+  전역 `:focus-visible` 아웃라인.
 - **저장 탭** `#/saved`(하단 탭 ⭐): 즐겨찾기 / 메모 2-세그먼트. 두 목록 모두 `reviewItem` 펼침 행 —
   눌러서 정답·해설을 인라인 확인하고, `opts.memo` 로 **목록에서 메모를 바로 수정**(변경 시 저장·동기화).
   즐겨찾기 쪽엔 "N문항 풀기", 공통으로 "모두 펼치기" 토글. `더보기` 안에 있던 즐겨찾기·메모 섹션을
@@ -241,7 +263,7 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 - **문항 직링크** `#/q/<qid>`: 통계·즐겨찾기·노트·검색의 단일 문항 클릭은 세션을 건드리지 않고 이 라우트로 이동. 같은 회차 이전/다음 이동.
 - **통합 검색** `#/search/<query>`: 문제·정답·해설·보충지문·노트 전체를 AND 부분일치로 검색(예상문제 포함). 결과에서 바로 세션 시작 가능. 입력은 `history.replaceState` 로 URL 동기화.
 - **모의고사** `#/mock`(하단 탭): 예상문제 18문항 실전 편성 + 180분 타이머 + 60점 합격 판정. 위 「예상문제」 섹션 참고. 세션 인프라(`route('session')`/`route('summary')`)를 재사용하며 `SESSION.kind==='mock'`·`durationMin` 으로 타이머·합격배너 분기.
-- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v27**).
+- 진행 데이터는 기기별 localStorage. 더보기 > 내보내기/가져오기(JSON)로 기기 간 이동. 앱 셸(index.html/style.css/app.js/sw.js) 변경 시 `docs/sw.js` `CACHE` 버전을 올린다 (현재 **v28**).
 - **CPPG 트랙**: `#/cppg` 홈에서 연습문제(과목/노트/태그/오답/즐겨찾기/안 푼/랜덤 범위, 즉시 공개 토글) ·
   모의고사(과목별 배분 100문항 + 120분 타이머 + 총점 60·과목별 40% 과락 판정) · 통계 ·
   - 과목/노트/태그 범위엔 **"안 푼 문제만"** 체크박스(`#conlyunseen`, `cstore.attemptCount(id)===0` 필터) + 하위 셀렉트 옵션에 `안 푼 N/전체 M` 카운트. 전역 `안 푼 문제` 범위는 그대로 유지.
