@@ -9,6 +9,7 @@ const SRC_DIR = join(ROOT, '실기');
 const META_DIR = join(ROOT, 'meta');
 const NOTES_DIR = join(ROOT, 'notes');
 const PRED_DIR = join(ROOT, '예상문제');   // 기사 모의고사용 신규 예상문제 (실기/ 원본과 별개)
+const MNEMO_FILE = join(ROOT, '두음.json');   // 두문자 암기 정리
 const OUT_FILE = join(ROOT, 'docs', 'data', 'bundle.js');
 
 const CPPG_DIR = join(ROOT, 'cppg');
@@ -275,6 +276,25 @@ function loadPredicted(notes, rounds) {
   return { items, perType, perDomain };
 }
 
+// ---------- 3c. 두음 (두문자 암기) ----------
+function loadMnemonics() {
+  if (!existsSync(MNEMO_FILE)) return [];
+  const raw = JSON.parse(readFileSync(MNEMO_FILE, 'utf8'));
+  return (raw.항목들 || []).map((it, i) => {
+    const list = Array.isArray(it.내용) ? it.내용 : null;
+    if (!it.항목 || !it.두음) warn(`두음.json: ${i + 1}번 항목/두음 비어있음`);
+    if (it.분류 && !DOMAINS.includes(it.분류)) warn(`두음.json: "${it.항목}" 분류 값 오류 "${it.분류}"`);
+    return {
+      id: `mn-${i + 1}`,
+      topic: it.항목,
+      dueum: it.두음,
+      cat: it.분류 || null,
+      list,                                        // 배열이면 항목 목록
+      formula: list ? null : String(it.내용 || ''),  // 문자열이면 공식·설명
+    };
+  });
+}
+
 // ---------- CPPG (개인정보관리사) ----------
 const CPPG_REF_CATS = ['참고자료'];   // subjects.json 에 없어도 허용되는 노트 카테고리 (문제 연결 없이 정리용)
 
@@ -388,6 +408,7 @@ function main() {
   const notes = loadNotes(rounds);
   const { items: predicted, perType: predType, perDomain: predDomain } = loadPredicted(notes, rounds);
   linkRelated(notes, rounds, predicted);
+  const mnemonics = loadMnemonics();
 
   let total = 0, classified = 0, explained = 0, supplemented = 0;
   for (const r of rounds) for (const q of r.questions) {
@@ -403,9 +424,10 @@ function main() {
     rounds,
     notes,
     predicted,
+    mnemonics,
     stats: {
       total, classified, explained, supplemented, notes: notes.length,
-      predicted: predicted.length, predType, predDomain,
+      predicted: predicted.length, predType, predDomain, mnemonics: mnemonics.length,
     },
   };
 
@@ -417,6 +439,10 @@ function main() {
   console.log(`  해설 ${explained}/${total}`);
   console.log(`  보충 지문 ${supplemented}건`);
   console.log(`  노트 ${notes.length}개`);
+  if (mnemonics.length) {
+    const withCat = mnemonics.filter((m) => m.cat).length;
+    console.log(`  두음 ${mnemonics.length}항목 (분류 ${withCat}/${mnemonics.length})`);
+  }
 
   if (predicted.length) {
     const abbr = { 시스템보안: '시스템', 네트워크보안: '네트워크', 애플리케이션보안: '앱', 정보보안일반: '일반', 정보보안관리및법규: '법규' };

@@ -19,6 +19,9 @@ PREDICTED.forEach((q) => q.notes.forEach((slug) => {
 }));
 const MOCK = { total: 18, quota: { 단답형: 12, 서술형: 4, 실무형: 2 }, durationMin: 180, passScore: 60,
   domW: { 정보보안관리및법규: 29, 네트워크보안: 26, 애플리케이션보안: 23, 시스템보안: 18, 정보보안일반: 6 } };
+
+/* 두음 (두문자 암기) — 참고자료. 채점·진도 개념 없음 */
+const MNEMONICS = DATA.mnemonics || [];
 const GRADE_LABEL = { o: '맞음', m: '애매함', x: '틀림' };
 const GRADE_ICON = { o: '⭕', m: '🔺', x: '❌' };
 
@@ -465,7 +468,9 @@ function render() {
   const track = path === 'cppg' ? 'cppg' : 'sil';
   if (store.state.settings.track !== track) { store.state.settings.track = track; store.save(); }
   tabbar.querySelectorAll('.tabs').forEach((g) => { g.hidden = g.dataset.track !== track; });
-  const activeTab = track === 'cppg' ? (args[0] || '') : path;
+  // 라우트 → 하단 탭 매핑 (탭이 없는 라우트는 부모 탭을 활성화)
+  const SIL_TAB = { mock: 'solve', notes: 'more', note: 'more' };
+  const activeTab = track === 'cppg' ? (args[0] || '') : (SIL_TAB[path] || path);
   tabbar.querySelectorAll(`.tabs[data-track="${track}"] a`).forEach((a) => {
     const on = a.dataset.tab === activeTab;
     a.classList.toggle('active', on);
@@ -760,6 +765,7 @@ route('home', (app) => {
   app.appendChild(el(`<div class="row" style="margin-top:14px">
     <a class="btn primary" href="#/solve">문제 풀기 →</a>
     ${PREDICTED.length ? '<a class="btn" href="#/mock">모의고사</a>' : ''}
+    ${MNEMONICS.length ? '<a class="btn" href="#/mnemonics">📿 두음</a>' : ''}
     <a class="btn" href="#/stats">통계</a>
     ${(store.state.favorites.length || Object.values(store.state.results).some((r) => r.memo)) ? '<a class="btn" href="#/saved">⭐ 저장</a>' : ''}
     ${store.state.sessions.length ? '<a class="btn" href="#/history">지난 기록</a>' : ''}
@@ -845,8 +851,22 @@ function examPaceCard(examDate, o) {
   </div>`);
 }
 
+/* 풀기 페이지 상단 세그먼트 — [문제 풀기 | 모의고사] */
+function solveSeg(mode) {
+  const seg = el(`<div class="track-switch">
+    <a data-v="solve" class="${mode === 'solve' ? 'on' : ''}">문제 풀기</a>
+    <a data-v="mock" class="${mode === 'mock' ? 'on' : ''}">모의고사</a>
+  </div>`);
+  seg.addEventListener('click', (e) => {
+    const a = e.target.closest('a');
+    if (a && a.dataset.v !== mode) navigate(a.dataset.v === 'mock' ? '#/mock' : '#/solve');
+  });
+  return seg;
+}
+
 /* ============ 풀기: 범위 선택 ============ */
 route('solve', (app) => {
+  app.appendChild(solveSeg('solve'));
   app.appendChild(el(`<h1>문제 풀기</h1>`));
   const form = el(`<div class="card stack"></div>`);
 
@@ -1339,7 +1359,7 @@ function drawMock(opts = {}) {
 }
 
 route('mock', (app) => {
-  app.appendChild(trackSwitch('sil'));
+  app.appendChild(solveSeg('mock'));
   app.appendChild(el(`<h1>모의고사</h1>`));
 
   if (!PREDICTED.length) {
@@ -1708,6 +1728,139 @@ route('note', (app, args) => {
   }
 });
 
+/* ============ 두음 (두문자 암기) ============ */
+let mnBlind = false;   // 가리기(암기) 모드 — 모듈 스코프 기억, 해시 미반영
+
+// 두음 문자열 → 타일. 공백은 그룹 구분(.mn-gap), 나머지는 글자당 한 타일.
+function mnemoHeroHtml(dueum) {
+  const groups = String(dueum || '').trim().split(/\s+/).filter(Boolean);
+  return `<div class="mnemo-hero">${groups.map((g, gi) =>
+    (gi ? '<span class="mn-gap"></span>' : '') +
+    [...g].map((ch) => `<span class="mn-tile">${esc(ch)}</span>`).join('')
+  ).join('')}</div>`;
+}
+
+const CIRCLED_NUM = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮'];
+
+function mnemoCard(item) {
+  const bodyHtml = item.list
+    ? `<div class="mnemo-cnt small muted">뜻 ${item.list.length}개</div>
+       <ol class="mnemo-list">${item.list.map((t, i) =>
+         `<li><span class="mn-no">${CIRCLED_NUM[i] || (i + 1)}</span>${esc(t)}</li>`).join('')}</ol>`
+    : `<div class="mnemo-formula">${esc(item.formula)}</div>`;
+
+  const card = el(`<div class="mnemo-card card${mnBlind ? ' blind' : ''}">
+    <div class="mn-head">
+      <span class="mn-topic">${esc(item.topic)}</span>
+      ${item.cat ? `<span class="pill">${esc(item.cat)}</span>` : ''}
+    </div>
+    ${mnemoHeroHtml(item.dueum)}
+    <button class="btn sm mn-peek" hidden>뜻 보기 ▼</button>
+    <div class="mnemo-body"${mnBlind ? ' hidden' : ''}>${bodyHtml}</div>
+  </div>`);
+
+  const body = $('.mnemo-body', card);
+  const peek = $('.mn-peek', card);
+  const setPeek = (show) => {
+    body.hidden = !show;
+    peek.textContent = show ? '뜻 접기 ▲' : '뜻 보기 ▼';
+  };
+  peek.hidden = !mnBlind;
+  peek.addEventListener('click', (e) => { e.stopPropagation(); setPeek(body.hidden); });
+  // 가리기 모드일 때 카드(두음 타일) 아무 곳이나 눌러도 공개
+  card.addEventListener('click', (e) => {
+    if (!card.classList.contains('blind')) return;
+    if (e.target.closest('.mnemo-body') || e.target.closest('.mn-peek')) return;
+    setPeek(body.hidden);
+  });
+  return card;
+}
+
+let mnCat = '';
+route('mnemonics', (app, args) => {
+  app.appendChild(el(`<h1>두음 암기</h1>`));
+  if (!MNEMONICS.length) {
+    app.appendChild(el(`<div class="empty">두음 데이터가 없습니다.<br><span class="small">저장소 루트의 <code>두음.json</code> 작성 후 <code>node scripts/build.mjs</code></span></div>`));
+    return;
+  }
+
+  const cats = [...new Set(MNEMONICS.map((m) => m.cat).filter(Boolean))];
+  const catCount = (c) => MNEMONICS.filter((m) => m.cat === c).length;
+  mnCat = args.length ? decodeURIComponent(args.join('/')) : mnCat;
+  if (mnCat && !cats.includes(mnCat)) mnCat = '';
+
+  const controls = el(`<div class="card stack">
+    <div class="chip-row" id="mnCatRow">
+      <button class="chip" data-cat="">전체 <span>${MNEMONICS.length}</span></button>
+      ${cats.map((c) => `<button class="chip" data-cat="${esc(c)}">${esc(c)} <span>${catCount(c)}</span></button>`).join('')}
+    </div>
+    <div class="row tight">
+      <input type="text" id="mq" placeholder="항목·두음·뜻 검색" style="flex:2;min-width:150px" autocomplete="off">
+      <button class="btn sm" id="mnBlind" style="flex:1;min-width:120px">${mnBlind ? '👁 뜻 보이기' : '🙈 가리고 암기'}</button>
+    </div>
+  </div>`);
+  app.appendChild(controls);
+  const listWrap = el(`<div id="mnlist"></div>`);
+  app.appendChild(listWrap);
+
+  const mq = $('#mq', controls);
+  const catRow = $('#mnCatRow', controls);
+  const blindBtn = $('#mnBlind', controls);
+
+  function syncChips() {
+    catRow.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c.dataset.cat === mnCat));
+  }
+  function syncHash() {
+    const t = mnCat ? '#/mnemonics/' + encodeURIComponent(mnCat) : '#/mnemonics';
+    try { if (location.hash !== t) history.replaceState(null, '', t); } catch (e) { /* noop */ }
+  }
+
+  function draw() {
+    const f = mq.value.trim().toLowerCase();
+    const list = MNEMONICS.filter((m) => {
+      if (mnCat && m.cat !== mnCat) return false;
+      if (f) {
+        const hay = `${m.topic} ${m.dueum} ${m.list ? m.list.join(' ') : m.formula}`.toLowerCase();
+        if (!hay.includes(f)) return false;
+      }
+      return true;
+    });
+    listWrap.innerHTML = '';
+    const tags = [];
+    if (mnCat) tags.push(esc(mnCat));
+    if (f) tags.push('"' + esc(mq.value.trim()) + '"');
+    listWrap.appendChild(el(`<p class="small muted" style="margin:6px 2px">${list.length}항목${tags.length ? ' · ' + tags.join(' · ') : ''}${mnBlind ? ' · 🙈 가리기 모드 (두음 타일을 눌러 확인)' : ''}</p>`));
+    if (!list.length) { listWrap.appendChild(el(`<p class="muted small">조건에 맞는 두음이 없습니다.</p>`)); return; }
+
+    if (mnCat) {
+      list.forEach((m) => listWrap.appendChild(mnemoCard(m)));
+      return;
+    }
+    const byCat = {};
+    list.forEach((m) => (byCat[m.cat || '기타'] || (byCat[m.cat || '기타'] = [])).push(m));
+    Object.entries(byCat).forEach(([cat, arr]) => {
+      listWrap.appendChild(el(`<div class="note-cat">${esc(cat)}</div>`));
+      arr.forEach((m) => listWrap.appendChild(mnemoCard(m)));
+    });
+  }
+
+  catRow.addEventListener('click', (e) => {
+    const btn = e.target.closest('.chip');
+    if (!btn) return;
+    mnCat = btn.dataset.cat;
+    syncChips(); syncHash(); draw();
+  });
+  mq.addEventListener('input', draw);
+  blindBtn.addEventListener('click', () => {
+    mnBlind = !mnBlind;
+    blindBtn.textContent = mnBlind ? '👁 뜻 보이기' : '🙈 가리고 암기';
+    draw();
+  });
+
+  syncChips();
+  draw();
+});
+
 /* ============ 단일 문항 (#/q/<qid>) ============ */
 route('q', (app, args) => {
   const q = anyQ(decodeURIComponent(args.join('/')));
@@ -1877,6 +2030,8 @@ route('more', (app) => {
   // 바로가기 메뉴
   const memoN = Object.values(store.state.results).filter((r) => r.memo).length;
   app.appendChild(el(`<div class="card" style="padding:2px 12px">
+    <a class="menu-row" href="#/notes">📓 학습 노트 <span class="muted">${DATA.notes.length}</span></a>
+    <a class="menu-row" href="#/mnemonics">📿 두음 암기 <span class="muted">${MNEMONICS.length}</span></a>
     <a class="menu-row" href="#/saved">⭐ 즐겨찾기 · 💭 메모 <span class="muted">${store.state.favorites.length} · ${memoN}</span></a>
     <a class="menu-row" href="#/history">🕐 지난 풀이 기록 <span class="muted">${store.state.sessions.length}회</span></a>
     <a class="menu-row" href="#/stats">📊 통계</a>
