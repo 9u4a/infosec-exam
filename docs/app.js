@@ -82,7 +82,6 @@ const store = {
     return null;
   },
   setMemo(qid, memo) { this.result(qid).memo = memo; this.save(); },
-  setAns(qid, ans) { this.result(qid).ans = ans; this.save(); },
   isFav(qid) { return this.state.favorites.includes(qid); },
   toggleFav(qid) {
     const i = this.state.favorites.indexOf(qid);
@@ -246,11 +245,10 @@ function mergeResults(a, b) {
   for (const src of [b || {}, a || {}]) {
     for (const qid of Object.keys(src)) {
       const r = src[qid] || {};
-      const t = out[qid] || (out[qid] = { attempts: [], memo: '', ans: '' });
+      const t = out[qid] || (out[qid] = { attempts: [], memo: '' });
       const seen = new Set(t.attempts.map((x) => x.t + '/' + x.g));
       for (const at of r.attempts || []) { const k = at.t + '/' + at.g; if (!seen.has(k)) { seen.add(k); t.attempts.push(at); } }
       if ((r.memo || '').length > t.memo.length) t.memo = r.memo;
-      if ((r.ans || '').length > (t.ans || '').length) t.ans = r.ans;   // 문항별 mtime 없음 → memo 와 같은 "긴 쪽 우선"
     }
   }
   for (const qid of Object.keys(out)) out[qid].attempts.sort((x, y) => x.t - y.t);
@@ -500,11 +498,6 @@ function questionCard(q, opts = {}) {
   const notesHtml = noteLinksHtml(q);
   const rep = repeatNote(q);
 
-  const savedAns = (store.state.results[q.qid] || {}).ans || '';
-  const inSession = !!opts.sessionStart;
-  const initialAns = inSession ? '' : savedAns;         // 세션 중엔 빈칸(인출 연습), 복습 문맥이면 프리필
-  const longHint = (q.type === '서술형' || q.type === '실무형') ? ' · 권장 3~5줄' : '';
-
   card.innerHTML = `
     <div class="q-head">
       <span class="pill accent">${esc(qLabel(q))}</span>
@@ -514,11 +507,6 @@ function questionCard(q, opts = {}) {
     </div>
     <div class="q-body">${esc(q.question)}${supplementHtml(q)}</div>
     ${rep ? `<a class="repeat-badge" href="#/note/${encodeURIComponent(rep.slug)}">🔁 ${rep.questions.length}회 반복 출제 · 회차별 비교 →</a>` : ''}
-
-    <label class="field my-answer">
-      <span>✍️ 내 답 (선택 입력) <span class="ans-count"></span>${inSession && savedAns ? ' <a href="#" class="load-ans">지난 답안 불러오기</a>' : ''}</span>
-      <textarea class="my-ans" rows="3" placeholder="여기에 답을 적어보고 아래에서 정답과 비교하세요">${esc(initialAns)}</textarea>
-    </label>
 
     <div class="reveal-slot"></div>
   `;
@@ -533,39 +521,7 @@ function questionCard(q, opts = {}) {
     star.textContent = on ? '★' : '☆';
   });
 
-  // ── 내 답: 저장(디바운스) · 글자수 · 비교 블록 실시간 동기화 ──
-  const myAnsEl = $('.my-ans', card);
-  const countEl = $('.ans-count', card);
-  let acTextEl = null;      // 정답 펼치면 생성되는 비교 블록의 "내 답" 칸
   let answerEl = null;
-  const saveAns = (v) => {
-    v = v.trim();
-    if (!v && !store.state.results[q.qid]) return;   // 빈 답으로 빈 엔트리를 만들지 않음
-    store.setAns(q.qid, v);
-  };
-  const syncAns = () => {
-    const v = myAnsEl.value.trim();
-    countEl.textContent = v ? `${v.length}자${longHint}` : '';
-    if (acTextEl) acTextEl.textContent = v || '(비어 있음)';
-    else if (answerEl && v && !$('.ans-compare', answerEl)) { rebuildAnswer(); }
-  };
-  let ansTimer = null;
-  myAnsEl.addEventListener('input', () => {
-    myAnsEl.style.height = 'auto'; myAnsEl.style.height = myAnsEl.scrollHeight + 'px';
-    syncAns();
-    clearTimeout(ansTimer);
-    ansTimer = setTimeout(() => saveAns(myAnsEl.value), 600);
-  });
-  const flushAns = () => { clearTimeout(ansTimer); saveAns(myAnsEl.value); };
-  myAnsEl.addEventListener('change', flushAns);
-  myAnsEl.addEventListener('blur', flushAns);
-  const loadLink = $('.load-ans', card);
-  if (loadLink) loadLink.addEventListener('click', (e) => {
-    e.preventDefault();
-    myAnsEl.value = (store.state.results[q.qid] || {}).ans || '';
-    myAnsEl.dispatchEvent(new Event('input'));
-    loadLink.remove();
-  });
 
   function buildAnswer() {
     const r = store.state.results[q.qid] || {};   // 읽기 전용 — store.result() 는 빈 엔트리를 만듦
@@ -575,17 +531,9 @@ function questionCard(q, opts = {}) {
     const histHtml = priorN
       ? `<div class="grade-hist small">지난 채점 ${GRADE_ICON[priorLast] || ''} <b>${GRADE_LABEL[priorLast] || '-'}</b> · ${priorN}회 풀이${priorX ? ` · 누적 오답 ${priorX}회` : ''}</div>`
       : '';
-    const myV = myAnsEl.value.trim();
-    const modelBody = `<div class="a-body">${renderAnswer(q.answer)}</div>`;
-    const answerBlock = myV
-      ? `<div class="ans-compare">
-           <div class="ac-pane mine"><b>✍️ 내 답</b><div class="ac-text">${esc(myV)}</div></div>
-           <div class="ac-pane model"><b>✅ 모범답안</b>${modelBody}</div>
-         </div>`
-      : modelBody;
     const wrap = el(`
       <div class="answer-wrap">
-        ${answerBlock}
+        <div class="a-body">${renderAnswer(q.answer)}</div>
         ${q.explanation ? `<div class="expl"><b>💡 해설</b><div class="expl-body markdown">${window.marked ? window.marked.parse(q.explanation) : esc(q.explanation)}</div></div>` : ''}
         ${notesHtml ? `<div class="note-links">${notesHtml}</div>` : ''}
         ${histHtml}
@@ -600,7 +548,6 @@ function questionCard(q, opts = {}) {
         </label>
       </div>
     `);
-    acTextEl = $('.ac-text', wrap);
     const gr = $('.grade-row', wrap);
     const paint = () => {
       const cur = store.lastGradeSince(q.qid, sinceTs);   // 이번 풀이에서 매긴 것만 하이라이트
@@ -623,15 +570,6 @@ function questionCard(q, opts = {}) {
     return wrap;
   }
 
-  function rebuildAnswer() {
-    if (!answerEl) return;
-    const wasHidden = answerEl.hidden;
-    const next = buildAnswer();
-    next.hidden = wasHidden;
-    answerEl.replaceWith(next);
-    answerEl = next;
-  }
-
   const toggleBtn = el(`<button class="btn primary wide reveal-btn" aria-expanded="false"></button>`);
   let shown = false;
   function setShown(next) {
@@ -644,7 +582,6 @@ function questionCard(q, opts = {}) {
   }
   toggleBtn.addEventListener('click', () => setShown(!shown));
   slot.appendChild(toggleBtn);
-  syncAns();
   setShown(revealed);
   enhanceMarkdown(card);
   return card;
@@ -654,7 +591,6 @@ function questionCard(q, opts = {}) {
 function reviewItem(q, grade, opts = {}) {
   const notesHtml = noteLinksHtml(q);
   const rep = repeatNote(q);
-  const myAns = (store.state.results[q.qid] || {}).ans || '';
   const d = el(`<details class="q-review">
     <summary>
       <span class="pill accent">${esc(qLabel(q))}</span>
@@ -671,7 +607,6 @@ function reviewItem(q, grade, opts = {}) {
     body.innerHTML = `
       ${rep && !opts.hideRepeatBadge ? `<a class="repeat-badge" href="#/note/${encodeURIComponent(rep.slug)}">🔁 ${rep.questions.length}회 반복 출제 · 회차별 비교 →</a>` : ''}
       <div class="q-body">${esc(q.question)}${supplementHtml(q)}</div>
-      ${myAns ? `<div class="ac-pane mine rv-mine"><b>✍️ 내 답</b><div class="ac-text">${esc(myAns)}</div></div>` : ''}
       ${opts.memo ? `<label class="field" style="margin:10px 0 0"><span>💭 내 메모</span><textarea class="rv-memo" rows="2" placeholder="헷갈린 점, 암기 포인트 등">${esc((store.state.results[q.qid] || {}).memo || '')}</textarea></label>` : ''}
       <div class="rv-reveal-slot"></div>
       <a class="btn sm" style="margin-top:8px" href="#/q/${encodeURIComponent(q.qid)}">이 문항만 크게 보기 →</a>`;

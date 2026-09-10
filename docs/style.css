@@ -184,18 +184,6 @@ label.field > span { display: block; font-size: .85rem; font-weight: 600; color:
 .reveal-btn.open { background: var(--surface); color: var(--text-dim); border-color: var(--border); }
 .answer-wrap { margin-top: 16px; border-top: 1px dashed var(--border); padding-top: 14px; }
 
-/* 내 답 입력 · 모범답안 비교 */
-.my-answer .ans-count { font-weight: 400; color: var(--text-dim); }
-.my-answer .load-ans { font-weight: 400; font-size: .8rem; }
-.my-ans { font-family: inherit; }
-.ans-compare { display: grid; gap: 10px; margin-bottom: 4px; }
-@media (min-width: 700px) { .ans-compare { grid-template-columns: 1fr 1fr; } }
-.ac-pane { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
-.ac-pane > b { display: block; font-size: .8rem; margin-bottom: 6px; }
-.ac-pane.mine > b { color: var(--maybe); }
-.ac-pane.model > b { color: var(--ok); }
-.ac-text { white-space: pre-wrap; word-break: keep-all; font-size: .97rem; line-height: 1.7; }
-.rv-mine { margin-bottom: 10px; }
 .rv-reveal-slot { margin-top: 10px; }
 .rv-reveal-slot .reveal-btn { margin: 0; }
 .a-body {
