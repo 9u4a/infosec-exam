@@ -80,6 +80,10 @@ export default {
         if (body.baseRev != null && body.baseRev !== cur.rev && !body.force) {
           return json({ conflict: true, ...cur }, 409);
         }
+        // 내용이 이전과 완전히 같으면 KV 쓰기를 생략(무료 쓰기 한도 절약) — rev·updatedAt 도 그대로 반환
+        if (cur.state && JSON.stringify(body.state) === JSON.stringify(cur.state)) {
+          return json({ rev: cur.rev, updatedAt: cur.updatedAt });
+        }
         const next = { state: body.state, rev: cur.rev + 1, updatedAt: new Date().toISOString() };
         await env.STORE.put(STATE_KEY, JSON.stringify(next));
         return json({ rev: next.rev, updatedAt: next.updatedAt });

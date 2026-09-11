@@ -171,15 +171,19 @@ const SYNC = {
     this.status = 'syncing'; updateSyncUI();
     try {
       const data = await (await this._req('/state')).json();
+      let needPush = true;   // 서버에 저장된 게 없으면(최초) 로컬 상태를 올려야 함
       if (data && data.state) {
+        const serverJson = JSON.stringify(data.state);
         store.state = mergeState(store.state, data.state);
         store.state.settings = Object.assign(DEFAULT_STATE().settings, store.state.settings || {});
         store.state.cppg = Object.assign(DEFAULT_STATE().cppg, store.state.cppg || {});
         store.save({ fromSync: true });
         rebindSessions();
+        needPush = JSON.stringify(store.state) !== serverJson;   // 병합해도 서버와 동일하면 새로 보낼 게 없음 — KV 쓰기 절약
       }
       this.rev = (data && data.rev) || 0; this._persist();
-      await this._push(true);            // 병합 결과를 서버에 반영
+      if (needPush) await this._push(true);            // 병합으로 새로워진(또는 최초) 내용만 반영
+      else this._pushed = JSON.stringify(store.state);
       this.status = 'idle'; this.lastAt = Date.now();
       if (typeof render === 'function') render();
     } catch (e) {
@@ -193,7 +197,9 @@ const SYNC = {
     if (!this.on) return;
     this.status = 'syncing'; updateSyncUI();
     clearTimeout(this._timer);
-    this._timer = setTimeout(() => this._push(), 4000);
+    // Cloudflare Workers KV 무료 쓰기 한도(1,000/일) 절약 — 채점·메모 등 개별 저장마다 즉시 push 하지 않고
+    // 30초 디바운스로 묶어서 반영. 탭을 숨기거나 닫을 때는 visibilitychange 가 pushNow() 로 즉시 flush.
+    this._timer = setTimeout(() => this._push(), 30000);
   },
   async pushNow() { clearTimeout(this._timer); await this._push(true); },
   async _push(force) {

@@ -168,7 +168,7 @@ exams/cppg/자료/*.pdf               시행처·법령 원문 PDF(1차 사료).
   수가 많아서). 빌드가 존재 검증 + 노트에 `note.quiz` 역인덱스. 과목명(=폴더명)은 `subjects.json` 의
   `name` 과 일치 검증.
 
-앱 셸 파일 변경 시 `docs/sw.js` 의 `CACHE` 버전도 올린다 (현재 **v41**, 실기·CPPG 공용).
+앱 셸 파일 변경 시 `docs/sw.js` 의 `CACHE` 버전도 올린다 (현재 **v42**, 실기·CPPG 공용).
 
 ⚠ 개인정보보호법은 개정이 잦다. 주요 시행일: 2020.8.5 데이터3법 / 2023.9.15 대개정(전송요구권 등
 일부 2024.3.15) / 2025.10.31·**2026.7.1 안전성 확보조치 고시 제2026-9호** / **2026.9.11 개정**(과징금
@@ -199,15 +199,22 @@ exams/cppg/자료/*.pdf               시행처·법령 원문 PDF(1차 사료).
 - **`server/worker.js`** — Cloudflare Worker. `POST /login`(공유 암호→HMAC 토큰) · `GET/PUT /state`
   (`{state, baseRev, force?}`, rev 불일치 시 409). KV 키 하나(`state:v1`)에 학습기록 JSON 통째 보관.
   Secret: `PASSPHRASE`·`TOKEN_SECRET`, Var: `ALLOW_ORIGIN`. 배포는 `server/README.md`.
+  **PUT 은 내용이 이전과 완전히 같으면 KV 쓰기를 생략**(rev·updatedAt 은 그대로 반환) — 무료 쓰기
+  한도(1,000/일) 절약용 방어선. `worker.js` 를 고치면 재배포(`wrangler deploy`) 해야 반영됨(자동 아님).
 - **프런트엔드**(`docs/app.js` 의 `SYNC`): 로그인 안 하면 `SYNC.on===false` → 기존과 100% 동일하게
-  localStorage 만 사용. 로그인 시 부팅에 `pull` → 이후 `store.save()` 마다 4초 디바운스 `push`.
-  오프라인이면 로컬로 동작하다 online·visible 이벤트에 재동기화.
-- **병합**(`mergeState`): 누적형(`results` attempts·`favorites`·`sessions`, cppg 포함)은 **합집합**
-  (attempts 는 `t/g` 로 중복 제거), 스칼라(`settings`·`lastSummary`)는 `_mtime` 최신본. 진행 중
-  `session` 은 이 기기 우선. `results[qid].memo`·`.ans` 는 mtime 없어 **"긴 쪽 우선"**(알려진 한계).
+  localStorage 만 사용. 로그인 시 부팅에 `pull` → 이후 `store.save()` 마다 **30초 디바운스** `push`
+  (`schedulePush`). 오프라인이면 로컬로 동작하다 online·visible 이벤트에 재동기화. 탭을 숨기거나
+  닫을 때는 `visibilitychange` 가 `pushNow()` 로 즉시 flush하므로 디바운스를 늘려도 유실은 없음.
+  `pull()` 은 병합 결과가 서버에서 받아온 상태와 **완전히 같으면 push 를 생략**한다(새로 반영할
+  변경이 없는데도 매 부팅·탭 복귀마다 강제 push 하던 것을 제거 — KV 쓰기 절약의 핵심).
+- **병합**(`mergeState`): 누적형(`results` attempts·`favorites`·`mnemoFavs`·`sessions`, cppg 포함)은
+  **합집합**(attempts 는 `t/g` 로 중복 제거), 스칼라(`settings`·`lastSummary`)는 `_mtime` 최신본.
+  진행 중 `session` 은 이 기기 우선. `results[qid].memo`·`.ans` 는 mtime 없어 **"긴 쪽 우선"**(알려진 한계).
 - `server/worker.js` 는 **빌드 대상 아님** — `wrangler deploy` 로 별도 배포, `docs/` 에 넣지 말 것.
 - 검증: `scratchpad/sync.test.mjs`(Worker 단위 + jsdom 2기기 병합·409 충돌).
-- ⚠ 공유 암호라 암호를 아는 사람은 기록을 공유(개인/소그룹용). KV Free 쓰기 1,000/일 — 디바운스로 충분.
+- ⚠ 공유 암호라 암호를 아는 사람은 기록을 공유(개인/소그룹용). KV Free 쓰기 1,000/일 —
+  30초 디바운스 + pull 후 무변경 시 스킵 + 서버측 동일값 스킵의 3중 방어로 여유를 둔다.
+  그래도 부족하면 `server/README.md` 의 D1 이전 안내 참고.
 
 ## 빌드 & 로컬 확인
 
