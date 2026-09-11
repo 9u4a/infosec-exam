@@ -60,7 +60,8 @@
     },
     "15": {
       "domain": "애플리케이션보안",
-      "explanation": "응답이 `200 OK` 이면서 `<h1>Index of /cgi/bin</h1>` 파일 목록(logo.png, backup.zip, test/)을 반환 → **디렉토리 인덱싱** 취약점. index 파일이 없어 목록이 자동 노출됨(backup.zip 같은 민감 파일 유출 위험). 대응: `Options -Indexes`. 13회 출제."
+      "explanation": "응답이 `200 OK` 이면서 `<h1>Index of /cgi/bin</h1>` 파일 목록(logo.png, backup.zip, test/)을 반환 → **디렉토리 인덱싱** 취약점. index 파일이 없어 목록이 자동 노출됨(backup.zip 같은 민감 파일 유출 위험). 대응: `Options -Indexes`. 13회 출제.",
+      "question": "요청 헤더와 응답 헤더를 보여 주며 공격에 대하여 질문에 답하시오.\n[요청헤더]\nGET /cgi/bin/ HTTP/1.1\nHost: example.com\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\nAccept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7\nConnection: close\n[응답헤더]\nHTTP/1.1 200 OK\nDate: Tue, 24 Mar 2026 10:30:00 GMT\nServer: Apache/2.4.58 (Unix)\nContent-Type: text/html; charset=UTF-8\nContent-Length: 3421\nConnection: close\n\n<html>\n<head><title>Index of /cgi/bin</title></head>\n<body>\n<h1>Index of /cgi/bin</h1>\n<ul>\n  <li><a href=\"logo.png\">logo.png</a></li>\n  <li><a href=\"backup.zip\">backup.zip</a></li>\n  <li><a href=\"test/\">test/</a></li>\n</ul>\n</body>\n</html>\n\n(1) 이 공격은 무슨 공격인가?\n(2) 해당 공격이라고 생각하는 근거는?\n(3) 이 공격에 대한 방어 기법은?"
     },
     "16": {
       "domain": "애플리케이션보안",
