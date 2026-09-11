@@ -31,6 +31,7 @@ const DEFAULT_STATE = () => ({
   v: 1,
   results: {},        // qid -> { attempts: [{t, g}], memo: '' }
   favorites: [],       // [qid]
+  mnemoFavs: [],       // [mnemonic id] — 두음 즐겨찾기(문항 favorites 와 별개)
   sessions: [],        // [{ id, startedAt, endedAt, scopeLabel, graded: {o,m,x} }]
   session: null,       // 진행 중 세션 { qids, label, idx, startedAt }
   lastSummary: null,   // 마지막 제출 결과 { label, qids, startedAt, graded:{o,m,x} }
@@ -88,6 +89,13 @@ const store = {
     const i = this.state.favorites.indexOf(qid);
     if (i >= 0) this.state.favorites.splice(i, 1);
     else this.state.favorites.unshift(qid);
+    this.save();
+  },
+  isMnemoFav(id) { return this.state.mnemoFavs.includes(id); },
+  toggleMnemoFav(id) {
+    const i = this.state.mnemoFavs.indexOf(id);
+    if (i >= 0) this.state.mnemoFavs.splice(i, 1);
+    else this.state.mnemoFavs.unshift(id);
     this.save();
   },
   lastGrade(qid) {
@@ -225,6 +233,7 @@ function mergeState(local, remote) {
   const out = Object.assign(DEFAULT_STATE(), remote);
   out.results = mergeResults(local.results, remote.results);
   out.favorites = unionArr(remote.favorites, local.favorites);
+  out.mnemoFavs = unionArr(remote.mnemoFavs, local.mnemoFavs);
   out.sessions = mergeSessions(local.sessions, remote.sessions);
   out.session = local.session || remote.session || null;   // 진행 중 세션은 이 기기 우선
   out.settings = Object.assign(DEFAULT_STATE().settings, localNewer ? remote.settings : local.settings, localNewer ? local.settings : remote.settings);
@@ -1753,17 +1762,18 @@ function mnemoHeroHtml(dueum) {
 
 const CIRCLED_NUM = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮'];
 
-function mnemoCard(item) {
+function mnemoCard(item, opts = {}) {
   const bodyHtml = item.list
     ? `<div class="mnemo-cnt small muted">뜻 ${item.list.length}개</div>
        <ol class="mnemo-list">${item.list.map((t, i) =>
          `<li><span class="mn-no">${CIRCLED_NUM[i] || (i + 1)}</span>${esc(t)}</li>`).join('')}</ol>`
     : `<div class="mnemo-formula">${esc(item.formula)}</div>`;
 
-  const card = el(`<div class="mnemo-card card${mnBlind ? ' blind' : ''}">
+  const card = el(`<div class="mnemo-card card${mnBlind ? ' blind' : ''}" data-id="${esc(item.id)}">
     <div class="mn-head">
       <span class="mn-topic">${esc(item.topic)}</span>
       ${item.cat ? `<span class="pill">${esc(item.cat)}</span>` : ''}
+      <button class="star ${store.isMnemoFav(item.id) ? 'on' : ''}" title="즐겨찾기" aria-label="즐겨찾기" aria-pressed="${store.isMnemoFav(item.id)}">${store.isMnemoFav(item.id) ? '★' : '☆'}</button>
     </div>
     ${mnemoHeroHtml(item.dueum)}
     <button class="btn sm mn-peek" hidden>뜻 보기 ▼</button>
@@ -1772,22 +1782,33 @@ function mnemoCard(item) {
 
   const body = $('.mnemo-body', card);
   const peek = $('.mn-peek', card);
+  const star = $('.star', card);
   const setPeek = (show) => {
     body.hidden = !show;
     peek.textContent = show ? '뜻 접기 ▲' : '뜻 보기 ▼';
   };
   peek.hidden = !mnBlind;
   peek.addEventListener('click', (e) => { e.stopPropagation(); setPeek(body.hidden); });
+  star.addEventListener('click', (e) => {
+    e.stopPropagation();
+    store.toggleMnemoFav(item.id);
+    const on = store.isMnemoFav(item.id);
+    star.classList.toggle('on', on);
+    star.textContent = on ? '★' : '☆';
+    star.setAttribute('aria-pressed', on);
+    if (opts.onFavToggle) opts.onFavToggle(on);
+  });
   // 가리기 모드일 때 카드(두음 타일) 아무 곳이나 눌러도 공개
   card.addEventListener('click', (e) => {
     if (!card.classList.contains('blind')) return;
-    if (e.target.closest('.mnemo-body') || e.target.closest('.mn-peek')) return;
+    if (e.target.closest('.mnemo-body') || e.target.closest('.mn-peek') || e.target.closest('.star')) return;
     setPeek(body.hidden);
   });
   return card;
 }
 
 let mnCat = '';
+let mnFavOnly = false;   // 즐겨찾기만 보기 — 모듈 스코프 기억, 해시 미반영
 route('mnemonics', (app, args) => {
   app.appendChild(el(`<h1>두음 암기</h1>`));
   if (!MNEMONICS.length) {
@@ -1806,6 +1827,9 @@ route('mnemonics', (app, args) => {
       ${cats.map((c) => `<button class="chip" data-cat="${esc(c)}">${esc(c)} <span>${catCount(c)}</span></button>`).join('')}
     </div>
     <div class="row tight">
+      <button class="chip fav-chip ${mnFavOnly ? 'on' : ''}" id="mnFavOnly">⭐ 즐겨찾기만 <span>${store.state.mnemoFavs.length}</span></button>
+    </div>
+    <div class="row tight">
       <input type="text" id="mq" placeholder="항목·두음·뜻 검색" style="flex:2;min-width:150px" autocomplete="off">
       <button class="btn sm" id="mnBlind" style="flex:1;min-width:120px">${mnBlind ? '👁 뜻 보이기' : '🙈 가리고 암기'}</button>
     </div>
@@ -1817,19 +1841,27 @@ route('mnemonics', (app, args) => {
   const mq = $('#mq', controls);
   const catRow = $('#mnCatRow', controls);
   const blindBtn = $('#mnBlind', controls);
+  const favOnlyBtn = $('#mnFavOnly', controls);
 
   function syncChips() {
     catRow.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c.dataset.cat === mnCat));
+  }
+  function syncFavOnlyBtn() {
+    favOnlyBtn.classList.toggle('on', mnFavOnly);
+    $('span', favOnlyBtn).textContent = store.state.mnemoFavs.length;
   }
   function syncHash() {
     const t = mnCat ? '#/mnemonics/' + encodeURIComponent(mnCat) : '#/mnemonics';
     try { if (location.hash !== t) history.replaceState(null, '', t); } catch (e) { /* noop */ }
   }
 
+  const cardOpts = { onFavToggle: () => { syncFavOnlyBtn(); if (mnFavOnly) draw(); } };
+
   function draw() {
     const f = mq.value.trim().toLowerCase();
     const list = MNEMONICS.filter((m) => {
       if (mnCat && m.cat !== mnCat) return false;
+      if (mnFavOnly && !store.isMnemoFav(m.id)) return false;
       if (f) {
         const hay = `${m.topic} ${m.dueum} ${m.list ? m.list.join(' ') : m.formula}`.toLowerCase();
         if (!hay.includes(f)) return false;
@@ -1839,19 +1871,23 @@ route('mnemonics', (app, args) => {
     listWrap.innerHTML = '';
     const tags = [];
     if (mnCat) tags.push(esc(mnCat));
+    if (mnFavOnly) tags.push('⭐ 즐겨찾기');
     if (f) tags.push('"' + esc(mq.value.trim()) + '"');
     listWrap.appendChild(el(`<p class="small muted" style="margin:6px 2px">${list.length}항목${tags.length ? ' · ' + tags.join(' · ') : ''}${mnBlind ? ' · 🙈 가리기 모드 (두음 타일을 눌러 확인)' : ''}</p>`));
-    if (!list.length) { listWrap.appendChild(el(`<p class="muted small">조건에 맞는 두음이 없습니다.</p>`)); return; }
+    if (!list.length) {
+      listWrap.appendChild(el(`<p class="muted small">${mnFavOnly ? '즐겨찾기한 두음이 없습니다. 카드의 ☆ 를 눌러 추가하세요.' : '조건에 맞는 두음이 없습니다.'}</p>`));
+      return;
+    }
 
     if (mnCat) {
-      list.forEach((m) => listWrap.appendChild(mnemoCard(m)));
+      list.forEach((m) => listWrap.appendChild(mnemoCard(m, cardOpts)));
       return;
     }
     const byCat = {};
     list.forEach((m) => (byCat[m.cat || '기타'] || (byCat[m.cat || '기타'] = [])).push(m));
     Object.entries(byCat).forEach(([cat, arr]) => {
       listWrap.appendChild(el(`<div class="note-cat">${esc(cat)}</div>`));
-      arr.forEach((m) => listWrap.appendChild(mnemoCard(m)));
+      arr.forEach((m) => listWrap.appendChild(mnemoCard(m, cardOpts)));
     });
   }
 
@@ -1862,6 +1898,11 @@ route('mnemonics', (app, args) => {
     syncChips(); syncHash(); draw();
   });
   mq.addEventListener('input', draw);
+  favOnlyBtn.addEventListener('click', () => {
+    mnFavOnly = !mnFavOnly;
+    syncFavOnlyBtn();
+    draw();
+  });
   blindBtn.addEventListener('click', () => {
     mnBlind = !mnBlind;
     blindBtn.textContent = mnBlind ? '👁 뜻 보이기' : '🙈 가리고 암기';
