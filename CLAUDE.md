@@ -5,8 +5,8 @@
 
 ## 절대 규칙
 
-1. **`exams/sil/실기/` 의 원본 JSON은 절대 수정하지 않는다.** 시험 문제·정답의 원천.
-   메타데이터(영역 분류, 해설, 문제/정답 교체)는 `exams/sil/meta/` 레이어에만 쓴다.
+1. **`exams/EIS/실기/` 의 원본 JSON은 절대 수정하지 않는다.** 시험 문제·정답의 원천.
+   메타데이터(영역 분류, 해설, 문제/정답 교체)는 `exams/EIS/meta/` 레이어에만 쓴다.
 2. 빌드 산출물 `docs/data/bundle.js`·`docs/data/cppg.js` 는 **커밋한다.** GitHub Pages는
    빌드를 돌리지 않으므로 생성물이 저장소에 있어야 한다. 데이터·노트·메타를 고치면
    반드시 `node scripts/build.mjs` 를 다시 돌리고 함께 커밋한다.
@@ -18,20 +18,20 @@
 
 ## 디렉토리
 
-시험 트랙별 원본은 `exams/<코드>/` 아래로 모은다(`sil`=정보보안기사 실기, `cppg`=CPPG).
+시험 트랙별 원본은 `exams/<코드>/` 아래로 모은다(`EIS`=정보보안기사 실기, `cppg`=CPPG).
 새 시험을 추가할 땐 `exams/<코드>/` 폴더 + `scripts/build.mjs` 에 로더 함수 하나 +
 이 문서에 스키마 절 하나만 늘리면 된다(`exams/README.md` 에도 같은 안내).
 
 ```
 exams/
-  sil/
+  EIS/
     실기/N회(YYYY-MM-DD)/N.json   원본. { title, data: [{ id, type, question, answer }] }
     meta/N.json                   메타 레이어. 아래 스키마
     notes/<영역>/<슬러그>.md        학습 노트. 프론트매터 + 마크다운
     예상문제/<영역>.json           기사 모의고사용 신규 예상문항 — 아래 별도 섹션
     두음.json                     두문자 암기 정리 — 아래 별도 섹션
   cppg/                         CPPG(개인정보관리사) 트랙 — 아래 별도 섹션
-scripts/build.mjs             exams/sil/* → bundle.js · exams/cppg/* → cppg.js
+scripts/build.mjs             exams/EIS/* → bundle.js · exams/cppg/* → cppg.js
 docs/                         GitHub Pages 발행 루트 (Settings→Pages→/docs)
 server/                       (선택) 학습기록 동기화 Cloudflare Worker — 아래 별도 섹션
 ```
@@ -59,7 +59,7 @@ server/                       (선택) 학습기록 동기화 Cloudflare Worker 
   `시스템보안` · `네트워크보안` · `애플리케이션보안` · `정보보안일반` · `정보보안관리및법규`
 - 문항 번호(문자열 키)는 원본 `id` 와 일치해야 한다. 빌드가 검증하고 경고한다.
 - `explanation` 은 최신 회차(32→22회)부터 단계적으로 채운다. 옛 회차 법규 문항은 「현행/종전 병기 규칙」 적용.
-- **`question`/`answer` 교체**: `exams/sil/실기/N회/N.json` 원본이 실제 기출의 paraphrase·재구성본
+- **`question`/`answer` 교체**: `exams/EIS/실기/N회/N.json` 원본이 실제 기출의 paraphrase·재구성본
   (1~12·30~32회)인 경우, 실제 기출을 확보하면 `meta.question` 으로 **문제 본문을 통째로 교체**한다
   (원본은 불변). 코드·로그·HTML·보기가 들어가도 `q.question` 은 `esc()` 로 렌더되므로 **코드펜스 불필요**.
   오탈자 수정·정답 표기 정렬에도 `answer` override 사용.
@@ -96,7 +96,7 @@ related: [시스템보안/유닉스-시스템-하드닝]   # 선택. 아래 참�
 
 ## 예상문제 (기사 모의고사)
 
-원본과 **완전 별개**인 신규 예상 문항. `exams/sil/예상문제/<영역>.json` = `{ domain, items: [...] }`.
+원본과 **완전 별개**인 신규 예상 문항. `exams/EIS/예상문제/<영역>.json` = `{ domain, items: [...] }`.
 
 ```json
 { "id": "y-sys-001", "type": "단답형",
@@ -120,7 +120,7 @@ related: [시스템보안/유닉스-시스템-하드닝]   # 선택. 아래 참�
 
 ## 두음 (두문자 암기)
 
-`exams/sil/두음.json` — 참고자료라 **채점·진도 개념 없음**.
+`exams/EIS/두음.json` — 참고자료라 **채점·진도 개념 없음**.
 
 ```json
 { "제목": "...", "총_항목_수": 67, "항목들": [
@@ -176,7 +176,7 @@ exams/cppg/자료/*.pdf               시행처·법령 원문 PDF(1차 사료).
 노트에 조문 번호+기준 시점(`2026-09 기준`)+고시번호 명시. 1차 사료는 `exams/cppg/자료/` PDF.
 
 **현행/종전 병기 규칙** — 개정으로 기출과 현행법이 갈리는 논점은 노트·해설에 둘 다 적는다. **CPPG
-뿐 아니라 실기 `exams/sil/notes/정보보안관리및법규/` 에도 동일 적용**(노트 상단 `> 기준 시점: 2026-09 …`
+뿐 아니라 실기 `exams/EIS/notes/정보보안관리및법규/` 에도 동일 적용**(노트 상단 `> 기준 시점: 2026-09 …`
 한 줄 + 논점별 현행/종전 2줄). 실기는 출제 당시 기준으로 채점되므로 **옛 회차의 정답 = 종전** 값임을
 명시하고 현행은 참고로 둔다:
 ```
@@ -248,7 +248,7 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 
 ## 사이트 동작 요약
 
-**하단 탭(실기 7개)**: 홈·풀기·두음·노트·저장·통계·더보기(`index.html` `.tabs[data-track="sil"]`).
+**하단 탭(실기 7개)**: 홈·풀기·두음·노트·저장·통계·더보기(`index.html` `.tabs[data-track="EIS"]`).
 `모의고사` 는 `풀기` 상단 세그먼트(`solveSeg()`)로 흡수 — `#/mock` 라우트는 유지, `render()` 의
 `SIL_TAB` 매핑으로 `mock→solve`·`note→notes` 탭 활성. `검색` 은 탭 없음 — 홈 상단 검색창
 (`#homeSearch`)·더보기 메뉴·`/` 단축키로 진입. **CPPG 는 6탭**(두음 제외 동일 구성), `모의고사` 는

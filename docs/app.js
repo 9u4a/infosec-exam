@@ -35,7 +35,7 @@ const DEFAULT_STATE = () => ({
   sessions: [],        // [{ id, startedAt, endedAt, scopeLabel, graded: {o,m,x} }]
   session: null,       // 진행 중 세션 { qids, label, idx, startedAt }
   lastSummary: null,   // 마지막 제출 결과 { label, qids, startedAt, graded:{o,m,x} }
-  settings: { alwaysShowAnswer: false, theme: 'auto', track: 'sil', examDate: '', cppgExamDate: '' },
+  settings: { alwaysShowAnswer: false, theme: 'auto', track: 'EIS', examDate: '', cppgExamDate: '' },
   // CPPG(개인정보관리사) 트랙 — 학습기록 완전 분리
   cppg: { results: {}, favorites: [], sessions: [], session: null, lastSummary: null },
 });
@@ -499,15 +499,15 @@ function render() {
   view(app, args);
   const tabbar = $('#tabbar');
   tabbar.hidden = false;
-  const track = path === 'cppg' ? 'cppg' : 'sil';
+  const track = path === 'cppg' ? 'cppg' : 'EIS';
   if (store.state.settings.track !== track) { store.state.settings.track = track; store.save(); }
   tabbar.querySelectorAll('.tabs').forEach((g) => { g.hidden = g.dataset.track !== track; });
   // 라우트 → 하단 탭 매핑 (탭이 없는 라우트는 부모 탭을 활성화)
-  const SIL_TAB = { mock: 'solve', note: 'notes' };
+  const EIS_TAB = { mock: 'solve', note: 'notes' };
   const CPPG_TAB = { mock: 'quiz', note: 'notes' };
   const activeTab = track === 'cppg'
     ? (CPPG_TAB[args[0]] || args[0] || '')
-    : (SIL_TAB[path] || path);
+    : (EIS_TAB[path] || path);
   tabbar.querySelectorAll(`.tabs[data-track="${track}"] a`).forEach((a) => {
     const on = a.dataset.tab === activeTab;
     a.classList.toggle('active', on);
@@ -723,7 +723,7 @@ function reviewItem(q, grade, opts = {}) {
 /* 트랙 전환 스위처 (홈 상단) */
 function trackSwitch(cur) {
   const box = el(`<div class="track-switch">
-    <a href="#/home" class="${cur === 'sil' ? 'on' : ''}">정보보안기사 실기</a>
+    <a href="#/home" class="${cur === 'EIS' ? 'on' : ''}">정보보안기사 실기</a>
     <a href="#/cppg" class="${cur === 'cppg' ? 'on' : ''}">CPPG 개인정보관리사</a>
   </div>`);
   const cppgLink = box.children[1];
@@ -733,7 +733,7 @@ function trackSwitch(cur) {
 
 /* ============ 홈 ============ */
 route('home', (app) => {
-  app.appendChild(trackSwitch('sil'));
+  app.appendChild(trackSwitch('EIS'));
   const s = computeStats();
   const today = dayKey();
   const todayCount = s.dayMap[today] || 0;
@@ -1398,7 +1398,7 @@ route('mock', (app) => {
   app.appendChild(el(`<h1>모의고사</h1>`));
 
   if (!PREDICTED.length) {
-    app.appendChild(el(`<div class="empty">예상문제가 아직 없습니다.<br><span class="small"><code>exams/sil/예상문제/</code> 폴더 작성 후 <code>node scripts/build.mjs</code></span></div>`));
+    app.appendChild(el(`<div class="empty">예상문제가 아직 없습니다.<br><span class="small"><code>exams/EIS/예상문제/</code> 폴더 작성 후 <code>node scripts/build.mjs</code></span></div>`));
     return;
   }
 
@@ -1829,7 +1829,7 @@ let mnFavOnly = false;   // 즐겨찾기만 보기 — 모듈 스코프 기억, 
 route('mnemonics', (app, args) => {
   app.appendChild(el(`<h1>두음 암기</h1>`));
   if (!MNEMONICS.length) {
-    app.appendChild(el(`<div class="empty">두음 데이터가 없습니다.<br><span class="small"><code>exams/sil/두음.json</code> 작성 후 <code>node scripts/build.mjs</code></span></div>`));
+    app.appendChild(el(`<div class="empty">두음 데이터가 없습니다.<br><span class="small"><code>exams/EIS/두음.json</code> 작성 후 <code>node scripts/build.mjs</code></span></div>`));
     return;
   }
 

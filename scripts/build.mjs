@@ -1,4 +1,4 @@
-// exams/sil/ (실기 원본+meta+notes+예상문제+두음) → docs/data/bundle.js
+// exams/EIS/ (실기 원본+meta+notes+예상문제+두음) → docs/data/bundle.js
 // exams/cppg/ (subjects+notes+quiz) → docs/data/cppg.js
 // 외부 의존성 없음. `node scripts/build.mjs` 로 실행.
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, mkdirSync } from 'node:fs';
@@ -6,15 +6,15 @@ import { join, dirname, basename, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-// 시험별 소스는 exams/<트랙코드>/ 아래에 모은다(현재 sil=정보보안기사 실기, cppg=CPPG).
+// 시험별 소스는 exams/<트랙코드>/ 아래에 모은다(현재 EIS=정보보안기사 실기, cppg=CPPG).
 // 새 시험 추가 시: exams/<code>/ 폴더 + 아래와 같은 경로 상수 + 로더 함수만 늘리면 된다.
 const EXAMS_DIR = join(ROOT, 'exams');
-const SIL_DIR = join(EXAMS_DIR, 'sil');
-const SRC_DIR = join(SIL_DIR, '실기');
-const META_DIR = join(SIL_DIR, 'meta');
-const NOTES_DIR = join(SIL_DIR, 'notes');
-const PRED_DIR = join(SIL_DIR, '예상문제');   // 기사 모의고사용 신규 예상문제 (실기/ 원본과 별개)
-const MNEMO_FILE = join(SIL_DIR, '두음.json');   // 두문자 암기 정리
+const EIS_DIR = join(EXAMS_DIR, 'EIS');
+const SRC_DIR = join(EIS_DIR, '실기');
+const META_DIR = join(EIS_DIR, 'meta');
+const NOTES_DIR = join(EIS_DIR, 'notes');
+const PRED_DIR = join(EIS_DIR, '예상문제');   // 기사 모의고사용 신규 예상문제 (실기/ 원본과 별개)
+const MNEMO_FILE = join(EIS_DIR, '두음.json');   // 두문자 암기 정리
 const OUT_FILE = join(ROOT, 'docs', 'data', 'bundle.js');
 
 const CPPG_DIR = join(EXAMS_DIR, 'cppg');
@@ -117,7 +117,7 @@ function walk(dir, acc = []) {
   return acc;
 }
 
-const SIL_EXTRA_CATS = ['반복출제'];   // 실기 5영역이 아닌 정리용 카테고리 (노트 목록 맨 끝)
+const EIS_EXTRA_CATS = ['반복출제'];   // 실기 5영역이 아닌 정리용 카테고리 (노트 목록 맨 끝)
 
 function loadNotes(rounds) {
   const notes = [];
@@ -154,7 +154,7 @@ function loadNotes(rounds) {
     });
   }
   notes.sort((a, b) =>
-    (SIL_EXTRA_CATS.includes(a.category) ? 1 : 0) - (SIL_EXTRA_CATS.includes(b.category) ? 1 : 0) ||
+    (EIS_EXTRA_CATS.includes(a.category) ? 1 : 0) - (EIS_EXTRA_CATS.includes(b.category) ? 1 : 0) ||
     a.slug.localeCompare(b.slug, 'ko'));
   return notes;
 }
