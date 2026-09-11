@@ -120,14 +120,17 @@ const store = {
 
 /* ============ 서버 동기화 (선택) ============
    로그인하지 않으면 SYNC.on === false → 앱은 localStorage 로만 동작(기존과 동일).
-   로그인 시: 부팅에 서버 상태를 pull 해 병합, 이후 store.save() 마다 debounce push. */
+   로그인 시: 부팅에 서버 상태를 pull 해 병합, 이후 store.save() 마다 "dirty" 표시만 해두고
+   실제 push 는 고정 주기 타이머가 한꺼번에 처리(아래 schedulePush 주석 참고). */
 const SYNC_LS = 'infosec_sync';
+const PUSH_INTERVAL_MS = 60000;   // 활동 빈도와 무관하게 push 를 이 주기 이하로 제한 — KV 무료 쓰기 한도 절약
 const SYNC = {
   cfg: { url: '', token: '' },
   rev: 0,
   status: 'off',       // off | idle | syncing | error | offline
   lastAt: 0,
-  _timer: null,
+  _timer: null,        // 고정 주기 push 타이머(setInterval) — on 인 동안 계속 돎
+  _dirty: false,       // 다음 타이머 tick 에 push 가 필요한 변경이 있었는지
   _pushed: '',
   get on() { return !!(this.cfg.url && this.cfg.token); },
   load() {
@@ -151,6 +154,7 @@ const SYNC = {
     await this.pull();
   },
   logout() {
+    clearInterval(this._timer); this._timer = null; this._dirty = false;
     this.cfg = { url: '', token: '' }; this.rev = 0; this.status = 'off'; this._pushed = '';
     try { localStorage.removeItem(SYNC_LS); } catch (e) { /* noop */ }
     updateSyncUI();
@@ -183,7 +187,7 @@ const SYNC = {
       }
       this.rev = (data && data.rev) || 0; this._persist();
       if (needPush) await this._push(true);            // 병합으로 새로워진(또는 최초) 내용만 반영
-      else this._pushed = JSON.stringify(store.state);
+      else { this._pushed = JSON.stringify(store.state); this._dirty = false; }
       this.status = 'idle'; this.lastAt = Date.now();
       if (typeof render === 'function') render();
     } catch (e) {
@@ -195,17 +199,22 @@ const SYNC = {
   },
   schedulePush() {
     if (!this.on) return;
+    this._dirty = true;
     this.status = 'syncing'; updateSyncUI();
-    clearTimeout(this._timer);
-    // Cloudflare Workers KV 무료 쓰기 한도(1,000/일) 절약 — 채점·메모 등 개별 저장마다 즉시 push 하지 않고
-    // 30초 디바운스로 묶어서 반영. 탭을 숨기거나 닫을 때는 visibilitychange 가 pushNow() 로 즉시 flush.
-    this._timer = setTimeout(() => this._push(), 30000);
+    // Cloudflare Workers KV 무료 쓰기 한도(1,000/일) 절약 — 채점·메모 등 개별 저장마다 push 하면
+    // 활동 빈도만큼 그대로 쓰기가 쌓인다(디바운스는 "잠깐 멈출 때"만 묶어줄 뿐, 각 동작이 그보다
+    // 넓게 떨어져 있으면 효과가 없음). 대신 고정 주기 타이머 하나가 계속 돌면서 dirty 표시가
+    // 있을 때만 push 해 활동 패턴과 무관하게 주기당 최대 1회로 상한을 둔다. 탭을 숨기거나 닫을 때는
+    // visibilitychange 가 pushNow() 로 즉시 flush 하므로 실사용 체감 지연은 없음.
+    if (!this._timer) {
+      this._timer = setInterval(() => { if (this._dirty) this._push(); }, PUSH_INTERVAL_MS);
+    }
   },
-  async pushNow() { clearTimeout(this._timer); await this._push(true); },
+  async pushNow() { await this._push(true); },
   async _push(force) {
     if (!this.on) return;
     const body = JSON.stringify(store.state);
-    if (!force && body === this._pushed) { this.status = 'idle'; updateSyncUI(); return; }
+    if (!force && body === this._pushed) { this._dirty = false; this.status = 'idle'; updateSyncUI(); return; }
     this.status = 'syncing'; updateSyncUI();
     try {
       let r = await this._req('/state', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state: store.state, baseRev: this.rev }) });
@@ -222,11 +231,13 @@ const SYNC = {
       const out = await r.json();
       if (!r.ok) throw new Error(out.error || ('HTTP ' + r.status));
       this.rev = out.rev; this._pushed = JSON.stringify(store.state); this._persist();
+      this._dirty = false;
       this.status = 'idle'; this.lastAt = Date.now();
     } catch (e) {
       if (e && e.message === 'unauthorized') return;
       this.status = navigator.onLine ? 'error' : 'offline';
       console.warn('sync push 실패', e);
+      // _dirty 는 그대로 true 로 남겨 다음 주기 타이머 tick(또는 다음 pull/visibility 이벤트)에 재시도
     }
     updateSyncUI();
   },
@@ -3055,11 +3066,12 @@ installShortcuts();
 /* 서버 동기화 — 로그인되어 있으면 부팅에 서버 상태를 받아 병합 */
 SYNC.load();
 if (SYNC.on) SYNC.pull();
-window.addEventListener('online', () => { if (SYNC.on) SYNC.pull(); });
+// 연결 반짝임(모바일 네트워크 전환 등)으로 online 이벤트가 짧은 간격에 여러 번 뜨는 경우 재요청 방지
+window.addEventListener('online', () => { if (SYNC.on && Date.now() - SYNC.lastAt > 20000) SYNC.pull(); });
 document.addEventListener('visibilitychange', () => {
   if (!SYNC.on) return;
   if (document.hidden) SYNC.pushNow();                                 // 탭 숨김/닫힘 직전 대기분 flush
-  else if (Date.now() - SYNC.lastAt > 20000) SYNC.pull();              // 돌아오면 최신화
+  else if (Date.now() - SYNC.lastAt > PUSH_INTERVAL_MS) SYNC.pull();   // 한동안 자리 비웠다 돌아오면 최신화
 });
 
 /* 서비스 워커 — 새 버전 감지 시 1회 자동 새로고침 */
