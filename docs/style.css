@@ -255,10 +255,11 @@ label.field > span { display: block; font-size: .85rem; font-weight: 600; color:
 .q-review .rv-g { flex: none; font-size: .8rem; color: var(--text-dim); }
 .q-review .rv-g.g-x { color: var(--bad); }
 .q-review .rv-g.g-m { color: var(--maybe); }
-.q-review .rv-fav {
+.q-review .rv-remove {
   flex: none; background: none; border: none; cursor: pointer;
-  font-size: 1.15rem; line-height: 1; color: var(--star); padding: 2px 2px 2px 6px;
+  font-size: 1rem; line-height: 1; color: var(--text-dim); padding: 2px 2px 2px 6px;
 }
+.q-review .rv-remove.fav { font-size: 1.15rem; color: var(--star); }
 .q-review .rv-body { padding: 2px 2px 14px; }
 .q-review .rv-body .q-body { font-size: .98rem; }
 

@@ -166,7 +166,7 @@ exams/cppg/자료/*.pdf               시행처·법령 원문 PDF(1차 사료).
   수가 많아서). 빌드가 존재 검증 + 노트에 `note.quiz` 역인덱스. 과목명(=폴더명)은 `subjects.json` 의
   `name` 과 일치 검증.
 
-앱 셸 파일 변경 시 `docs/sw.js` 의 `CACHE` 버전도 올린다 (현재 **v39**, 실기·CPPG 공용).
+앱 셸 파일 변경 시 `docs/sw.js` 의 `CACHE` 버전도 올린다 (현재 **v40**, 실기·CPPG 공용).
 
 ⚠ 개인정보보호법은 개정이 잦다. 주요 시행일: 2020.8.5 데이터3법 / 2023.9.15 대개정(전송요구권 등
 일부 2024.3.15) / 2025.10.31·**2026.7.1 안전성 확보조치 고시 제2026-9호** / **2026.9.11 개정**(과징금
@@ -254,8 +254,11 @@ python -m http.server 8080 --directory docs  # http://localhost:8080  (file:// �
 펼치면 먼저 문제만 보이고 `정답·해설 보기 ▼` 를 한 번 더 눌러야 열림(2단계 인출 연습, 읽기 전용).
 `route('summary')` 한 곳이 라이브 요약·모의고사 결과·`#/summary/<id>` 전부 처리, 세션 레코드의
 `qids`+`grades` 스냅샷으로 재채점해도 지난 점수창 고정. 저장 탭은 즐겨찾기/메모 2-세그먼트 —
-즐겨찾기 쪽엔 `reviewItem` 의 `opts.onUnfav` 콜백으로 각 행에 ★ 제거 버튼(`.rv-fav`), 클릭 시
-`store.toggleFav` + 그 자리에서 목록·카운트 배지 재렌더(`draw('fav')`).
+`reviewItem` 의 `opts.onRemove`/`removeIcon`/`removeTitle` 콜백으로 각 행에 제거 버튼(`.rv-remove`,
+즐겨찾기는 ★ 로 `.fav` 수식자 붙음, 메모는 🗑)을 달아 목록에서 바로 뺄 수 있다 — 즐겨찾기는
+`store.toggleFav`, 메모는 `store.setMemo(qid, '')` 호출 후 그 자리에서 목록·카운트 배지 재렌더
+(`draw('fav')`/`draw('memo')`). `draw()` 는 `favIds`/`memoIds` 를 매번 새로 계산해 제거 직후에도
+목록이 즉시 갱신된다.
 
 **노트**: `noteProgress(n)`(읽기 전용, `store.result()` 금지)가 연결 문항 채점 이력 집계 — 목록에
 진도 막대 + `#nsort`(기본/취약한 순/연결 많은 순), 상세엔 진도 스트립 + "약한 문항만 풀기". 연관

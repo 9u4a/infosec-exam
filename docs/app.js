@@ -630,6 +630,8 @@ function questionCard(q, opts = {}) {
 }
 
 /* 점수 화면 "다시 볼 문항" · 저장 탭 행 — 펼치면 먼저 문제만, 다시 눌러야 정답·해설 (읽기 전용) */
+// opts.onRemove: 목록(저장 탭 등)에서 이 행을 바로 제거하는 콜백. removeIcon/removeTitle 로 표시만 바꿔
+// 즐겨찾기 해제·메모 삭제 등 여러 "목록에서 빼기" 액션에 공용으로 쓴다.
 function reviewItem(q, grade, opts = {}) {
   const notesHtml = noteLinksHtml(q);
   const rep = repeatNote(q);
@@ -638,15 +640,15 @@ function reviewItem(q, grade, opts = {}) {
       <span class="pill accent">${esc(qLabel(q))}</span>
       <span class="rv-q">${esc(opts.summaryText || q.question.slice(0, 36))}</span>
       <span class="rv-g g-${grade || 'none'}">${grade ? GRADE_ICON[grade] + ' ' + GRADE_LABEL[grade] : '미채점'}</span>
-      ${opts.onUnfav ? `<button type="button" class="rv-fav" title="즐겨찾기에서 제거" aria-label="즐겨찾기에서 제거">★</button>` : ''}
+      ${opts.onRemove ? `<button type="button" class="rv-remove${opts.removeIcon === '★' ? ' fav' : ''}" title="${esc(opts.removeTitle || '제거')}" aria-label="${esc(opts.removeTitle || '제거')}">${opts.removeIcon || '✕'}</button>` : ''}
     </summary>
     <div class="rv-body"></div>
   </details>`);
-  if (opts.onUnfav) {
-    $('.rv-fav', d).addEventListener('click', (e) => {
+  if (opts.onRemove) {
+    $('.rv-remove', d).addEventListener('click', (e) => {
       e.preventDefault();     // <summary> 기본 펼침 동작 막기
       e.stopPropagation();
-      opts.onUnfav();
+      opts.onRemove();
     });
   }
   const body = $('.rv-body', d);
@@ -1281,13 +1283,17 @@ route('saved', (app) => {
         : '즐겨찾기가 없습니다.<br><span class="small">문제 카드의 ☆ 를 눌러 추가하세요.</span>'}</div>`));
       return;
     }
-    const box = el(`<div class="card"><h3>${v === 'memo' ? '메모한 문항' : '즐겨찾기'} (${ids.length}) <span class="muted small">눌러서 답·해설${v === 'memo' ? '·메모' : ''}${v === 'fav' ? ' · ★ 로 제거' : ''}</span></h3></div>`);
+    const box = el(`<div class="card"><h3>${v === 'memo' ? '메모한 문항' : '즐겨찾기'} (${ids.length}) <span class="muted small">눌러서 답·해설${v === 'memo' ? '·메모' : ''} · ${v === 'fav' ? '★' : '🗑'} 로 제거</span></h3></div>`);
     ids.forEach((qid) => {
       const q = anyQ(qid); if (!q) return;
       box.appendChild(reviewItem(q, store.lastGrade(qid), {
         memo: true,
         summaryText: v === 'memo' ? store.state.results[qid].memo : undefined,
-        onUnfav: v === 'fav' ? () => { store.toggleFav(qid); draw('fav'); } : undefined,
+        onRemove: v === 'fav'
+          ? () => { store.toggleFav(qid); draw('fav'); }
+          : () => { store.setMemo(qid, ''); draw('memo'); },
+        removeIcon: v === 'fav' ? '★' : '🗑',
+        removeTitle: v === 'fav' ? '즐겨찾기에서 제거' : '메모 삭제',
       }));
     });
     const btnRow = el(`<div class="row tight" style="margin-top:12px"></div>`);
