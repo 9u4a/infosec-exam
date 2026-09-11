@@ -1,18 +1,23 @@
-// 실기/ (원본) + meta/ (영역·해설) + notes/ (학습노트) → docs/data/bundle.js
+// exams/sil/ (실기 원본+meta+notes+예상문제+두음) → docs/data/bundle.js
+// exams/cppg/ (subjects+notes+quiz) → docs/data/cppg.js
 // 외부 의존성 없음. `node scripts/build.mjs` 로 실행.
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, mkdirSync } from 'node:fs';
 import { join, dirname, basename, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC_DIR = join(ROOT, '실기');
-const META_DIR = join(ROOT, 'meta');
-const NOTES_DIR = join(ROOT, 'notes');
-const PRED_DIR = join(ROOT, '예상문제');   // 기사 모의고사용 신규 예상문제 (실기/ 원본과 별개)
-const MNEMO_FILE = join(ROOT, '두음.json');   // 두문자 암기 정리
+// 시험별 소스는 exams/<트랙코드>/ 아래에 모은다(현재 sil=정보보안기사 실기, cppg=CPPG).
+// 새 시험 추가 시: exams/<code>/ 폴더 + 아래와 같은 경로 상수 + 로더 함수만 늘리면 된다.
+const EXAMS_DIR = join(ROOT, 'exams');
+const SIL_DIR = join(EXAMS_DIR, 'sil');
+const SRC_DIR = join(SIL_DIR, '실기');
+const META_DIR = join(SIL_DIR, 'meta');
+const NOTES_DIR = join(SIL_DIR, 'notes');
+const PRED_DIR = join(SIL_DIR, '예상문제');   // 기사 모의고사용 신규 예상문제 (실기/ 원본과 별개)
+const MNEMO_FILE = join(SIL_DIR, '두음.json');   // 두문자 암기 정리
 const OUT_FILE = join(ROOT, 'docs', 'data', 'bundle.js');
 
-const CPPG_DIR = join(ROOT, 'cppg');
+const CPPG_DIR = join(EXAMS_DIR, 'cppg');
 const CPPG_NOTES_DIR = join(CPPG_DIR, 'notes');
 const CPPG_QUIZ_DIR = join(CPPG_DIR, 'quiz');
 const CPPG_OUT_FILE = join(ROOT, 'docs', 'data', 'cppg.js');

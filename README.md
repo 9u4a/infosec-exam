@@ -49,15 +49,16 @@
 ## 구조
 
 ```
-실기/N회(YYYY-MM-DD)/N.json   정보보안기사 원본 기출 (수정 금지)
-meta/N.json                   기출 영역 분류 + 해설 (문항번호로 조인)
-notes/<영역>/<슬러그>.md        기사 학습 노트 (반복출제 카테고리 포함)
-예상문제/<영역>.json            기사 모의고사용 신규 예상문제 (원본과 별개)
-두음.json                      기사 두문자 암기 정리
-cppg/subjects.json            CPPG 과목·모의고사 배분·합격기준 (단일 출처)
-cppg/notes/<과목>/<슬러그>.md   CPPG 학습 노트 (참고자료 카테고리 포함)
-cppg/quiz/<과목id>.json        CPPG 5지선다 문제
-cppg/자료/*.pdf                CPPG 법령 원문 PDF (1차 사료)
+exams/                        시험 트랙별 원본 데이터 (새 시험은 폴더 하나 추가하는 식으로 확장)
+exams/sil/실기/N회(YYYY-MM-DD)/N.json   정보보안기사 원본 기출 (수정 금지)
+exams/sil/meta/N.json         기출 영역 분류 + 해설 + 문제/정답 교체 (문항번호로 조인)
+exams/sil/notes/<영역>/<슬러그>.md   기사 학습 노트 (반복출제 카테고리 포함)
+exams/sil/예상문제/<영역>.json   기사 모의고사용 신규 예상문제 (원본과 별개)
+exams/sil/두음.json            기사 두문자 암기 정리
+exams/cppg/subjects.json      CPPG 과목·모의고사 배분·합격기준 (단일 출처)
+exams/cppg/notes/<과목>/<슬러그>.md   CPPG 학습 노트 (참고자료 카테고리 포함)
+exams/cppg/quiz/<과목id>.json  CPPG 5지선다 문제
+exams/cppg/자료/*.pdf          CPPG 법령 원문 PDF (1차 사료)
 scripts/build.mjs             모든 소스 → docs/data/bundle.js · docs/data/cppg.js
 docs/                         GitHub Pages 발행 루트
 server/                       (선택) 학습기록 동기화 Cloudflare Worker
@@ -99,7 +100,7 @@ git add -A && git commit -m "..." && git push
 
 ## 콘텐츠 추가
 
-**기사 노트** — `notes/시스템보안/새노트.md`:
+**기사 노트** — `exams/sil/notes/시스템보안/새노트.md`:
 
 ```markdown
 ---
@@ -111,7 +112,7 @@ tags: [태그1, 태그2]
 본문 마크다운...
 ```
 
-**기사 예상문제** — `예상문제/<영역>.json` 의 `items[]` 에 추가:
+**기사 예상문제** — `exams/sil/예상문제/<영역>.json` 의 `items[]` 에 추가:
 
 ```json
 { "id": "y-sys-001", "type": "단답형",
@@ -119,6 +120,6 @@ tags: [태그1, 태그2]
   "notes": ["시스템보안/리눅스-유닉스-로그파일"], "tags": ["로그"] }
 ```
 
-**CPPG 문제** — `cppg/quiz/<과목id>.json` 의 `items[]` 에 추가 (문제→노트 연결은 문제의 `note` 필드).
+**CPPG 문제** — `exams/cppg/quiz/<과목id>.json` 의 `items[]` 에 추가 (문제→노트 연결은 문제의 `note` 필드).
 
 수정 후 `node scripts/build.mjs` 를 실행하면 참조 오류·누락이 경고로 표시된다.

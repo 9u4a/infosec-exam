@@ -1339,7 +1339,7 @@ route('mock', (app) => {
   app.appendChild(el(`<h1>모의고사</h1>`));
 
   if (!PREDICTED.length) {
-    app.appendChild(el(`<div class="empty">예상문제가 아직 없습니다.<br><span class="small"><code>예상문제/</code> 폴더 작성 후 <code>node scripts/build.mjs</code></span></div>`));
+    app.appendChild(el(`<div class="empty">예상문제가 아직 없습니다.<br><span class="small"><code>exams/sil/예상문제/</code> 폴더 작성 후 <code>node scripts/build.mjs</code></span></div>`));
     return;
   }
 
@@ -1756,7 +1756,7 @@ let mnCat = '';
 route('mnemonics', (app, args) => {
   app.appendChild(el(`<h1>두음 암기</h1>`));
   if (!MNEMONICS.length) {
-    app.appendChild(el(`<div class="empty">두음 데이터가 없습니다.<br><span class="small">저장소 루트의 <code>두음.json</code> 작성 후 <code>node scripts/build.mjs</code></span></div>`));
+    app.appendChild(el(`<div class="empty">두음 데이터가 없습니다.<br><span class="small"><code>exams/sil/두음.json</code> 작성 후 <code>node scripts/build.mjs</code></span></div>`));
     return;
   }
 
