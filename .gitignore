@@ -7,6 +7,14 @@ Thumbs.db
 scratch/
 scratch_dump.txt
 
+# OneDrive 동기화 충돌·Windows 특수 파일 (이 폴더는 OneDrive 동기화 대상)
+desktop.ini
+*.tmp
+*.bak
+*.orig
+*~
+*.swp
+
 # Cloudflare Wrangler (로컬 캐시·계정정보·개인 배포값 — 커밋 금지)
 .wrangler/
 **/.wrangler/
