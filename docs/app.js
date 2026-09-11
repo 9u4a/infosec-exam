@@ -365,6 +365,18 @@ function computeStats() {
   return { perDomain, perRound, perType, attemptsTotal, doneTotal, dayMap, wrongRank };
 }
 
+// 회차별 반복 풀이 횟수 — '회차별' 범위로 그 회차를 통째로 풀어 제출(중단 포함)한 세션 수.
+// route('solve') 의 round scope 는 scopeLabel 이 항상 "N회 M문항" 형태(예상문제 포함 옵션이
+// round scope 엔 안 붙음)라 정규식으로 안전하게 회차만 뽑아낼 수 있다.
+function roundAttemptCounts() {
+  const counts = {};
+  for (const s of store.state.sessions) {
+    const m = /^(\d+)회 \d+문항$/.exec(s.scopeLabel || '');
+    if (m) counts[m[1]] = (counts[m[1]] || 0) + 1;
+  }
+  return counts;
+}
+
 /* ============ 유틸 ============ */
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
@@ -887,8 +899,9 @@ route('solve', (app) => {
     // '예상문제 포함'은 회차별·즐겨찾기·예상문제 범위에는 의미 없음
     predWrap.hidden = ['round', 'fav', 'predicted', 'due'].includes(v);
     if (v === 'round') {
+      const rc = roundAttemptCounts();
       sub.appendChild(el(`<label class="field"><span>회차</span><select id="p">
-        ${DATA.rounds.map((r) => `<option value="${r.round}">${r.round}회 (${r.date})</option>`).reverse().join('')}
+        ${DATA.rounds.map((r) => `<option value="${r.round}">${r.round}회 (${r.date})${rc[r.round] ? ` · ${rc[r.round]}회 풀이` : ''}</option>`).reverse().join('')}
       </select></label>`));
     } else if (v === 'domain' || v === 'predicted') {
       sub.appendChild(el(`<label class="field"><span>영역</span><select id="p">
@@ -1463,10 +1476,12 @@ route('stats', (app) => {
 
   // 회차별 (접기)
   const rbox = el(`<div class="card"><h3>회차별 정답률</h3></div>`);
+  const roundCounts = roundAttemptCounts();
   DATA.rounds.slice().reverse().forEach((r) => {
     const v = s.perRound[r.round];
+    const cnt = roundCounts[r.round];
     rbox.appendChild(el(`<div class="bar-row"><span class="bar-label">${r.round}회</span>${barTrack(v)}
-      <span class="bar-num">${v.done}/${v.total}</span></div>`));
+      <span class="bar-num">${v.done}/${v.total}</span>${cnt ? `<span class="small muted" style="flex:none">· ${cnt}회 풀이</span>` : ''}</div>`));
   });
   app.appendChild(rbox);
 
@@ -3002,4 +3017,4 @@ if ('serviceWorker' in navigator) {
 }
 
 /* 테스트용 노출 (스모크에서 병합·동기화 로직 검증) */
-try { window.__sync = { SYNC, mergeState, mergeResults, mergeSessions, store, dayKey, streakDays, computeStats, dueQids, reviewDueAt, ensureCppg }; } catch (e) { /* noop */ }
+try { window.__sync = { SYNC, mergeState, mergeResults, mergeSessions, store, dayKey, streakDays, computeStats, dueQids, reviewDueAt, ensureCppg, roundAttemptCounts }; } catch (e) { /* noop */ }
