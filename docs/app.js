@@ -638,9 +638,17 @@ function reviewItem(q, grade, opts = {}) {
       <span class="pill accent">${esc(qLabel(q))}</span>
       <span class="rv-q">${esc(opts.summaryText || q.question.slice(0, 36))}</span>
       <span class="rv-g g-${grade || 'none'}">${grade ? GRADE_ICON[grade] + ' ' + GRADE_LABEL[grade] : '미채점'}</span>
+      ${opts.onUnfav ? `<button type="button" class="rv-fav" title="즐겨찾기에서 제거" aria-label="즐겨찾기에서 제거">★</button>` : ''}
     </summary>
     <div class="rv-body"></div>
   </details>`);
+  if (opts.onUnfav) {
+    $('.rv-fav', d).addEventListener('click', (e) => {
+      e.preventDefault();     // <summary> 기본 펼침 동작 막기
+      e.stopPropagation();
+      opts.onUnfav();
+    });
+  }
   const body = $('.rv-body', d);
   let built = false;
   d.addEventListener('toggle', () => {
@@ -1248,9 +1256,10 @@ route('history', (app) => {
 let savedTab = 'fav';
 route('saved', (app) => {
   app.appendChild(el(`<h1>저장한 문항</h1>`));
-  const favIds = store.state.favorites.filter((id) => anyQ(id));
-  const memoIds = Object.keys(store.state.results)
-    .filter((qid) => store.state.results[qid].memo && anyQ(qid));
+  const getFavIds = () => store.state.favorites.filter((id) => anyQ(id));
+  const getMemoIds = () => Object.keys(store.state.results).filter((qid) => store.state.results[qid].memo && anyQ(qid));
+  const favIds = getFavIds();
+  const memoIds = getMemoIds();
 
   const seg = el(`<div class="track-switch">
     <a data-v="fav">⭐ 즐겨찾기 <span>${favIds.length}</span></a>
@@ -1259,21 +1268,26 @@ route('saved', (app) => {
 
   const draw = (v) => {
     savedTab = v;
+    // 매번 store 에서 새로 읽는다 — 즐겨찾기 해제 직후 목록·카운트가 바로 반영되도록.
+    const curFavIds = getFavIds(), curMemoIds = getMemoIds();
+    $('span', seg.children[0]).textContent = curFavIds.length;
+    $('span', seg.children[1]).textContent = curMemoIds.length;
     seg.querySelectorAll('a').forEach((a) => a.classList.toggle('on', a.dataset.v === v));
     wrap.innerHTML = '';
-    const ids = v === 'memo' ? memoIds : favIds;
+    const ids = v === 'memo' ? curMemoIds : curFavIds;
     if (!ids.length) {
       wrap.appendChild(el(`<div class="empty">${v === 'memo'
         ? '메모가 없습니다.<br><span class="small">문제를 풀며 정답을 펼치면 메모를 남길 수 있어요. 여기서 바로 수정도 됩니다.</span>'
         : '즐겨찾기가 없습니다.<br><span class="small">문제 카드의 ☆ 를 눌러 추가하세요.</span>'}</div>`));
       return;
     }
-    const box = el(`<div class="card"><h3>${v === 'memo' ? '메모한 문항' : '즐겨찾기'} (${ids.length}) <span class="muted small">눌러서 답·해설${v === 'memo' ? '·메모' : ''}</span></h3></div>`);
+    const box = el(`<div class="card"><h3>${v === 'memo' ? '메모한 문항' : '즐겨찾기'} (${ids.length}) <span class="muted small">눌러서 답·해설${v === 'memo' ? '·메모' : ''}${v === 'fav' ? ' · ★ 로 제거' : ''}</span></h3></div>`);
     ids.forEach((qid) => {
       const q = anyQ(qid); if (!q) return;
       box.appendChild(reviewItem(q, store.lastGrade(qid), {
         memo: true,
         summaryText: v === 'memo' ? store.state.results[qid].memo : undefined,
+        onUnfav: v === 'fav' ? () => { store.toggleFav(qid); draw('fav'); } : undefined,
       }));
     });
     const btnRow = el(`<div class="row tight" style="margin-top:12px"></div>`);
