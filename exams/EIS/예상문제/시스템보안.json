@@ -561,6 +561,70 @@
         "프로세스은닉",
         "침해대응"
       ]
+    },
+    {
+      "id": "y-sys-035",
+      "type": "단답형",
+      "question": "TCP Wrapper 접근 제어에 대한 물음이다.\n\n* 두 설정 파일 `/etc/hosts.allow` 와 `/etc/hosts.deny` 중, 검사 시 ( A ) 파일이 먼저 평가되며 여기서 매치되면 즉시 허용이 확정된다.\n* 다음 설정의 의미를 서술하시오.\n\n```\nin.telnetd : .aaa.com EXCEPT www.aaa.com\n```",
+      "answer": "정답\n(A) /etc/hosts.allow\n(서술) aaa.com 도메인 전체에서의 telnet 접속은 허용하되, 그 중 www.aaa.com 호스트만은 예외로 차단한다(EXCEPT 뒤는 앞의 허용 범위에서 제외).",
+      "explanation": "검사 순서는 hosts.allow → hosts.deny이며, 어느 파일에도 해당 규칙이 없으면 기본적으로 허용된다. `ALL : ALL`을 hosts.deny에 넣고 hosts.allow에서 필요한 서비스·호스트만 개별 허용하는 화이트리스트 구성이 안전하다. libwrap을 사용하는 inetd/xinetd 계열, sshd 등에 적용된다.",
+      "notes": [
+        "시스템보안/crontab-xinetd-보안"
+      ],
+      "tags": [
+        "TCPWrapper",
+        "hosts.allow",
+        "hosts.deny",
+        "EXCEPT"
+      ]
+    },
+    {
+      "id": "y-sys-036",
+      "type": "단답형",
+      "question": "Windows SID(Security Identifier)에 대한 물음이다.\n\n* SID 값 500 은 어떤 내장 계정에 항상 고정 부여되는가?\n* SID 값 501 은 어떤 내장 계정에 항상 고정 부여되는가?\n* 이 두 계정에 대해 각각 취해야 할 보안 조치를 한 가지씩 쓰시오.",
+      "answer": "정답\nSID 500 : Administrator(내장 관리자) — 삭제는 불가하므로 계정 이름 변경 및 강력한 패스워드로 조치\nSID 501 : Guest — 반드시 비활성화(사용 안 함)\n(그 외 신규 사용자 계정은 SID 1000번대부터 순차 부여)",
+      "explanation": "SID는 삭제해도 재사용되지 않는 고유 식별자이며, Administrator·Guest는 이름을 바꿔도 SID(500/501)가 그대로라 공격자가 SID로 계정을 특정할 수 있다는 점에 유의한다. RID(상대 식별자, SID의 마지막 부분)가 500/501로 고정된다는 점이 핵심 포인트.",
+      "notes": [
+        "시스템보안/윈도우-계정-감사정책"
+      ],
+      "tags": [
+        "SID",
+        "RID",
+        "Administrator",
+        "Guest계정"
+      ]
+    },
+    {
+      "id": "y-sys-037",
+      "type": "실무형",
+      "question": "리눅스 서버에서 루트킷에 의해 `ps`, `netstat` 명령어가 변조된 것으로 의심된다.\n\n(a) 이 상황에서 `ps`, `netstat` 대신 활용할 수 있는 무결성 검증 명령어 계열(패키지 관리자)을 쓰시오.\n(b) 아래 절차의 빈칸 ①~④에 들어갈 명령을 순서대로 쓰시오.\n\n```\n① rpm -qf /bin/netstat /bin/ps          → 소속 패키지 확인\n② rpm -V net-tools procps               → ( 무엇을 확인하는 명령인가 )\n③ ( immutable 플래그 확인 명령 )\n④ ( immutable 해제 후 원본으로 강제 재설치하는 명령 )\n```\n(c) `rpm -V` 결과에 `5` 코드가 표시되었다면 이는 무엇을 의미하는가?",
+      "answer": "정답\n(a) rpm (rpm -qf / rpm -V)\n(b) ② 패키지에 속한 파일들의 변조(무결성) 여부 검증 ③ lsattr /bin/netstat /bin/ps ④ chattr -i /bin/netstat /bin/ps 후 rpm -Uvh --force [패키지명]\n(c) MD5 체크섬 불일치 — 해당 파일의 내용이 변조되었음이 확실함을 의미",
+      "explanation": "rpm -V 출력 코드: S=크기변경, M=권한변경, 5=MD5 불일치(변조 확실), T=타임스탬프변경, U=소유자변경, G=그룹변경, L=심볼릭링크변경. 복구 후에는 재변조 방지를 위해 `chattr +i` 로 다시 잠근다.",
+      "notes": [
+        "시스템보안/무결성점검과-악성코드-분석"
+      ],
+      "tags": [
+        "rpm",
+        "무결성검증",
+        "chattr",
+        "루트킷"
+      ]
+    },
+    {
+      "id": "y-sys-038",
+      "type": "단답형",
+      "question": "Windows 레지스트리 5대 루트 키에 대한 물음이다.\n\n* SAM, SECURITY, SOFTWARE, SYSTEM 하이브가 모두 하위에 위치하는, 시스템 전체 설정을 담는 루트 키는 무엇인가?\n* 현재 로그인한 사용자별 개인 설정을 담는 루트 키는 무엇인가?\n* 파일 확장자와 프로그램(COM 객체)의 연결 정보를 담는 루트 키는 무엇인가?",
+      "answer": "정답\nHKEY_LOCAL_MACHINE (HKLM)\nHKEY_CURRENT_USER (HKCU)\nHKEY_CLASSES_ROOT (HKCR)\n(나머지 2개: HKEY_USERS(HKU) — 모든 사용자 프로파일, HKEY_CURRENT_CONFIG(HKCC) — 현재 하드웨어 프로파일)",
+      "explanation": "공격자가 재부팅 후에도 악성코드를 자동 실행시키는 대표적 지속성(Persistence) 기법은 `HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run` 키에 실행 파일 경로를 등록하는 것이다. 레지스트리 5대 키 중 HKLM이 시스템 전체를 다룬다는 점만 기억하면 나머지는 유추 가능.",
+      "notes": [
+        "시스템보안/윈도우-계정-감사정책"
+      ],
+      "tags": [
+        "레지스트리",
+        "HKLM",
+        "HKCU",
+        "HKCR"
+      ]
     }
   ]
 }

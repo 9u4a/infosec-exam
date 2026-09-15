@@ -629,6 +629,135 @@
         "RateLimiting",
         "이메일인증"
       ]
+    },
+    {
+      "id": "y-app-039",
+      "type": "단답형",
+      "question": "DNS 레코드 타입에 대한 물음이다.\n\n* 도메인을 IPv4 주소로 매핑하는 레코드는 ( A ) 이다.\n* IP 주소로 도메인을 역으로 조회할 때 사용하는 레코드는 ( B ) 이다.\n* 메일 서버를 지정하는 레코드는 ( C ) 이다.\n* Zone 전체 전송(AXFR) 남용과 함께, 모든 레코드를 한 번에 조회해 응답 크기를 키우는(반사·증폭 DDoS에 악용되는) 질의 타입은 ( D ) 이다.",
+      "answer": "정답\n(A) A\n(B) PTR\n(C) MX\n(D) ANY",
+      "explanation": "그 밖에 AAAA(IPv6), NS(네임서버 지정), CNAME(별칭), SOA(Zone 권한 정보), TXT(SPF·DKIM 등 텍스트 정보) 도 함께 정리해 둔다. ANY 질의는 도메인의 모든 레코드를 한 번에 요청해 응답이 커지므로, 출발지를 피해자로 위조하면 DNS 증폭 DDoS(DRDoS)에 악용된다 — 대응은 재귀 질의 제한(`recursion no`)·응답 크기 제한(RRL).",
+      "notes": [
+        "애플리케이션보안/dns-보안"
+      ],
+      "tags": [
+        "DNS레코드",
+        "PTR",
+        "MX",
+        "ANY질의"
+      ]
+    },
+    {
+      "id": "y-app-040",
+      "type": "실무형",
+      "question": "sendmail 서버의 `/etc/mail/access` 파일이 다음과 같이 설정되어 있다.\n\n```\nlocalhost.localdomain   RELAY\nlocalhost               RELAY\n127.0.0.1               RELAY\nkca.or.kr               RELAY\nspam.com                DISCARD\nbaduser@evil.com        REJECT\n```\n\n(a) `spam.com` 에서 온 메일과 `baduser@evil.com` 에서 온 메일이 각각 어떻게 처리되는지, 그리고 두 처리 방식의 차이를 설명하시오.\n(b) 이 설정 파일을 수정한 뒤, 실제 반영을 위해 실행해야 하는 명령과 그 결과로 생성되는 파일명을 쓰시오.",
+      "answer": "정답\n(a) `spam.com` 메일은 DISCARD로 처리되어 아무런 응답 없이 조용히 삭제되며, 발신자는 메일이 정상 전송된 것으로 착각한다. `baduser@evil.com` 메일은 REJECT로 처리되어 550 등의 오류 코드가 발신자에게 반환되어 거부되었음을 명확히 통보받는다. 즉 DISCARD는 '조용한 폐기', REJECT는 '명시적 거부 응답'이라는 차이가 있다.\n\n(b) `makemap hash /etc/mail/access < /etc/mail/access` 를 실행하며, 그 결과 실제 sendmail이 참조하는 `/etc/mail/access.db` 파일이 생성(갱신)된다.",
+      "explanation": "채점 포인트: DISCARD=무응답 삭제(발신자는 성공으로 인식) vs REJECT=오류 응답 반환(거부 통보) 구분 + makemap hash 명령과 access.db 생성. `OK`는 수신 허용, `RELAY`는 그 주소·도메인의 외부 발신 중계까지 허용한다는 점도 함께 정리.",
+      "notes": [
+        "애플리케이션보안/메일보안-spf-dkim-dmarc"
+      ],
+      "tags": [
+        "sendmail",
+        "makemap",
+        "RELAY",
+        "DISCARD"
+      ]
+    },
+    {
+      "id": "y-app-041",
+      "type": "단답형",
+      "question": "Apache `httpd.conf` 설정에 대한 물음이다.\n\n* GET, POST 외의 모든 HTTP 메서드(PUT, DELETE, TRACE 등)를 차단하려 할 때 사용하는 지시자는 무엇인가?\n* `ServerTokens` 값을 `Full` 에서 `Prod` 로 바꾸면 응답의 `Server` 헤더에 노출되는 정보가 어떻게 달라지는가?\n* `Order Deny,Allow` 와 `Order Allow,Deny` 의 차이를 한 문장으로 쓰시오.",
+      "answer": "정답\n(A) `<LimitExcept GET POST> ... </LimitExcept>`\n(B) `Full`은 `Apache/2.4.6 (CentOS) OpenSSL/1.0.1` 처럼 웹서버·OS·모듈 버전까지 노출하지만, `Prod`는 `Apache` 만 표시해 버전·OS 정보 노출을 최소화한다.\n(C) `Order Deny,Allow`는 기본적으로 거부하되 Allow로 예외를 허용하는 방식(화이트리스트)이고, `Order Allow,Deny`는 그 반대로 기본 허용하되 Deny로 예외를 차단하는 방식(블랙리스트)이다.",
+      "explanation": "TRACE 메서드가 허용된 상태로 방치되면 XST(Cross-Site Tracing) 공격에 악용될 수 있어 `LimitExcept`로 반드시 제거해야 한다. `Order` 지시자는 순서가 뒤바뀌면 의도와 정반대로 접근 통제가 동작하므로 서술형 채점에서 순서를 정확히 요구한다.",
+      "notes": [
+        "애플리케이션보안/아파치-웹서버-보안설정과-로그"
+      ],
+      "tags": [
+        "LimitExcept",
+        "ServerTokens",
+        "OrderDenyAllow",
+        "TRACE메서드"
+      ]
+    },
+    {
+      "id": "y-app-042",
+      "type": "단답형",
+      "question": "`/etc/php.ini` 보안 설정에 대한 물음이다. 각 항목에 안전한 설정값을 쓰시오.\n\n* `display_errors` = ( A )\n* `allow_url_fopen` = ( B )\n* `session.cookie_httponly` = ( C )\n* `session.cookie_secure` = ( D )",
+      "answer": "정답\n(A) Off — 상세 에러 메시지가 화면에 노출되지 않도록\n(B) Off — 원격 파일 포함(RFI) 공격 방어\n(C) 1(On) — 세션 쿠키에 HttpOnly 부여, XSS를 통한 쿠키 탈취 방어\n(D) 1(On) — 세션 쿠키를 HTTPS 구간에서만 전송",
+      "explanation": "네 설정 모두 애플리케이션 코드 수정 없이 PHP 엔진 설정만으로 적용되는 방어이며, 실기에서는 각 항목이 '무엇을 막는지'까지 함께 서술해야 한다. `session.gc_maxlifetime` (세션 유효 시간, 예 600초)도 함께 정리해 둔다.",
+      "notes": [
+        "애플리케이션보안/아파치-웹서버-보안설정과-로그"
+      ],
+      "tags": [
+        "php.ini",
+        "display_errors",
+        "cookie_httponly",
+        "RFI방어"
+      ]
+    },
+    {
+      "id": "y-app-043",
+      "type": "단답형",
+      "question": "데이터베이스 SQL 언어 분류에 대한 물음이다.\n\n* `CREATE`, `DROP`, `ALTER` 는 ( A ) 에 속한다.\n* `SELECT`, `INSERT`, `UPDATE`, `DELETE` 는 ( B ) 에 속한다.\n* `GRANT`, `REVOKE` 는 ( C ) 에 속한다.\n* `COMMIT`, `ROLLBACK` 은 ( D ) 에 속한다.",
+      "answer": "정답\n(A) DDL (Data Definition Language)\n(B) DML (Data Manipulation Language)\n(C) DCL (Data Control Language)\n(D) TCL (Transaction Control Language)",
+      "explanation": "SQL Server 에서는 `GRANT`의 반대(권한을 명시적으로 거부)로 `DENY` 를 별도 제공하며, `DENY`는 `GRANT` 보다 우선 적용된다. 권한 관리는 개별 사용자 대신 `CREATE ROLE` 로 역할을 만들어 역할 단위로 `GRANT`하는 것이 최소권한 원칙에 부합한다.",
+      "notes": [
+        "애플리케이션보안/db보안-암호화-마스킹-감사"
+      ],
+      "tags": [
+        "DDL",
+        "DML",
+        "DCL",
+        "TCL"
+      ]
+    },
+    {
+      "id": "y-app-044",
+      "type": "서술형",
+      "question": "신규 구축한 Oracle DB 서버에 대해 보안 점검을 수행하려 한다. 점검해야 할 항목을 5가지 이상 제시하고, 각 항목의 취약한 상태와 조치 방법을 함께 서술하시오.",
+      "answer": "정답\n1. 불필요한 기본 계정: SCOTT, DEMO 등 설치 시 기본 제공되는 샘플 계정이 활성화되어 있으면 공격자에게 잘 알려진 진입점이 된다. → `DROP USER` 하거나 계정을 잠근다.\n2. 과도한 권한(DBA Role) 부여: 일반 업무용 계정에 DBA 롤이 부여되어 있으면 침해 시 DB 전체가 장악된다. → `REVOKE DBA FROM username` 으로 회수하고 업무에 필요한 최소 권한만 재부여한다.\n3. PUBLIC 롤의 과도한 권한: PUBLIC에 민감한 시스템 권한이 부여되어 있으면 모든 계정이 그 권한을 갖게 된다. → PUBLIC 권한을 최소화한다.\n4. OS 인증을 통한 DB 접속 허용: `REMOTE_OS_AUTHENTICATION=TRUE` 이면 OS 계정만으로 DB 인증을 우회할 수 있다. → `ALTER SYSTEM SET REMOTE_OS_AUTHENTICATION=FALSE;`(`OS_ROLES`, `REMOTE_OS_ROLES`도 동일하게 FALSE)로 설정한다.\n5. 감사(Audit) 미설정: 누가 언제 어떤 데이터를 조회·변경했는지 기록이 없으면 사고 발생 시 추적이 불가능하다. → `AUDIT SELECT, INSERT, UPDATE, DELETE ON 테이블 BY ACCESS;` 등으로 감사를 활성화한다.\n6. 평문 통신: 클라이언트-DB 간 연결이 암호화되지 않으면 스니핑에 노출된다. → SSL/TLS를 적용한다.",
+      "explanation": "채점 포인트: 기본계정 제거·DBA권한 최소화·PUBLIC권한 최소화·OS인증 차단·감사 활성화 중 5개 이상 + 각각의 구체적 조치(DROP USER/REVOKE/ALTER SYSTEM/AUDIT). '접근제어를 강화한다' 수준의 추상적 답변만으로는 감점.",
+      "notes": [
+        "애플리케이션보안/db보안-암호화-마스킹-감사"
+      ],
+      "tags": [
+        "Oracle보안점검",
+        "DBA권한",
+        "REMOTE_OS_AUTHENTICATION",
+        "AUDIT"
+      ]
+    },
+    {
+      "id": "y-app-045",
+      "type": "단답형",
+      "question": "클라우드 배포 모델에 대한 물음이다.\n\n* 불특정 다수에게 인터넷을 통해 제공되며 비용이 저렴한 대신 보안 위험이 상대적으로 큰 모델은 ( A ) 이다.\n* 단일 조직 전용으로 구축·운영되어 보안 수준은 높지만 비용이 큰 모델은 ( B ) 이다.\n* 금융권·공공기관처럼 동일한 목적·규제를 가진 조직들이 함께 공유하는 모델은 ( C ) 이다.",
+      "answer": "정답\n(A) Public Cloud\n(B) Private Cloud\n(C) Community Cloud\n(그 외 Public+Private를 혼합 운영하는 Hybrid Cloud 도 함께 정리)",
+      "explanation": "서비스 모델(IaaS/PaaS/SaaS)과 혼동하지 않도록 주의 — 배포 모델은 '누가 어떤 형태로 인프라를 소유·공유하는가'의 문제이고, 서비스 모델은 '어디까지를 제공자가 관리하는가'의 문제다.",
+      "notes": [
+        "애플리케이션보안/robots-모바일앱-클라우드-보안"
+      ],
+      "tags": [
+        "클라우드배포모델",
+        "PublicCloud",
+        "PrivateCloud",
+        "CommunityCloud"
+      ]
+    },
+    {
+      "id": "y-app-046",
+      "type": "단답형",
+      "question": "BYOD(개인 소유 기기의 업무 활용) 환경의 모바일 기기 관리 기술에 대한 물음이다.\n\n* 기기 전체를 원격으로 잠금·초기화하고 정책을 배포하는 기술은 ( A ) 이다.\n* 개인 앱과 업무 앱을 분리해 업무 앱만 별도로 관리하는 기술은 ( B ) 이다.\n* 업무 문서·콘텐츠 단위로 암호화·접근 통제를 적용하는 기술은 ( C ) 이다.\n* 위 세 가지를 통합한 솔루션을 무엇이라 하는가?",
+      "answer": "정답\n(A) MDM (Mobile Device Management)\n(B) MAM (Mobile Application Management)\n(C) MCM (Mobile Content Management)\n통합 솔루션 : EMM (Enterprise Mobility Management)",
+      "explanation": "개인 기기 전체를 통제하는 MDM은 사생활 침해 우려가 있어, 업무 영역만 컨테이너로 분리하는 MAM·MCM이 BYOD 환경에서 함께 쓰인다. CASB(Cloud Access Security Broker)가 사용자-클라우드(SaaS) 사이에서 가시성·컴플라이언스·데이터 보안·위협 방어를 제공하는 것과 함께 최근 출제가 늘고 있는 주제이므로 함께 정리한다.",
+      "notes": [
+        "애플리케이션보안/robots-모바일앱-클라우드-보안"
+      ],
+      "tags": [
+        "MDM",
+        "MAM",
+        "MCM",
+        "EMM",
+        "BYOD"
+      ]
     }
   ]
 }

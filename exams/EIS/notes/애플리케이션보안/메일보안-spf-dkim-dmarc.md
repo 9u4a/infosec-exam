@@ -70,7 +70,22 @@ _dmarc.example.com.  IN TXT  "v=DMARC1; p=reject; rua=mailto:dmarc@example.com; 
 | `/etc/mail/access` | 도메인·IP별 정책 (텍스트) |
 | `/etc/mail/access.db` | `makemap hash access.db < access` 로 생성 (실제 참조본) |
 
-access 정책값: **RELAY**(중계 허용) · **REJECT**(거부+오류회신) · **DISCARD**(조용히 폐기) · **OK**(수신 허용)
+access 정책값: **RELAY**(중계 허용) · **REJECT**(거부+오류회신, 550 에러로 발신자에게 통보) · **DISCARD**(조용히 폐기, 발신자는 전송 성공으로 착각) · **OK**(수신 허용)
+
+```
+# /etc/mail/access
+localhost.localdomain   RELAY
+localhost               RELAY
+127.0.0.1               RELAY
+kca.or.kr               RELAY      ← 특정 도메인만 중계 허용
+spam.com                DISCARD    ← 스팸 도메인은 조용히 삭제(발신자에게 정보 안 줌)
+baduser@evil.com        REJECT     ← 특정 발신자는 거부 응답 반환
+
+makemap hash /etc/mail/access < /etc/mail/access
+# → /etc/mail/access.db 생성, sendmail.cf 가 이 DB를 참조
+```
+
+메일 시스템 4대 구성요소: **MUA**(사용자 클라이언트, Outlook 등) → **MTA**(서버 간 전송, sendmail·Postfix) → **MDA**(메일함 저장, Procmail) → **MRA**(사용자가 메일함에서 가져옴, POP3/IMAP).
 
 ## 메일 내용 보안
 

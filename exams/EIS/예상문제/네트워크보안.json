@@ -699,6 +699,102 @@
         "기본정책",
         "정책검수"
       ]
+    },
+    {
+      "id": "y-net-043",
+      "type": "단답형",
+      "question": "Cisco 라우터 접근 제어에 대한 물음이다.\n\n* 원격 관리자만 VTY(원격 접속)로 접속하도록, 관리자 IP만 허용하는 표준 ACL을 만들고 VTY 라인에 적용하는 명령(키워드)을 쓰시오.\n* `line vty 0 4` 에서 `0 4` 가 의미하는 바를 쓰시오.",
+      "answer": "정답\naccess-class [ACL번호] in\n(예: access-list 10 permit host [관리IP] → access-list 10 deny any → line vty 0 4 → access-class 10 in)\n\n`0 4` : VTY 회선 번호 0번부터 4번까지, 즉 최대 5개의 동시 원격(Telnet/SSH) 세션을 의미",
+      "explanation": "콘솔(`line console 0`)은 `login`+`password`로 로컬 접근을 통제하고, 원격 접속은 `line vty 0 4`에 `access-class`로 특정 IP만 허용하는 것이 표준 패턴이다. Cisco 라우터는 User EXEC(`Router>`) → Privileged EXEC(`Router#`, enable) → Global Configuration(`Router(config)#`) → Interface/Line Configuration 순으로 모드가 깊어진다.",
+      "notes": [
+        "네트워크보안/cisco-라우터-스위치-보안설정"
+      ],
+      "tags": [
+        "access-class",
+        "VTY",
+        "Cisco",
+        "원격접속제어"
+      ]
+    },
+    {
+      "id": "y-net-044",
+      "type": "실무형",
+      "question": "사내 라우터의 SNMP 설정을 점검한 결과 `snmp-server community public rw` 로 되어 있었다.\n\n(a) 이 설정의 문제점을 2가지 지적하시오.\n(b) 문제를 해결하기 위한 라우터 설정 명령을 순서대로 작성하시오(community 변경, RO 전환, ACL 제한 포함).",
+      "answer": "정답\n(a) 문제점 : ① community string이 기본값 `public` 그대로라 추측이 쉽다 ② `rw`(읽기·쓰기) 권한이라 공격자가 SNMP로 장비 설정을 임의 변경할 수 있다.\n\n(b)\n```\nRouter(config)# snmp-server community [추측 어려운 문자열] ro\nRouter(config)# access-list 11 permit host [관리IP]\nRouter(config)# access-list 11 deny any\nRouter(config)# interface FastEthernet 0/0\nRouter(config-if)# ip access-group 11 in\n```\n가능하다면 SNMPv1/v2c 대신 인증·암호화를 지원하는 SNMPv3로 전환한다.",
+      "explanation": "SNMP 보안 4대 조치: ① 기본 community 문자열 변경 ② 쓰기(RW) 권한 제거, 읽기전용(RO)만 허용 ③ ACL로 접근 가능한 관리 IP 제한 ④ 가능하면 SNMPv3(인증+암호화) 사용. 완전히 쓰지 않는다면 `no snmp-server`로 에이전트 자체를 꺼도 된다.",
+      "notes": [
+        "네트워크보안/cisco-라우터-스위치-보안설정"
+      ],
+      "tags": [
+        "SNMP",
+        "community",
+        "RO",
+        "ACL"
+      ]
+    },
+    {
+      "id": "y-net-045",
+      "type": "실무형",
+      "question": "회사 라우터가 외부 인터넷 구간에서 사설 IP 대역(10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)을 출발지로 위조한 패킷을 그대로 통과시키고 있는 것이 확인되었다.\n\n(a) 이러한 스푸핑 패킷이 통과할 때 발생할 수 있는 공격 유형을 1가지 쓰시오.\n(b) 인터넷 구간 인터페이스에서 사설 IP를 출발지로 하는 패킷을 차단하는 Cisco ACL 설정을 작성하시오(3개 클래스 모두 차단 후 나머지 허용).",
+      "answer": "정답\n(a) 출발지 IP 스푸핑을 이용한 DDoS 반사·증폭 공격(Smurf, DRDoS 등) 또는 IP 스푸핑 기반 우회 공격\n\n(b)\n```\nRouter(config)# access-list 15 deny 10.0.0.0 0.255.255.255\nRouter(config)# access-list 15 deny 172.16.0.0 0.15.255.255\nRouter(config)# access-list 15 deny 192.168.0.0 0.0.255.255\nRouter(config)# access-list 15 permit any\nRouter(config)# interface FastEthernet 0/0\nRouter(config-if)# ip access-group 15 in\n```",
+      "explanation": "외부(인터넷) 구간에서 사설 IP가 출발지로 들어오는 것은 정상적으로 있을 수 없으므로 반드시 차단해야 한다(Ingress Filtering의 일종). 와일드카드 마스크는 서브넷 마스크의 비트를 반전한 값이다(255.0.0.0 → 0.255.255.255). Unicast RPF(`ip verify unicast reverse-path`)로도 유사한 스푸핑 방어가 가능하다.",
+      "notes": [
+        "네트워크보안/cisco-라우터-스위치-보안설정"
+      ],
+      "tags": [
+        "사설IP차단",
+        "IP스푸핑",
+        "와일드카드마스크",
+        "IngressFiltering"
+      ]
+    },
+    {
+      "id": "y-net-046",
+      "type": "단답형",
+      "question": "Snort 룰 옵션에 대한 물음이다.\n\n* `sid` 값이 1~99 이면 ( A ), 100~999999 이면 ( B ), 1000000 이상이면 ( C ) 룰을 의미한다.\n* 같은 공격을 탐지하는 룰의 개정(수정) 버전을 표시하는 옵션은 무엇인가?\n* 공격 유형을 분류(예: `attempted-recon`)해 표시하는 옵션은 무엇인가?",
+      "answer": "정답\n(A) 예약(시스템) 룰\n(B) 공식(Snort 커뮤니티) 룰\n(C) 사용자 정의 룰\n\n개정 버전 옵션 : rev\n공격 유형 분류 옵션 : classtype",
+      "explanation": "실기에서 사용자 정의 룰을 직접 작성할 때는 반드시 sid를 1000000 이상으로 부여해야 한다. 그 외 Rule Body 옵션으로 `priority`(우선순위, 1이 최우선), `http_method`(HTTP 메서드 검사)도 함께 출제된다.",
+      "notes": [
+        "네트워크보안/snort-룰-문법"
+      ],
+      "tags": [
+        "Snort",
+        "sid범위",
+        "rev",
+        "classtype"
+      ]
+    },
+    {
+      "id": "y-net-047",
+      "type": "단답형",
+      "question": "iptables 명령의 옵션에 대한 물음이다. 각 옵션의 의미를 쓰시오.\n\n* `-I 2`\n* `-D 3`\n* `-L -n`\n* `-F`",
+      "answer": "정답\n`-I 2` : Insert — 해당 체인의 2번째 위치에 규칙 삽입\n`-D 3` : Delete — 해당 체인의 3번째 규칙 삭제\n`-L -n` : List — 현재 등록된 규칙을 IP·포트를 숫자로(도메인 조회 없이) 출력\n`-F` : Flush — 해당 체인(또는 전체)의 모든 규칙 삭제",
+      "explanation": "`-A`(Append, 맨 끝에 추가)와 `-I`(Insert, 지정 위치에 삽입)를 구분하는 것이 핵심 — iptables는 위에서부터 첫 매치 규칙을 적용하므로 삽입 위치가 정책 결과를 좌우한다. `LOG` 타깃은 패킷을 버리지 않고 로그만 남긴 뒤 다음 규칙 평가를 계속한다는 점도 함정으로 자주 나온다.",
+      "notes": [
+        "네트워크보안/iptables-방화벽-정책"
+      ],
+      "tags": [
+        "iptables옵션",
+        "Insert",
+        "Flush",
+        "LOG타깃"
+      ]
+    },
+    {
+      "id": "y-net-048",
+      "type": "서술형",
+      "question": "MITRE ATT&CK 프레임워크의 개념을 설명하고, 전통적인 사이버 킬체인(7단계)과 비교했을 때 갖는 차이점을 서술하시오.",
+      "answer": "정답\n[개념]\nMITRE ATT&CK 는 실제 관찰된 공격자의 전술(Tactics)·기법(Techniques)·절차(Procedures, TTP)를 행렬(매트릭스) 형태로 체계화한 무료 지식베이스다. 미국 MITRE 사가 개발·공개하며, 정찰부터 영향(파괴)까지 14개 전술 범주 아래 수백 개의 세부 기법을 정리해 둔다.\n\n[킬체인과의 차이]\n- 록히드마틴 사이버 킬체인은 정찰→무기화→전달→익스플로잇→설치→C2→목적실행의 선형(순차) 7단계로, 공격의 큰 흐름을 설명하는 개념 모델에 가깝다.\n- MITRE ATT&CK 는 이를 더 세분화해 지속성(Persistence)·권한 상승·방어 우회·자격증명 접근·내부 이동 등 실무적으로 관찰되는 전술을 추가하고, 각 전술 아래 구체적인 기법·실제 사례(절차)까지 매핑한다.\n- 킬체인이 '공격의 단계'를 보여준다면, ATT&CK는 '각 단계에서 공격자가 실제로 쓰는 구체적 수단'을 보여줘 탐지 규칙·위협 헌팅·방어 갭 분석에 직접 활용할 수 있다는 실용성이 특징이다.",
+      "explanation": "채점 포인트: ATT&CK=실제 관찰된 TTP 체계화·무료 지식베이스·14개 전술 + 킬체인 대비 세분화·실무 활용성(탐지룰·위협헌팅 매핑) 차이. 킬체인 7단계 순서도 함께 언급하면 가점.",
+      "notes": [
+        "네트워크보안/apt-킬체인-악성코드"
+      ],
+      "tags": [
+        "MITREATTACK",
+        "킬체인",
+        "TTP",
+        "위협헌팅"
+      ]
     }
   ]
 }

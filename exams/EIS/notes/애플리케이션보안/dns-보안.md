@@ -36,6 +36,22 @@ zone "korea.co.kr" IN {
 ```
 SOA serial을 올려야 Slave가 갱신 감지.
 
+## DNS 레코드 타입
+
+| 타입 | 설명 |
+|---|---|
+| A / AAAA | 도메인 → IPv4 / IPv6 주소 |
+| MX | 메일 서버 지정 |
+| NS | Name Server 지정 |
+| PTR | IP → 도메인(역방향 조회) |
+| CNAME | 도메인 별칭 |
+| SOA | Zone 권한 정보(serial 등) |
+| TXT | 텍스트 정보(SPF·DKIM 등에 활용) |
+| AXFR | Zone Transfer 전체 전송(질의 타입) |
+| ANY | 모든 레코드 조회 — **DRDoS 증폭에 악용**(응답 크기가 커짐) |
+
+재귀 질의 남용(오픈 리졸버) 차단: `named.conf`에 `recursion no;` 또는 `allow-recursion { 내부대역; };` 로 외부의 재귀 질의 자체를 거부(캐시 포이즈닝·DRDoS 악용 동시 예방).
+
 ## Zone Transfer (AXFR) 위협
 
 - 정상: Slave가 Master에서 존 전체 복제

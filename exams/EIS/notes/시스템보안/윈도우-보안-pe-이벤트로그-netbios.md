@@ -52,3 +52,30 @@ Windows NT 계열 실행 파일 포맷 (`.exe`, `.dll`, `.sys`, `.ocx`).
 시작 → 실행 → `ncpa.cpl` → 해당 연결 우클릭 → 속성 → **TCP/IPv4** 선택 → 고급 →
 **WINS 탭 → "TCP/IP over NetBIOS 사용 안 함"** 선택.
 추가: "Microsoft 네트워크용 파일 및 프린터 공유" 바인딩 해제, 방화벽에서 137~139/445 차단.
+
+## NetBIOS / SMB 포트
+
+| 포트 | 프로토콜 | 설명 |
+|---|---|---|
+| 135/TCP | RPC | 원격 프로시저 호출 |
+| 137/UDP | NetBIOS | 이름 서비스(Name Service) |
+| 138/UDP | NetBIOS | 데이터그램 서비스 |
+| 139/TCP | NetBIOS | 세션 서비스(SMB over NetBIOS) |
+| 445/TCP | SMB/CIFS | 파일·프린터 공유(직접 연결, NetBIOS 없이도 동작) |
+
+## 관리 공유(Administrative Shares) 차단
+
+기본 공유 `C$`·`D$`(드라이브 루트) · `ADMIN$`(Windows 디렉터리) · `IPC$`(프로세스 간 통신, **익명 널 세션 접근 가능**)는 원격 관리용으로 자동 생성되며, 정찰·측면 이동에 악용된다.
+
+```
+net share                 # 현재 공유 목록 확인
+net share C$ /delete      # 특정 공유 즉시 삭제(재부팅 시 재생성됨)
+net session                # 현재 연결 세션 확인
+net session /delete       # 모든 세션 강제 종료
+
+# 재부팅 후에도 영구 차단(레지스트리)
+reg add HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters ^
+  /v AutoShareServer /t REG_DWORD /d 0 /f
+```
+
+**널 세션(익명 IPC$ 접속) 차단**: 레지스트리 `HKLM\SYSTEM\CurrentControlSet\Control\LSA` → `RestrictAnonymous = 2`(완전 차단, 1은 부분 제한).

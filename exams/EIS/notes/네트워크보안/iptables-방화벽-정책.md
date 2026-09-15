@@ -24,6 +24,23 @@ tags: [iptables, DROP, REJECT, chain, state, recent, SYN]
 | **OUTPUT** | 방화벽 자신이 **출발지** |
 | PREROUTING / POSTROUTING | 라우팅 전/후 (주로 nat) |
 
+## 주요 옵션
+
+| 옵션 | 의미 |
+|---|---|
+| `-A` | Append — 규칙 추가(맨 끝) |
+| `-I n` | Insert — n번째 위치에 삽입 |
+| `-D n` | Delete — n번째 규칙 삭제 |
+| `-L -n` | 현재 규칙 목록 출력(숫자로) |
+| `-F` | Flush — 모든 규칙 삭제 |
+| `-P` | Policy — 체인 기본 정책(ACCEPT/DROP/REJECT) |
+| `-s` / `-d` | 출발지/목적지 IP |
+| `--sport` / `--dport` | 출발지/목적지 포트 |
+| `-p` | 프로토콜(tcp/udp/icmp) |
+| `-j` | Target 지정 |
+
+`LOG` 타깃은 패킷을 버리지 않고 `/var/log/messages`에 기록한 뒤 **다음 규칙을 계속 평가**한다(차단은 별도 DROP/REJECT 규칙이 필요).
+
 ## 타깃 — DROP vs REJECT (10-13)
 
 | | DROP | REJECT |

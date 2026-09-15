@@ -80,6 +80,56 @@ threshold: type <limit|threshold|both>, track <by_src|by_dst>, count N, seconds 
 
 대량 트래픽(flooding)에서 경보 폭주 억제용.
 
+## sid 범위 · 기타 옵션
+
+| sid 범위 | 의미 |
+|---|---|
+| 1 ~ 99 | 예약(시스템 룰) |
+| 100 ~ 999999 | 공식(Snort 커뮤니티) 룰 |
+| 1000000 ~ | 사용자 정의 룰 |
+
+`rev:N`(룰 버전), `classtype:공격분류`(예 `attempted-recon`), `priority:1`(1=최우선), `http_method`(HTTP 메서드 검사) 도 Rule Body 옵션.
+
+## TCP flags 표기 (스캔 탐지 룰)
+
+`S`=SYN `F`=FIN `SF`=SYN+FIN `!UAPRSF`=아무 플래그도 없음(**NULL 스캔**). Land Attack은 플래그가 아니라 `sameIP`(출발지=목적지 IP 동일) 옵션으로 탐지.
+
+```
+# SYN+FIN 스캔
+alert tcp any any -> 10.10.10.0/24 any (msg:"SYNFIN Scan Detect"; flags:SF; sid:100240;)
+# NULL 스캔
+alert tcp any any -> 10.10.10.0/24 any (msg:"NULL Scan Detect"; flags:!UAPRSF; sid:100270;)
+# Land Attack (출발지=목적지 동일 IP)
+alert ip any any -> HOME_NET any (msg:"Land Attack SRC=DST Same IP"; sameIP; sid:100230;)
+```
+
+## 브루트포스 / 플러딩 탐지 실전 룰 (threshold 활용)
+
+```
+# Telnet 로그인 실패 문자열로 브루트포스 탐지 (5초에 1번만 경보 = limit)
+alert tcp 10.10.10.0/24 23 -> any any (msg:"Telnet brute force"; content:"Login incorrect"; nocase;
+  threshold: type limit, track by_dst, count 1, seconds 5; sid:1000120;)
+
+# SSH 배너로 브루트포스 탐지 (30초 내 5회 중 첫 1회만 = both)
+alert tcp any any -> 10.10.10.0/24 22 (msg:"SSH login brute force"; content:"SSH-2.0"; nocase;
+  threshold: type both, track by_src, count 5, seconds 30; sid:1000150;)
+
+# TCP SYN Flooding (1초 내 5회마다 경보 = threshold)
+alert tcp any any -> 10.10.10.0/24 80 (msg:"TCP SYN Flooding"; flags:S;
+  threshold: type threshold, track by_src, count 5, seconds 1; sid:1000170;)
+```
+
+## HeartBleed 탐지 룰 (13회15 기출)
+
+```
+alert tcp any any -> any [443,465,523]
+  (content:"|18 03 00|"; depth:3;            # SSL 레코드 타입=0x18(Heartbeat), 버전 SSLv3
+   content:"|01|"; distance:2; within:1;    # Heartbeat 메시지 타입=0x01(Request)
+   content:!"|00|"; within:1;               # 길이 필드 상위 바이트가 0이 아님(비정상적으로 큰 요청)
+   msg:"SSLv3 Malicious Heartbleed Request"; sid:1;)
+```
+'작은 하트비트 요청인데 유독 큰 응답을 요구'하는 비정상 패턴을 잡는 룰 — `depth`/`distance`/`within`의 실전 조합 예로도 자주 출제.
+
 ## 룰 작성 시 문제점 (30회)
 
 - 너무 광범위/느슨 → **오탐(FP)**

@@ -35,9 +35,36 @@ tags: [APT, 킬체인, ATT&CK, DGA, 랜섬웨어, 드롭퍼, Pass the Hash]
 | 기법 | 설명 |
 |---|---|
 | **DGA** (Domain Generation Algorithm) | 매일 수천 개 도메인 생성 → 하나로 C2 접속 → 블랙리스트 회피 |
+| **Fast Flux** | C2 서버의 IP를 DNS로 매우 빠르게 계속 변경 → IP 차단 회피 |
+| **Domain Shadowing** | 탈취한 합법 도메인의 서브도메인을 만들어 C2로 활용 → 평판 기반 차단 우회 |
 | **Pass the Hash** | LSASS 메모리의 NTLM 해시를 그대로 제출해 원격 인증 (크래킹 불필요) |
 | **Living off the Land** | PowerShell·WMI 등 정상 도구로 공격 (파일리스) |
-| **자동실행 레지스트리** (Run 키) | 재부팅 후에도 지속 |
+| **자동실행 레지스트리** (Run 키) | `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run`에 악성 실행파일 경로 등록 → 재부팅 후에도 지속(Persistence) |
+
+## MITRE ATT&CK 14 전술(Tactics) — 킬체인보다 세분화
+
+정찰 → 자원 개발 → 초기 침투(Initial Access) → 실행(Execution) → **지속성(Persistence)** → 권한 상승 → **방어 우회**(루트킷·난독화) → 자격증명 접근 → 정보 수집(Discovery) → 내부 이동(Lateral Movement) → 데이터 수집(Collection) → C2 → 유출(Exfiltration) → 영향(Impact, 파괴·랜섬웨어).
+실제 공격에서 관찰된 전술·기법·절차(TTP)를 체계화한 무료 지식베이스(MITRE 개발) — 킬체인의 7단계를 더 세분화해 위협 헌팅·탐지 커버리지 평가에 활용한다.
+
+## DBD (Drive-by Download) 상세 흐름
+
+1. 공격자가 정상 사이트(A)에 악성 코드(주로 `<iframe width=0 height=0 src="B">`처럼 **보이지 않게** 삽입)를 심음
+2. 피해자가 A 사이트를 정상적으로 방문
+3. 은닉 iframe이 자동으로 악성 사이트(B)에 연결 → 필요 시 C로 추가 리다이렉트
+4. 브라우저·플러그인(Flash, PDF, ActiveX 등) 취약점을 이용해 취약점 코드 실행
+5. 피해자 PC에 악성코드 자동 다운로드·설치
+6. 감염 PC가 C2 서버와 통신 시작
+
+탐지: HTTP Referer(유입 경로 확인), 브라우저 캐시 분석(IECacheView 등), 프로세스 트리 분석(Process Explorer), 비정상 TCP 연결(TCPView). 은닉 스크립트는 흔히 `unescape()`로 16진수 인코딩되어 있다.
+
+## 악성코드 분석 도구
+
+| 유형 | 도구 |
+|---|---|
+| 정적 분석(실행 없이 코드·구조 분석) | PEiD(패커 식별), IDA Pro·Ghidra·Radare2(디스어셈블), YARA(시그니처 룰) |
+| 동적 분석(실제 실행해 행위 관찰) | Cuckoo Sandbox, Any.Run, OllyDbg, x64dbg |
+
+주요 난독화 기법: **XOR 인코딩**(바이트 단위 XOR로 은닉), **BASE64 인코딩**(바이너리→문자열 변환으로 탐지 우회), 10진수/16진수 변환(ASCII를 숫자로 표현).
 
 ## 악성코드 유형
 

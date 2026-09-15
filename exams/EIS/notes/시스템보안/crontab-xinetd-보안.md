@@ -50,6 +50,47 @@ tags: [crontab, xinetd, logrotate, TMOUT, securetty, 서비스하드닝]
 - 조사 시 `lsattr` 로 비정상 immutable 파일(공격자가 백도어 보호용으로 건 것) 확인.
 - `last` : `/var/log/wtmp` 기반 로그인 이력 (→ `리눅스-유닉스-로그파일` 노트).
 
+## TCP Wrapper (`/etc/hosts.allow` · `/etc/hosts.deny`)
+
+xinetd 기반 서비스의 2차 접근 통제. **검사 순서: hosts.allow → hosts.deny** (allow가 먼저 매칭되면 그것으로 확정, 어느 쪽에도 없으면 기본 허용).
+
+```
+# /etc/hosts.allow
+in.telnetd : .aaa.com EXCEPT www.aaa.com   # aaa.com 도메인은 허용하되 www.aaa.com만 예외로 차단
+# /etc/hosts.deny
+ALL : ALL                                   # 나머지 전부 차단
+```
+
+## 불필요 서비스 차단 목록
+
+xinetd로 구동되는 아래 서비스는 대부분 **DoS 취약·정보 노출·평문 인증**이라 `disable = yes` 로 반드시 차단한다.
+
+| 서비스 | 위험 |
+|---|---|
+| `echo`, `discard`, `daytime`, `chargen` | Simple TCP 서비스 — 반사·증폭 DoS(Chargen 등) 취약 |
+| `rlogin`, `rsh`, `rexec` | r-계열 — 패스워드 없이(신뢰 파일 기반) 접근 가능 |
+| `finger`, `tftp`, `talk` | 계정·시스템 정보 노출(finger), 인증 없음(tftp) |
+| `rpc.cmsd`, `rusersd` | RPC 기반 취약 서비스 |
+
+## 주요 설정 파일 권한 점검
+
+| 파일 | 소유자 | 권한 | 이유 |
+|---|---|---|---|
+| `/etc/passwd` | root | 644 | 모두 읽기 가능(필수), 쓰기는 root만 |
+| `/etc/shadow` | root | 400 | root만 읽기 |
+| `/etc/hosts` | root | 600 | IP 매핑 파일 |
+| `/etc/xinetd.conf` | root | 600 | 서비스 기동 설정 보호 |
+| `/etc/syslog.conf`(`rsyslog.conf`) | root | 644 | 로그 설정 보호 |
+
+## 취약 파일 탐지 명령어
+
+```bash
+find / -type f -perm -2 -exec ls -al {} \;       # World Writable(누구나 쓰기 가능) 파일 탐지
+chmod o-w [파일명]                                # 쓰기 권한 제거
+
+find / -nouser -o -nogroup -exec ls -al {} \;     # 소유자·그룹이 없는(고아) 파일 — 계정 삭제 후 잔존 등
+```
+
 ## 기타 하드닝
 
 | 항목 | 설정 |

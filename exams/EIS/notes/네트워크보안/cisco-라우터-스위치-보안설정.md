@@ -18,10 +18,66 @@ Router(config-line)# login                        # 또는 login local / transpo
 - `enable secret` 은 단방향 해시라 복호화 불가 → `enable password` 보다 안전.
 - `service password-encryption` 은 Type 7(취약, 복호화 툴 존재)이므로 보조 수단.
 
-## SNMP 비활성화 (관련: 21-2)
+## Cisco 라우터 4가지 모드
+
+| 모드 | 프롬프트 | 설명 |
+|---|---|---|
+| User EXEC | `Router>` | 기본 진입, 제한된 조회 명령만 |
+| Privileged EXEC | `Router#` | 관리자 모드(`enable`로 진입) |
+| Global Configuration | `Router(config)#` | 전역 설정 |
+| Interface/Line Configuration | `Router(config-if)#` 등 | 인터페이스·라인 단위 세부 설정 |
+
+## 콘솔·VTY 원격 접근 제어
 
 ```
-Router(config)# no snmp-server            # SNMP 에이전트 전체 비활성화
+Router(config)# line console 0
+Router(config-line)# login
+Router(config-line)# password cisco
+
+Router(config)# line vty 0 4              # VTY 0~4 = 최대 5개 동시 원격 세션
+Router(config-line)# login
+Router(config-line)# password cisco
+
+# 특정 관리 IP만 VTY 접속 허용 (ACL + access-class)
+Router(config)# access-list 10 permit host [관리IP]
+Router(config)# access-list 10 deny any
+Router(config)# line vty 0 4
+Router(config-line)# access-class 10 in
+```
+
+## SNMP 보안 설정 (4가지, 21-2)
+
+```
+Router(config)# no snmp-server                          # ① 완전 비활성화(가장 강력)
+Router(config)# snmp-server community [문자열] ro 11     # ② 기본 community 변경 + RO(읽기전용)만 허용
+Router(config)# access-list 11 permit host [관리IP]      # ③ ACL로 접근 IP 제한
+Router(config)# access-list 11 deny any
+Router(config)# interface FastEthernet 0/0
+Router(config-if)# ip access-group 11 in
+```
+④ 가능하면 **SNMPv3**(인증+암호화)로 업그레이드. 4가지 핵심: 기본 community 변경 · v3 사용 · ACL 접근 제한 · RW 제거(RO만 허용).
+
+## 개별 공격 방어 명령 (인터페이스 단위)
+
+```
+Router(config-if)# no ip directed-broadcast          # Smurf 공격 방어(브로드캐스트 릴레이 차단)
+Router(config-if)# no ip redirects                   # ICMP Redirect 공격 방어
+Router(config-if)# no ip unreachables                # ICMP Unreachable 응답 차단(정찰 차단)
+Router(config)#     no ip source-route                # Source Route 옵션 악용 방어(전역 설정)
+Router(config-if)# ip verify unicast reverse-path    # Unicast RPF — 출발지 IP가 역방향 라우팅표와 일치하는지 검증(스푸핑 방어)
+```
+
+## Private IP 스푸핑 차단 ACL
+
+외부에서 사설 IP 대역을 출발지로 위조한 패킷을 인바운드에서 차단:
+
+```
+Router(config)# access-list 15 deny 10.0.0.0 0.255.255.255       # A클래스 사설 대역
+Router(config)# access-list 15 deny 172.16.0.0 0.15.255.255      # B클래스 사설 대역
+Router(config)# access-list 15 deny 192.168.0.0 0.0.255.255      # C클래스 사설 대역
+Router(config)# access-list 15 permit any
+Router(config)# interface FastEthernet 0/0
+Router(config-if)# ip access-group 15 in
 ```
 
 ## 확장 ACL 해석 (32-2)
