@@ -340,6 +340,17 @@ a.pill:active { transform: translateY(1px); }
 .note-item-meta .pill { font-size: .74rem; }
 .note-item-meta .bar-track { height: 6px; max-width: 140px; margin-top: 5px; border-radius: 3px; }
 
+.note-item.pinned {
+  border-left: 3px solid var(--accent); background: var(--accent-weak);
+  padding-left: 9px; border-radius: 0 8px 8px 0;
+}
+
+.note-toc { padding: 12px 16px; }
+.note-toc h3 { margin: 0 0 8px; font-size: .92rem; color: var(--text-dim); }
+.toc-link { border: 1px solid var(--border); background: var(--surface); cursor: pointer; font: inherit; }
+.toc-link:active { transform: translateY(1px); }
+.markdown h2, .markdown h3 { scroll-margin-top: 12px; }
+
 /* ============ 두음 (두문자 암기) ============ */
 .mnemo-card { }
 .mnemo-card .mn-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }

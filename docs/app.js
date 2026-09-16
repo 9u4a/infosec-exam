@@ -1650,8 +1650,9 @@ route('notes', (app, args) => {
       const progTxt = p.done
         ? ` · ${p.done}/${p.total} 풀이 · 정답 ${p.rate}%`
         : (p.total ? ' · 아직 안 품' : '');
-      return el(`<a class="note-item" href="#/note/${encodeURIComponent(n.slug)}">
-        <span class="note-item-title">${esc(n.title)}</span>
+      const pinned = n.category === '요약';
+      return el(`<a class="note-item${pinned ? ' pinned' : ''}" href="#/note/${encodeURIComponent(n.slug)}">
+        <span class="note-item-title">${pinned ? '📌 ' : ''}${esc(n.title)}</span>
         <span class="note-item-meta">${(n.tags || []).slice(0, 5).map((t) => `<span class="pill">${esc(t)}</span>`).join(' ')}
           <span class="small muted">· ${linkTxt}${progTxt}</span>
           ${p.done ? `<span class="bar-track">
@@ -1663,10 +1664,12 @@ route('notes', (app, args) => {
     };
 
     if (noteSort === 'weak' || noteSort === 'linked') {
-      const sorted = notes.slice().sort(noteSort === 'weak'
+      const pinned = notes.filter((n) => n.category === '요약');
+      const rest = notes.filter((n) => n.category !== '요약');
+      const sorted = rest.slice().sort(noteSort === 'weak'
         ? (a, b) => prog.get(b.slug).weak - prog.get(a.slug).weak || prog.get(b.slug).total - prog.get(a.slug).total
         : (a, b) => prog.get(b.slug).total - prog.get(a.slug).total || a.slug.localeCompare(b.slug, 'ko'));
-      sorted.forEach((n) => listWrap.appendChild(noteEl(n)));
+      pinned.concat(sorted).forEach((n) => listWrap.appendChild(noteEl(n)));
       return;
     }
 
@@ -1703,6 +1706,32 @@ route('note', (app, args) => {
     <a class="pill accent" href="#/notes/${encodeURIComponent(n.category)}">${esc(n.domain || n.category)}</a>
     ${(n.tags || []).map((t) => `<a class="pill" href="#/notes/tag/${encodeURIComponent(t)}">${esc(t)}</a>`).join('')}</div>`));
 
+  const md = el(`<div class="card markdown"></div>`);
+  md.innerHTML = window.marked ? window.marked.parse(n.md) : `<pre>${esc(n.md)}</pre>`;
+  enhanceMarkdown(md);
+
+  /* 목차(TOC) — 이 노트(요약 카테고리)에만 적용. 대단원(h2)만 나열, 클릭 시 JS 스크롤
+     (실제 해시 앵커는 라우터가 페이지 이동으로 오인하므로 사용하지 않는다). */
+  if (n.category === '요약') {
+    const headings = [...md.querySelectorAll('h2')];
+    if (headings.length >= 3) {
+      headings.forEach((h, i) => { h.id = 'h-' + i; });
+      const toc = el(`<nav class="card note-toc">
+        <h3>목차</h3>
+        <div class="row tight">${headings.map((h) =>
+          `<button type="button" class="pill toc-link" data-target="${h.id}">${esc(h.textContent)}</button>`
+        ).join('')}</div>
+      </nav>`);
+      toc.addEventListener('click', (e) => {
+        const btn = e.target.closest('.toc-link');
+        if (!btn) return;
+        const target = document.getElementById(btn.dataset.target);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      app.appendChild(toc);
+    }
+  }
+
   const prog = noteProgress(n);
   if (prog.total) {
     const card = el(`<div class="card stack" style="gap:8px">
@@ -1721,9 +1750,6 @@ route('note', (app, args) => {
     app.appendChild(card);
   }
 
-  const md = el(`<div class="card markdown"></div>`);
-  md.innerHTML = window.marked ? window.marked.parse(n.md) : `<pre>${esc(n.md)}</pre>`;
-  enhanceMarkdown(md);
   app.appendChild(md);
 
   const isRepeat = n.category === '반복출제';

@@ -118,6 +118,13 @@ function walk(dir, acc = []) {
 }
 
 const EIS_EXTRA_CATS = ['반복출제'];   // 실기 5영역이 아닌 정리용 카테고리 (노트 목록 맨 끝)
+const EIS_PIN_CATS = ['요약'];         // 항상 노트 목록 맨 앞에 고정할 카테고리
+
+function catRank(category) {
+  if (EIS_PIN_CATS.includes(category)) return -1;
+  if (EIS_EXTRA_CATS.includes(category)) return 1;
+  return 0;
+}
 
 function loadNotes(rounds) {
   const notes = [];
@@ -154,7 +161,7 @@ function loadNotes(rounds) {
     });
   }
   notes.sort((a, b) =>
-    (EIS_EXTRA_CATS.includes(a.category) ? 1 : 0) - (EIS_EXTRA_CATS.includes(b.category) ? 1 : 0) ||
+    catRank(a.category) - catRank(b.category) ||
     a.slug.localeCompare(b.slug, 'ko'));
   return notes;
 }
