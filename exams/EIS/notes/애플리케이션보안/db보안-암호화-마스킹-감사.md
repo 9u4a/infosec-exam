@@ -77,7 +77,12 @@ XPath/XQuery 파라미터도 **공통 검증 → 필터링 → 파라미터 바�
 ## DB 접근권한 관리 (26-17)
 
 일반/원격 사용자에게 **부여 금지** 권한(Oracle 예): `CREATE USER`, `DROP USER`, `DROP ANY TABLE`, `ALTER SYSTEM`, `GRANT ANY PRIVILEGE`, `SELECT ANY TABLE`.
-최소화 방법: ① 역할(ROLE) 기반 부여 ② 업무별 최소 권한 ③ `PUBLIC` 에 부여된 불필요 권한 회수 ④ 주기적 권한 검토·미사용 계정 잠금.
+**최소화 방법**
+
+1. 역할(ROLE) 기반 부여
+2. 업무별 최소 권한
+3. `PUBLIC` 에 부여된 불필요 권한 회수
+4. 주기적 권한 검토·미사용 계정 잠금
 
 ## DB 감사(Audit) 로그 (28-17)
 

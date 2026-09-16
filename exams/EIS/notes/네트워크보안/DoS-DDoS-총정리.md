@@ -46,7 +46,12 @@ tags: [DoS, DDoS, Smurf, SYN Flooding, Slowloris, DRDoS, 증폭공격]
 | **SSDP 증폭** | UDP 1900 | UPnP M-SEARCH, IoT·공유기 악용 |
 | **Memcached** | UDP 11211 | 대용량 캐시 반사 (최대 5만 배, GitHub 2018) |
 
-**왜 IP 스푸핑 + 반사인가**: ①출처 추적 곤란 ②UDP는 인증 없어 위조 쉬움 ③좀비 없이도 대량 트래픽.
+**왜 IP 스푸핑 + 반사인가**
+
+1. 출처 추적 곤란
+2. UDP는 인증 없어 위조 쉬움
+3. 좀비 없이도 대량 트래픽
+
 **대응**: BCP38(출발지 검증, Unicast RPF), 개방형 리졸버 차단, `no ip directed-broadcast`, RRL, 대용량 응답 패킷 차단.
 
 ### Smurf 세부 (7-11)
@@ -56,7 +61,10 @@ tags: [DoS, DDoS, Smurf, SYN Flooding, Slowloris, DRDoS, 증폭공격]
 
 ### NTP 증폭 대응 4가지 (12-15, 27-18)
 
-① NTP를 **4.2.8 이상**으로 업그레이드(monlist 제거) ② 불가 시 `ntp.conf` 에 `disable monitor` ③ 대상 NTP 서버가 monlist(`ntpdc -c monlist`)에 응답하는지 점검 ④ iptables/ACL로 신뢰 대역만 UDP 123 허용, 개방형 NTP 차단.
+1. NTP를 **4.2.8 이상**으로 업그레이드(monlist 제거)
+2. 불가 시 `ntp.conf` 에 `disable monitor`
+3. 대상 NTP 서버가 monlist(`ntpdc -c monlist`)에 응답하는지 점검
+4. iptables/ACL로 신뢰 대역만 UDP 123 허용, 개방형 NTP 차단
 
 ### DNS 증폭 / DRDoS 로그 판별 (6-13, 18-16, 22-16)
 

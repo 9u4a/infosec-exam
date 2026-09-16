@@ -70,7 +70,14 @@ _dmarc.example.com.  IN TXT  "v=DMARC1; p=reject; rua=mailto:dmarc@example.com; 
 | `/etc/mail/access` | 도메인·IP별 정책 (텍스트) |
 | `/etc/mail/access.db` | `makemap hash access.db < access` 로 생성 (실제 참조본) |
 
-access 정책값: **RELAY**(중계 허용) · **REJECT**(거부+오류회신, 550 에러로 발신자에게 통보) · **DISCARD**(조용히 폐기, 발신자는 전송 성공으로 착각) · **OK**(수신 허용)
+**access 정책값**
+
+| 값 | 동작 |
+|---|---|
+| `RELAY` | 중계 허용 |
+| `REJECT` | 거부 + 오류회신(550 에러로 발신자에게 통보) |
+| `DISCARD` | 조용히 폐기(발신자는 전송 성공으로 착각) |
+| `OK` | 수신 허용 |
 
 ```
 # /etc/mail/access

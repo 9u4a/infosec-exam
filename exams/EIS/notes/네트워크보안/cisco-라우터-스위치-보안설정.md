@@ -55,7 +55,9 @@ Router(config)# access-list 11 deny any
 Router(config)# interface FastEthernet 0/0
 Router(config-if)# ip access-group 11 in
 ```
-④ 가능하면 **SNMPv3**(인증+암호화)로 업그레이드. 4가지 핵심: 기본 community 변경 · v3 사용 · ACL 접근 제한 · RW 제거(RO만 허용).
+④ 가능하면 **SNMPv3**(인증+암호화)로 업그레이드.
+
+**4가지 핵심**: 기본 community 변경 / v3 사용 / ACL 접근 제한 / RW 제거(RO만 허용)
 
 ## 개별 공격 방어 명령 (인터페이스 단위)
 
@@ -108,7 +110,10 @@ ip access-list extended SERVICE_FILTER
 ## Tiny Fragment 공격 (18-13)
 
 - 이유: TCP 헤더를 **첫 단편에 포트 번호가 안 들어갈 만큼** 잘게 쪼개면, 헤더만 보고 판단하는 패킷 필터가 규칙을 적용 못 함 → 통과.
-- 대응: ① 첫 단편의 최소 크기 강제(포트까지 포함) ② 재조합 후 검사하는 상태 기반 방화벽 ③ offset=1 인 단편 폐기.
+- 대응:
+  1. 첫 단편의 최소 크기 강제(포트까지 포함)
+  2. 재조합 후 검사하는 상태 기반 방화벽
+  3. offset=1 인 단편 폐기
 
 ## Smurf 차단 라우터 명령 (20-15)
 
