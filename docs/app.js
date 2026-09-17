@@ -253,14 +253,18 @@ function mergeState(local, remote) {
   out.mnemoFavs = unionArr(remote.mnemoFavs, local.mnemoFavs);
   out.sessions = mergeSessions(local.sessions, remote.sessions);
   out.session = local.session || remote.session || null;   // 진행 중 세션은 이 기기 우선
+  if (out.session && out.sessions.some((s) => s.id === out.session.id)) out.session = null;   // 이미 완료 기록이 있으면 되살리지 않음(중복 제출 방지)
   out.settings = Object.assign(DEFAULT_STATE().settings, localNewer ? remote.settings : local.settings, localNewer ? local.settings : remote.settings);
   out.lastSummary = localNewer ? (local.lastSummary || remote.lastSummary || null) : (remote.lastSummary || local.lastSummary || null);
   const lc = local.cppg || {}, rc = remote.cppg || {};
+  const cSessions = mergeSessions(lc.sessions, rc.sessions);
+  let cSession = lc.session || rc.session || null;
+  if (cSession && cSessions.some((s) => s.id === cSession.id)) cSession = null;
   out.cppg = {
     results: mergeResults(lc.results, rc.results),
     favorites: unionArr(rc.favorites, lc.favorites),
-    sessions: mergeSessions(lc.sessions, rc.sessions),
-    session: lc.session || rc.session || null,
+    sessions: cSessions,
+    session: cSession,
     lastSummary: localNewer ? (lc.lastSummary || rc.lastSummary || null) : (rc.lastSummary || lc.lastSummary || null),
   };
   out._mtime = Math.max(local._mtime || 0, remote._mtime || 0);
@@ -1133,6 +1137,7 @@ function sessionHasProgress() {
 }
 
 function finishSession() {
+  if (!SESSION) { navigate('#/solve'); return; }   // 이미 끝난 세션에 중복 호출된 경우(예: 제출 버튼 연타) 방어
   const rec = recordCurrentSession();
   store.addSession(rec);
   store.state.lastSummary = {

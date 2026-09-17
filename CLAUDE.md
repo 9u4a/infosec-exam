@@ -218,7 +218,11 @@ exams/cppg/자료/*.pdf               시행처·법령 원문 PDF(1차 사료).
   변경이 없는데도 매 부팅·탭 복귀마다 강제 push 하던 것을 제거 — KV 쓰기 절약의 핵심).
 - **병합**(`mergeState`): 누적형(`results` attempts·`favorites`·`mnemoFavs`·`sessions`, cppg 포함)은
   **합집합**(attempts 는 `t/g` 로 중복 제거), 스칼라(`settings`·`lastSummary`)는 `_mtime` 최신본.
-  진행 중 `session` 은 이 기기 우선. `results[qid].memo`·`.ans` 는 mtime 없어 **"긴 쪽 우선"**(알려진 한계).
+  진행 중 `session` 은 이 기기 우선 — 단, 상대방(remote/local)의 `sessions[]` 에 같은 `id` 로
+  이미 완료 기록이 있으면 되살리지 않고 `null` 로 무시한다(예: A가 모의고사를 끝내 로컬 `session`
+  을 비웠는데, 아직 push 안 된 stale remote.session 이 진행 중으로 남아있어 병합 시 되살아나면
+  "이어풀기" 카드가 뜨고 다시 제출 시 `sessions` 에 중복 기록되는 버그였음). `results[qid].memo`·
+  `.ans` 는 mtime 없어 **"긴 쪽 우선"**(알려진 한계).
 - `server/worker.js` 는 **빌드 대상 아님** — `wrangler deploy` 로 별도 배포, `docs/` 에 넣지 말 것.
 - 검증: `scratchpad/sync.test.mjs`(Worker 단위 + jsdom 2기기 병합·409 충돌).
 - ⚠ 공유 암호라 암호를 아는 사람은 기록을 공유(개인/소그룹용). KV Free 쓰기 1,000/일 —
