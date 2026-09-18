@@ -426,7 +426,14 @@ a.pill:active { transform: translateY(1px); }
 .markdown th, .markdown td {
   padding: 9px 12px; text-align: left; vertical-align: top; line-height: 1.6;
   border-bottom: 1px solid var(--border); border-right: 1px solid var(--border);
+  /* body 의 overflow-wrap:anywhere 를 표 안에서만 되돌림 — anywhere 는 표의 최소 폭 계산에도
+     영향을 줘 짧은 영문 약어(CVE·RBAC 등)까지 글자 단위로 쪼개 좁은 열에 욱여넣는다. 표는
+     이미 .md-table 가로 스크롤로 감싸 있으니 폭이 부족하면 스크롤되는 쪽이 낫다. */
+  overflow-wrap: normal; word-break: normal;
 }
+/* `code` 표기 용어(예: `activate`)는 .markdown code 자체의 word-break: break-word 가
+   위 규칙보다 더 구체적으로 적용돼 표 안에서도 여전히 쪼개진다 — 표 셀 안의 code 만 되돌림. */
+.markdown td code, .markdown th code { overflow-wrap: normal; word-break: normal; }
 .markdown th:last-child, .markdown td:last-child { border-right: 0; }
 .markdown tbody tr:last-child td { border-bottom: 0; }
 .markdown thead th {
