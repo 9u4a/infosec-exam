@@ -482,6 +482,13 @@ function enhanceMarkdown(root) {
   });
 }
 
+/* 목차 칩 라벨 — 제목 끝의 기출 배지(`27-15`)는 제외 */
+function tocLabel(h) {
+  const c = h.cloneNode(true);
+  c.querySelectorAll('.qref').forEach((x) => x.remove());
+  return c.textContent.replace(/^[\d.\s]+/, '').trim();
+}
+
 /* 노트 본문 전처리 — `{{27-15}}` → 기출 배지(문항 직링크) */
 function noteMdPre(md) {
   return md.replace(/\{\{\s*(\d+)-(\d+)\s*\}\}/g, (_, r, n) =>
@@ -1826,7 +1833,7 @@ route('note', (app, args) => {
   if (headings.length >= 3) {
     headings.forEach((h, i) => { h.id = 'h-' + i; });
     const toc = el(`<nav class="note-toc" aria-label="목차">${headings.map((h, i) =>
-      `<button type="button" class="toc-link" data-target="h-${i}">${esc(h.textContent.replace(/^[\d.\s]+/, ''))}</button>`
+      `<button type="button" class="toc-link" data-target="h-${i}">${esc(tocLabel(h))}</button>`
     ).join('')}</nav>`);
     toc.addEventListener('click', (e) => {
       const btn = e.target.closest('.toc-link');
