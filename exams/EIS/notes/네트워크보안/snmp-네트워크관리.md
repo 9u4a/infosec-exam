@@ -10,7 +10,7 @@ related: [네트워크보안/프로토콜-계층별-보안-총정리, 정보보�
 
 **SNMP** 는 Manager(NMS)가 Agent(장비)를 관리하는 프로토콜이다. 시험은 **포트 · 수집 방식(Polling/Trap) · 버전별 보안(v3) · 보안 설정 4가지** 를 묻는다. {{27-10}} {{11-7}} {{1-2}} {{6-2}} {{24-16}}
 
-## 1. 구조와 포트
+## 구조와 포트
 
 | 항목 | 값 |
 |---|---|
@@ -20,7 +20,7 @@ related: [네트워크보안/프로토콜-계층별-보안-총정리, 정보보�
 
 PDU: GetRequest · GetNextRequest · GetBulkRequest(v2) · SetRequest · Response · **Trap** · InformRequest
 
-## 2. 수집 방식 {{1-2}}
+## 수집 방식 {{1-2}}
 
 | 방식 | 설명 |
 |---|---|
@@ -28,7 +28,7 @@ PDU: GetRequest · GetNextRequest · GetBulkRequest(v2) · SetRequest · Respons
 | **Event Reporting (Trap)** | Agent 가 이벤트 발생 시 NMS 로 **능동 통보** |
 | **syslog** | 장비가 로그를 서버로 전송 (**UDP 514**). Trap 과 비슷하지만 텍스트 로그용 |
 
-## 3. 버전별 보안 {{6-2}}
+## 버전별 보안 {{6-2}}
 
 | 버전 | 인증 | 암호화 | 비고 |
 |---|---|---|---|
@@ -45,7 +45,7 @@ PDU: GetRequest · GetNextRequest · GetBulkRequest(v2) · SetRequest · Respons
 
 보안 수준: `noAuthNoPriv` < `authNoPriv` < `authPriv`
 
-## 4. 보안 설정 4가지 {{24-16}}
+## 보안 설정 4가지 {{24-16}}
 
 > [!암기] 변경 · v3 · ACL · RW 제거
 > 1. 커뮤니티 스트링을 `public` / `private` 기본값이 아닌 **추측 어려운 값**으로 변경

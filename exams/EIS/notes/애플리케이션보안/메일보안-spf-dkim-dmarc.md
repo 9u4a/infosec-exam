@@ -9,7 +9,7 @@ tags: [SPF, DKIM, DMARC, sendmail, 릴레이, PGP, S/MIME]
 
 메일은 **SMTP 가 발신자를 검증하지 않아** 위조가 쉽다. 방어는 세 층이다: **① 발신자 위조 방지(SPF·DKIM·DMARC) → ② 스팸·릴레이 통제(sendmail access) → ③ 내용 보호(PGP·S/MIME)**. {{16-13}} {{18-14}} {{20-14}} {{21-1}} {{25-6}} {{31-9}} {{32-16}}
 
-## 1. 프로토콜과 구성요소
+## 프로토콜과 구성요소
 
 | 프로토콜 | 평문 | SSL/TLS | 역할 |
 |---|---|---|---|
@@ -22,7 +22,7 @@ tags: [SPF, DKIM, DMARC, sendmail, 릴레이, PGP, S/MIME]
 > [!암기] MUA → MTA → MDA → MRA
 > **MUA** 사용자 클라이언트(Outlook) → **MTA** 서버 간 전송(sendmail·Postfix) → **MDA** 메일함 저장(Procmail) → **MRA** 메일함에서 가져옴(POP3/IMAP)
 
-## 2. 발신자 위조 방지 3종
+## 발신자 위조 방지 3종
 
 | 기법 | 검증 방법 | 서명 주체 | 키 공유 |
 |---|---|---|---|
@@ -48,7 +48,7 @@ _dmarc.example.com.  IN TXT  "v=DMARC1; p=reject; rua=mailto:dmarc@example.com; 
    ─ p: none(모니터링)/quarantine(격리)/reject(거부) · rua: 집계 리포트 · pct: 적용 비율
 ```
 
-## 3. 메일 헤더로 피싱·스푸핑 판별
+## 메일 헤더로 피싱·스푸핑 판별
 
 | 헤더 | 확인 포인트 |
 |---|---|
@@ -58,7 +58,7 @@ _dmarc.example.com.  IN TXT  "v=DMARC1; p=reject; rua=mailto:dmarc@example.com; 
 | **Message-ID** | 발송 서버 도메인과 다르면 의심 |
 | **Authentication-Results** | 수신 서버가 기록한 spf/dkim/dmarc 결과 |
 
-## 4. 스팸 대응과 릴레이 제한
+## 스팸 대응과 릴레이 제한
 
 ### 스팸 대응 기법
 
@@ -98,7 +98,7 @@ baduser@evil.com        REJECT     ← 특정 발신자는 거부 응답
 makemap hash /etc/mail/access < /etc/mail/access   # → access.db 생성
 ```
 
-## 5. 메일 내용 보안
+## 메일 내용 보안
 
 | 기술 | 신뢰 모델 | 특징 |
 |---|---|---|

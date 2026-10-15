@@ -9,7 +9,7 @@ tags: [Snort, IDS, IPS, content, threshold, PCRE]
 
 **Snort 룰**은 `헤더(어떤 패킷을) + 옵션(무엇을 보고 어떻게 알릴지)` 으로 이뤄진다. 실기는 **룰을 읽어 의미를 쓰거나, 조건에 맞는 룰을 직접 작성**하게 하며, 핵심은 `content` 위치 옵션과 `threshold` 다. {{2-12}} {{3-5}} {{7-4}} {{13-14}} {{22-6}} {{30-15}}
 
-## 1. 룰 구조
+## 룰 구조
 
 ```text
 액션  프로토콜  출발지IP 출발지포트  방향  목적지IP 목적지포트  ( 옵션 ; 옵션 ; ... )
@@ -24,7 +24,7 @@ alert  tcp      any      any       ->    any      80        (msg:"..."; content:
 > [!팁] 목적지를 any any 로 두지 말 것
 > 모든 패킷을 검사해 **성능이 떨어진다.** 웹 서버 IP·포트 80 처럼 명시한다.
 
-## 2. 주요 옵션
+## 주요 옵션
 
 | 옵션 | 의미 |
 |---|---|
@@ -53,7 +53,7 @@ content:"POST"; offset:0; depth:4; content:"/admin"; distance:0; within:20;
 > [!함정] offset/depth 와 distance/within 을 섞지 말 것
 > 첫 content 의 위치는 offset/depth 로, **두 번째 이후 패턴의 순서·간격**은 distance/within 으로 지정한다.
 
-## 3. 실기 룰 작성 예제
+## 실기 룰 작성 예제
 
 ```text
 # 1) 웹 디렉터리 트래버설
@@ -86,7 +86,7 @@ alert tcp any any -> any any (msg:"Malware Sig"; content:"|90 90 90 90 E8|"; sid
 
 그 밖의 옵션: `rev:N`(룰 버전) · `classtype:`(예 `attempted-recon`) · `priority:1`(1=최우선) · `http_method`
 
-## 4. threshold — 경보 폭주 억제
+## threshold — 경보 폭주 억제
 
 ```text
 threshold: type <limit|threshold|both>, track <by_src|by_dst>, count N, seconds S;
@@ -98,7 +98,7 @@ threshold: type <limit|threshold|both>, track <by_src|by_dst>, count N, seconds 
 | **threshold** | **N번마다 1회** 알림 (N, 2N, 3N…) |
 | **both** | 시간창 내 N번 도달 시 **딱 1회만** |
 
-## 5. 스캔·플러딩·브루트포스 탐지 룰
+## 스캔·플러딩·브루트포스 탐지 룰
 
 ### TCP flags 표기
 
@@ -130,7 +130,7 @@ alert tcp any any -> 10.10.10.0/24 80 (msg:"TCP SYN Flooding"; flags:S;
   threshold: type threshold, track by_src, count 5, seconds 1; sid:1000170;)
 ```
 
-## 6. Heartbleed 탐지 룰 {{13-14}}
+## Heartbleed 탐지 룰 {{13-14}}
 
 ```text
 alert tcp any any -> any [443,465,523]
@@ -142,7 +142,7 @@ alert tcp any any -> any [443,465,523]
 
 "작은 하트비트 요청인데 큰 응답을 요구"하는 비정상 패턴을 잡는다. `depth` · `distance` · `within` 실전 조합 예로도 출제된다.
 
-## 7. 룰 작성의 문제점 {{30-15}}
+## 룰 작성의 문제점 {{30-15}}
 
 | 문제 | 결과 |
 |---|---|

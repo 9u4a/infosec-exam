@@ -9,7 +9,7 @@ tags: [Cisco, enable secret, ACL, ingress, egress, directed-broadcast, tiny frag
 
 Cisco 보안 문제는 **① 접근 통제(패스워드·VTY·SNMP) → ② 공격별 방어 명령 → ③ ACL·필터링** 순서로 나온다. 명령어를 *읽고 의미를 설명*하거나 *빈칸에 채우는* 형태가 많다. {{1-15}} {{2-1}} {{18-13}} {{32-2}}
 
-## 1. 관리 접근 통제
+## 관리 접근 통제
 
 ### 라우터 모드
 
@@ -68,7 +68,7 @@ Router(config-if)# ip access-group 11 in
 > [!암기] 4가지 핵심
 > 기본 community **변경** · **v3** 사용 · **ACL** 접근 제한 · **RW 제거**(RO 만)
 
-## 2. 공격별 방어 명령
+## 공격별 방어 명령
 
 | 명령 | 막는 것 |
 |---|---|
@@ -89,7 +89,7 @@ Router(config-if)# no ip directed-broadcast        # 일반적으로는 전면 �
 
 와일드카드 마스크 = 서브넷 마스크의 **비트 반전** (255.255.255.0 → 0.0.0.255)
 
-## 3. ACL 과 필터링
+## ACL 과 필터링
 
 ### 사설 IP 스푸핑 차단
 

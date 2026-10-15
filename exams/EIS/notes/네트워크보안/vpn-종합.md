@@ -12,7 +12,7 @@ tags: [VPN, 터널링, IPSec, SSL VPN, PPTP, L2TP, 사이트투사이트, PFS]
 > [!팁] IPSec 상세는 별도 노트
 > 이 노트는 IPSec 노트의 상위 개념 정리다. 필기·실기 공통.
 
-## 1. 터널링 프로토콜 — 계층별
+## 터널링 프로토콜 — 계층별
 
 | 프로토콜 | 계층 | 특징 |
 |---|---|---|
@@ -24,7 +24,7 @@ tags: [VPN, 터널링, IPSec, SSL VPN, PPTP, L2TP, 사이트투사이트, PFS]
 | OpenVPN | 4 (TLS 기반) | 오픈소스, UDP/TCP |
 | WireGuard | 3 | 경량·고속, 최신 암호 |
 
-## 2. 구성 형태
+## 구성 형태
 
 | 형태 | 설명 | IPSec 모드 |
 |---|---|---|
@@ -32,7 +32,7 @@ tags: [VPN, 터널링, IPSec, SSL VPN, PPTP, L2TP, 사이트투사이트, PFS]
 | **원격 접속** | 재택 PC ↔ 본사 VPN 게이트웨이. 클라이언트(IPSec) 또는 브라우저(SSL) | — |
 | **호스트 대 호스트** | 서버 ↔ 서버 직접 | **전송** |
 
-## 3. IPSec VPN vs SSL VPN
+## IPSec VPN vs SSL VPN
 
 | 항목 | IPSec VPN | SSL VPN |
 |---|---|---|
@@ -43,14 +43,14 @@ tags: [VPN, 터널링, IPSec, SSL VPN, PPTP, L2TP, 사이트투사이트, PFS]
 | 적합 | 지사 연결, 항상 연결 | 재택·외부·협력사 원격 접속 |
 | 보안 우려 | 단말이 사내망에 **완전 편입** | 공용 PC 사용 시 흔적·세션 탈취 |
 
-## 4. PFS (Perfect Forward Secrecy)
+## PFS (Perfect Forward Secrecy)
 
 매 세션마다 **임시(ephemeral) DH 키**로 세션키를 만든다. 서버 개인키가 나중에 유출돼도 **과거 트래픽은 복호화할 수 없다.**
 
 - IPSec: IKE Phase 1/2 에서 DH 그룹을 재협상하는 옵션
 - TLS: `ECDHE` · `DHE` 암호군을 쓰면 제공 (**정적 RSA 키 교환은 PFS 없음**)
 
-## 5. 운영 시 보안 고려사항
+## 운영 시 보안 고려사항
 
 - 강한 인증 (인증서 + MFA)
 - **스플릿 터널링 제한** — 모든 트래픽이 VPN 을 경유하도록

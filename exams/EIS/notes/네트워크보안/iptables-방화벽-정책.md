@@ -9,7 +9,7 @@ tags: [iptables, DROP, REJECT, chain, state, recent, SYN]
 
 **iptables** 는 리눅스 커널 방화벽(netfilter)의 규칙 도구다. 기본 골격은 `iptables -t <테이블> -A <체인> <매치> -j <타깃>` 이며, 시험은 **어느 체인에 · 어떤 매치로 · 어떤 타깃을** 쓰는지 읽고 쓰게 한다. {{10-13}} {{21-14}} {{24-15}} {{31-3}}
 
-## 1. 구조 — 테이블 · 체인
+## 구조 — 테이블 · 체인
 
 | 테이블 | 용도 |
 |---|---|
@@ -29,7 +29,7 @@ tags: [iptables, DROP, REJECT, chain, state, recent, SYN]
 > [!함정] INPUT vs FORWARD
 > 방화벽 *뒤의 서버*로 가는 트래픽은 INPUT 이 아니라 **FORWARD** 다.
 
-## 2. 주요 옵션
+## 주요 옵션
 
 | 옵션 | 의미 |
 |---|---|
@@ -46,7 +46,7 @@ tags: [iptables, DROP, REJECT, chain, state, recent, SYN]
 
 `LOG` 타깃은 패킷을 버리지 않고 `/var/log/messages` 에 기록한 뒤 **다음 규칙을 계속 평가**한다. 차단하려면 별도 DROP/REJECT 규칙이 필요하다.
 
-## 3. 타깃 — DROP vs REJECT {{10-13}}
+## 타깃 — DROP vs REJECT {{10-13}}
 
 | | DROP | REJECT |
 |---|---|---|
@@ -54,7 +54,7 @@ tags: [iptables, DROP, REJECT, chain, state, recent, SYN]
 | 스캐너 관점 | filtered 인지 판별이 어려움 (타임아웃) | 닫혔음을 즉시 알려 스캔이 빨라짐 |
 | 권장 | **DROP** — 정보 노출 최소화, 스캔 지연 | 내부망 사용성이 필요할 때 제한적으로 |
 
-## 4. 규칙 예제
+## 규칙 예제
 
 ### 상태 추적 (stateful)
 

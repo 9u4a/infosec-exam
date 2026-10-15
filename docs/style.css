@@ -431,16 +431,15 @@ a.qref {
 
 /* 콜아웃 — 종류별 색 (시험/함정/암기/팁/현행) */
 .markdown blockquote.callout {
-  --co: var(--accent); --co-bg: var(--accent-weak);
-  border: 0; border-left: 4px solid var(--co); background: var(--co-bg);
+  border: 0; border-left: 4px solid var(--co, var(--accent)); background: var(--co-bg, var(--accent-weak));
   padding: 12px 16px; margin: 1.2em 0; border-radius: 0 10px 10px 0;
 }
-.callout.exam { --co: var(--accent); --co-bg: var(--accent-weak); }
-.callout.trap { --co: var(--bad); --co-bg: color-mix(in srgb, var(--bad) 12%, var(--surface)); }
-.callout.mem  { --co: var(--maybe); --co-bg: color-mix(in srgb, var(--maybe) 14%, var(--surface)); }
-.callout.tip  { --co: var(--ok); --co-bg: color-mix(in srgb, var(--ok) 12%, var(--surface)); }
-.callout.law  { --co: var(--text-dim); --co-bg: var(--surface-2); }
-.co-head { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: .88rem; color: var(--co); margin-bottom: 4px; }
+.markdown blockquote.callout.exam { --co: var(--accent); --co-bg: var(--accent-weak); }
+.markdown blockquote.callout.trap { --co: var(--bad); --co-bg: color-mix(in srgb, var(--bad) 12%, var(--surface)); }
+.markdown blockquote.callout.mem { --co: var(--maybe); --co-bg: color-mix(in srgb, var(--maybe) 14%, var(--surface)); }
+.markdown blockquote.callout.tip { --co: var(--ok); --co-bg: color-mix(in srgb, var(--ok) 12%, var(--surface)); }
+.markdown blockquote.callout.law { --co: var(--text-dim); --co-bg: var(--surface-2); }
+.co-head { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: .88rem; color: var(--co, var(--accent)); margin-bottom: 4px; }
 .callout > p, .callout > ul, .callout > ol { margin: .3em 0; }
 .markdown a { text-decoration: underline; }
 .markdown ul, .markdown ol { margin: .55em 0; padding-left: 1.4em; }
@@ -712,3 +711,6 @@ details.adv > summary::-webkit-details-marker { display: none; }
 .score-card { border-left: 0; }
 .resume-card { border-color: var(--accent); }
 .menu-row { padding: 15px 4px; }
+
+.card > h3:first-child, .card > h2:first-child { margin-top: 0; }
+.card { padding: 18px; }

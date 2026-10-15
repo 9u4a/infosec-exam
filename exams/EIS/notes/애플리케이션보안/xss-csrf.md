@@ -9,7 +9,7 @@ tags: [XSS, CSRF, 쿠키, HttpOnly, SameSite, CSRF토큰]
 
 **XSS** 는 악성 스크립트가 *피해자 브라우저에서 실행*되는 공격이고, **CSRF** 는 로그인된 피해자의 *쿠키가 자동 첨부되는 점*을 악용해 피해자 명의로 요청을 보내는 공격이다. 둘의 **공격 대상이 다르다**는 점이 핵심이다. {{3-9}} {{4-2}} {{15-1}} {{22-15}} {{26-9}} {{31-14}} {{32-6}}
 
-## 1. XSS (Cross-Site Scripting)
+## XSS (Cross-Site Scripting)
 
 응답에 실린 악성 스크립트가 피해자 브라우저에서 실행돼 **쿠키·세션 탈취 · 화면 변조 · 리다이렉트 · 키로깅** 을 일으킨다.
 
@@ -37,7 +37,7 @@ tags: [XSS, CSRF, 쿠키, HttpOnly, SameSite, CSRF토큰]
 - `#` 뒤 값은 서버로 가지 않아 **WAF 도 못 막는다**
 - 대응: `textContent` 등 안전한 DOM API, 프레임워크 바인딩
 
-## 2. CSRF (Cross-Site Request Forgery)
+## CSRF (Cross-Site Request Forgery)
 
 인증된 피해자의 브라우저가 **쿠키를 자동 첨부**하는 점을 악용해, 공격자 페이지에서 **피해자 명의의 상태 변경 요청**(비밀번호 변경·이체·설정 변경)을 유발한다. 서버가 "정상 폼 요청"과 "위조 요청"을 구분하지 못하는 것이 원인이다.
 
@@ -51,7 +51,7 @@ tags: [XSS, CSRF, 쿠키, HttpOnly, SameSite, CSRF토큰]
 | **재인증** | 중요 기능에서 비밀번호 재입력 |
 | 메서드 | 상태 변경은 GET 금지, **POST + 토큰** |
 
-## 3. XSS vs CSRF — 헷갈림 축
+## XSS vs CSRF — 헷갈림 축
 
 | | XSS | CSRF |
 |---|---|---|
@@ -66,7 +66,7 @@ tags: [XSS, CSRF, 쿠키, HttpOnly, SameSite, CSRF토큰]
 > "피해자 **명의로 요청**이 나감" = CSRF
 > XSS 가 있으면 CSRF 토큰까지 읽어 낼 수 있어 **CSRF 방어가 무력화**된다.
 
-## 4. 쿠키 · 세션
+## 쿠키 · 세션
 
 ### 쿠키 보안 속성 {{22-15}}
 
@@ -88,7 +88,7 @@ tags: [XSS, CSRF, 쿠키, HttpOnly, SameSite, CSRF토큰]
 
 세션 대응: 로그인 후 **세션 ID 재발급** · 유휴 타임아웃 · `Secure` + `HttpOnly` + `SameSite` · 전 구간 HTTPS
 
-## 5. URL Rewrite / mod_rewrite {{31-10}}
+## URL Rewrite / mod_rewrite {{31-10}}
 
 **IIS 의 URL Rewrite 모듈**(Apache 는 `mod_rewrite`)은 요청 URL 패턴을 정의해 다른 URL 로 **재작성·리디렉션**한다.
 
