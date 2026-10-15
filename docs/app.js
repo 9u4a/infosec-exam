@@ -435,6 +435,16 @@ function toast(msg) {
 }
 
 /* 마크다운 렌더 후 표를 가로 스크롤 컨테이너로 감싼다 (모바일에서 표 밀림 방지) */
+/* 콜아웃 종류 — `> [!시험] 제목` 문법 + 기존 `> 💡🔑📌⚠` 이모지 인용 하위호환 */
+const CALLOUTS = {
+  시험: { icon: '🎯', label: '시험 포인트', cls: 'exam' },
+  함정: { icon: '⚠️', label: '함정', cls: 'trap' },
+  암기: { icon: '🔑', label: '암기', cls: 'mem' },
+  팁:   { icon: '💡', label: '팁', cls: 'tip' },
+  현행: { icon: '📅', label: '현행 · 종전', cls: 'law' },
+};
+const CALLOUT_EMOJI = { '💡': '팁', '🔑': '암기', '📌': '시험', '⚠': '함정', '🎯': '시험', '🚨': '함정' };
+
 function enhanceMarkdown(root) {
   if (!root) return;
   root.querySelectorAll('table').forEach((tbl) => {
@@ -444,6 +454,38 @@ function enhanceMarkdown(root) {
     tbl.parentNode.insertBefore(wrap, tbl);
     wrap.appendChild(tbl);
   });
+  root.querySelectorAll('blockquote').forEach((bq) => {
+    if (bq.dataset.co) return;
+    const p = bq.querySelector('p');
+    if (!p) return;
+    const first = p.firstChild;
+    const txt = first && first.nodeType === 3 ? first.nodeValue : '';
+    let kind = null, title = '';
+    const m = txt.match(/^\s*\[!([^\]]+)\]\s*([^\n]*)/);
+    if (m && CALLOUTS[m[1]]) {
+      kind = m[1]; title = m[2].trim();
+      first.nodeValue = txt.slice(m[0].length).replace(/^\n/, '');
+    } else {
+      const lead = txt.trim().replace(/️/g, '').slice(0, 2);
+      const key = Object.keys(CALLOUT_EMOJI).find((e) => lead.startsWith(e));
+      if (key) { kind = CALLOUT_EMOJI[key]; first.nodeValue = txt.replace(/^\s*\p{Extended_Pictographic}️?\s*/u, ''); }
+    }
+    if (!kind) return;
+    const c = CALLOUTS[kind];
+    bq.dataset.co = kind;
+    bq.className = `callout ${c.cls}`;
+    const head = document.createElement('div');
+    head.className = 'co-head';
+    head.innerHTML = `<span class="co-ic" aria-hidden="true">${c.icon}</span><span class="co-lb">${esc(title || c.label)}</span>`;
+    bq.insertBefore(head, bq.firstChild);
+    if (!p.textContent.trim() && !p.children.length) p.remove();
+  });
+}
+
+/* 노트 본문 전처리 — `{{27-15}}` → 기출 배지(문항 직링크) */
+function noteMdPre(md) {
+  return md.replace(/\{\{\s*(\d+)-(\d+)\s*\}\}/g, (_, r, n) =>
+    `<a class="qref" href="#/q/r${r}q${n}" title="${r}회 ${n}번 기출">${r}-${n}</a>`);
 }
 
 function qLabel(q) { return q.predicted ? `예상 · ${q.domain}` : `${q.round}회 ${q.no}번`; }
@@ -498,6 +540,7 @@ function render() {
   const view = routes[path] || routes.home;
   const app = $('#app');
   app.innerHTML = '';
+  if (window.__viewCleanup) { try { window.__viewCleanup(); } catch (e) { /* noop */ } window.__viewCleanup = null; }
   if (STIMER) { clearInterval(STIMER); STIMER = null; }   // 세션 타이머 정리 (session 라우트가 필요 시 재생성)
   try { window.scrollTo(0, 0); } catch (e) { /* noop */ }
   view(app, args);
@@ -506,9 +549,10 @@ function render() {
   const track = path === 'cppg' ? 'cppg' : 'EIS';
   if (store.state.settings.track !== track) { store.state.settings.track = track; store.save(); }
   tabbar.querySelectorAll('.tabs').forEach((g) => { g.hidden = g.dataset.track !== track; });
+  updateTopbar(path, args, track);
   // 라우트 → 하단 탭 매핑 (탭이 없는 라우트는 부모 탭을 활성화)
-  const EIS_TAB = { mock: 'solve', note: 'notes' };
-  const CPPG_TAB = { mock: 'quiz', note: 'notes' };
+  const EIS_TAB = { mock: 'solve', note: 'notes', saved: 'more', stats: 'more', history: 'more' };
+  const CPPG_TAB = { mock: 'quiz', note: 'notes', saved: 'more', stats: 'more' };
   const activeTab = track === 'cppg'
     ? (CPPG_TAB[args[0]] || args[0] || '')
     : (EIS_TAB[path] || path);
@@ -519,6 +563,39 @@ function render() {
   });
 }
 window.addEventListener('hashchange', render);
+
+/* '나' 허브 세그먼트 — 통계 · 저장 · 기록 · 설정 */
+function segLinks(items, cur) {
+  return el(`<nav class="track-switch sub-seg">${items.map(([k, label, href]) =>
+    `<a href="${href}" class="${k === cur ? 'on' : ''}">${label}</a>`).join('')}</nav>`);
+}
+const meSeg = (cur) => segLinks([['stats', '통계', '#/stats'], ['saved', '저장', '#/saved'], ['history', '기록', '#/history'], ['more', '설정', '#/more']], cur);
+const cMeSeg = (cur) => segLinks([['stats', '통계', '#/cppg/stats'], ['saved', '저장', '#/cppg/saved'], ['more', '설정', '#/cppg/more']], cur);
+
+/* 상단 바 — 화면 제목·뒤로가기·검색·트랙 전환 */
+const TOP_TITLE = {
+  home: '홈', solve: '풀기', session: '문제 풀이', summary: '결과', history: '지난 기록', saved: '저장',
+  mock: '모의고사', stats: '통계', notes: '노트', note: '노트', mnemonics: '암기', q: '문항', search: '검색', more: '나',
+};
+const TOP_BACK = new Set(['note', 'q', 'summary', 'search', 'history']);
+const CPPG_TOP = { quiz: '문제', notes: '노트', note: '노트', saved: '저장', stats: '통계', more: '나', mock: '모의고사', run: '풀이', result: '결과', q: '문항' };
+function updateTopbar(path, args, track) {
+  const bar = $('#topbar');
+  if (!bar) return;
+  bar.hidden = false;
+  const cppg = track === 'cppg';
+  const sub = args[0] || '';
+  const title = cppg ? (CPPG_TOP[sub] || 'CPPG 개인정보관리사') : (path === 'home' ? '정보보안기사 실기' : (TOP_TITLE[path] || '정보보안기사 실기'));
+  $('#tbTitle').textContent = title;
+  const back = $('#tbBack');
+  back.hidden = !(cppg ? ['note', 'q', 'result'].includes(sub) : TOP_BACK.has(path));
+  back.onclick = (e) => { e.preventDefault(); if (history.length > 1) history.back(); else navigate(cppg ? '#/cppg' : '#/home'); };
+  $('#tbSearch').hidden = cppg;
+  const t = $('#tbTrack');
+  t.textContent = cppg ? '실기 ⇄' : 'CPPG ⇄';
+  t.setAttribute('href', cppg ? '#/home' : '#/cppg');
+  if (!cppg) t.onpointerenter = () => { ensureCppg(); };
+}
 
 /* ============ 테마 ============ */
 function applyTheme() {
@@ -737,10 +814,11 @@ function trackSwitch(cur) {
 
 /* ============ 홈 ============ */
 route('home', (app) => {
-  app.appendChild(trackSwitch('EIS'));
   const s = computeStats();
   const today = dayKey();
   const todayCount = s.dayMap[today] || 0;
+  const due = dueQids();
+  const unseen = QUESTIONS.filter((q) => store.attemptCount(q.qid) === 0).length;
 
   const weak = Object.entries(s.perDomain)
     .map(([d, v]) => ({ d, v, rate: v.done ? pct(v.o, v.done) : null }))
@@ -753,100 +831,89 @@ route('home', (app) => {
     .map((q) => ({ q, t: store.state.results[q.qid].attempts.slice(-1)[0].t }))
     .sort((a, b) => b.t - a.t).slice(0, 5);
 
-  app.appendChild(el(`<h1>정보보안기사 실기</h1>`));
-
+  /* ① 지금 할 일 — 히어로 1개 (이어풀기 > 오늘 복습 > 새 문제) */
   if (SESSION && SESSION.qids && SESSION.qids.length) {
     const isMock = SESSION.kind === 'mock';
     const expd = sExpiresAt();
     const dead = expd && Date.now() >= expd;
-    const rc = el(`<div class="card resume-card">
-      <div><b>${isMock ? '진행 중 모의고사' : '이어풀기'}</b> <span class="muted small">${esc(SESSION.label)} · ${SESSION.idx + 1}/${SESSION.qids.length}${expd ? ' · ' + (dead ? '시간 종료' : '남은 ' + fmtClock(expd - Date.now())) : ''}</span></div>
-      <div class="row tight" style="margin-top:8px">
-        <button class="btn primary sm" id="resumeGo">${dead ? '결과 보기' : '이어서 풀기 →'}</button>
-        <button class="btn sm" id="resumeQuit">그만두고 제출</button>
-      </div></div>`);
-    $('#resumeGo', rc).addEventListener('click', () => dead ? finishSession() : navigate('#/session'));
-    $('#resumeQuit', rc).addEventListener('click', () => finishSession());
-    app.appendChild(rc);
+    const hero = el(`<section class="hero">
+      <div class="hero-k">${isMock ? '진행 중 모의고사' : '이어풀기'}</div>
+      <div class="hero-t">${esc(SESSION.label)}</div>
+      <div class="hero-s">${SESSION.idx + 1} / ${SESSION.qids.length}${expd ? ' · ' + (dead ? '시간 종료' : '남은 ' + fmtClock(expd - Date.now())) : ''}</div>
+      <button class="btn" id="resumeGo">${dead ? '결과 보기' : '이어서 풀기 →'}</button>
+      <button class="btn line sm" id="resumeQuit">제출하고 종료</button>
+    </section>`);
+    $('#resumeGo', hero).addEventListener('click', () => dead ? finishSession() : navigate('#/session'));
+    $('#resumeQuit', hero).addEventListener('click', () => finishSession());
+    app.appendChild(hero);
+  } else if (due.length) {
+    const hero = el(`<section class="hero">
+      <div class="hero-k">오늘의 복습</div>
+      <div class="hero-t">복습할 문항 ${due.length}개</div>
+      <div class="hero-s">틀렸거나 애매했던 문제를 잊기 전에 다시 — 한 번에 최대 20문항</div>
+      <button class="btn" id="dueGo">복습 시작 →</button>
+    </section>`);
+    $('#dueGo', hero).addEventListener('click', () => {
+      const ids = dueQids().slice(0, 20);
+      startSession(ids, `오늘 복습 ${ids.length}문항`);
+    });
+    app.appendChild(hero);
+  } else {
+    app.appendChild(el(`<section class="hero">
+      <div class="hero-k">오늘의 학습</div>
+      <div class="hero-t">${unseen ? `안 푼 문제 ${unseen}개가 남았어요` : '전 문항을 한 번 이상 풀었어요'}</div>
+      <div class="hero-s">${unseen ? '회차·영역을 골라 바로 시작하세요' : '모의고사나 오답 복습으로 마무리하세요'}</div>
+      <a class="btn" href="#/solve">문제 풀러 가기 →</a>
+    </section>`));
   }
+
+  /* ② 오늘의 숫자 */
+  app.appendChild(el(`<div class="kpis">
+    <div><div class="k-n">${todayCount}</div><div class="k-l">오늘 푼 문항</div></div>
+    <div><div class="k-n">${s.doneTotal}<small> / ${QUESTIONS.length}</small></div><div class="k-l">학습한 문항</div></div>
+    <div><div class="k-n">${s.attemptsTotal ? pct(countLast('o'), s.doneTotal) : 0}<small>%</small></div><div class="k-l">최근 정답률</div></div>
+  </div>`));
 
   const paceCard = examPaceCard(store.state.settings.examDate, {
     unsolved: QUESTIONS.length - s.doneTotal, todayCount, streak: streakDays(s.dayMap),
   });
-  if (paceCard) app.appendChild(paceCard);
+  if (paceCard) { paceCard.style.marginTop = '18px'; app.appendChild(paceCard); }
 
-  app.appendChild(el(`
-    <div class="stat-grid">
-      <div class="card"><div class="big">${todayCount}</div><div class="muted small">오늘 푼 문항</div></div>
-      <div class="card"><div class="big">${s.doneTotal}<span class="muted" style="font-size:1rem">/${QUESTIONS.length}</span></div><div class="muted small">1회+ 학습</div></div>
-      <div class="card"><div class="big">${s.attemptsTotal ? pct(countLast('o'), s.doneTotal) : 0}%</div><div class="muted small">최근 정답률</div></div>
-    </div>
-  `));
+  /* ③ 바로가기 */
+  const lastMock = store.state.sessions.filter((x) => x.kind === 'mock')[0];
+  const rows = [
+    PREDICTED.length ? { ic: '📝', t: '모의고사', s: lastMock ? `최근 ${lastMock.score != null ? lastMock.score + '점' : '-'} · ${lastMock.pass ? '합격' : '불합격'}` : '18문항 · 180분 · 60점 합격', h: '#/mock' } : null,
+    { ic: '📓', t: '노트', s: `${DATA.notes.length}개 · 약한 영역부터 읽기`, h: '#/notes' },
+    { ic: '📿', t: '두음 암기', s: `${MNEMONICS.length}개 항목`, h: '#/mnemonics' },
+  ].filter(Boolean);
+  app.appendChild(el(`<div class="sec-title"><span>바로가기</span></div>`));
+  app.appendChild(el(`<div class="list">${rows.map((r) => `
+    <a class="list-row" href="${r.h}"><span class="lr-ic">${r.ic}</span>
+      <span class="lr-main"><div class="lr-t">${r.t}</div><div class="lr-s">${esc(r.s)}</div></span><span class="lr-go">›</span></a>`).join('')}</div>`));
 
-  const searchBox = el(`<form class="home-search" style="margin-top:14px">
-    <input type="search" id="homeSearch" placeholder="🔍 문제·정답·해설·노트 검색" autocomplete="off" enterkeyhint="search">
-  </form>`);
-  searchBox.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const q = $('#homeSearch', searchBox).value.trim();
-    navigate(q ? '#/search/' + encodeURIComponent(q) : '#/search');
-  });
-  app.appendChild(searchBox);
-
-  app.appendChild(el(`<div class="row" style="margin-top:14px">
-    <a class="btn primary" href="#/solve">문제 풀기 →</a>
-    ${PREDICTED.length ? '<a class="btn" href="#/mock">모의고사</a>' : ''}
-    ${store.state.sessions.length ? '<a class="btn" href="#/history">지난 기록</a>' : ''}
-  </div>`));
-
-  const due = dueQids();
-  if (due.length) {
-    const dv = { o: 0, m: 0, x: 0 };
-    due.forEach((qid) => { const g = store.lastGrade(qid); if (g) dv[g]++; });
-    const box = el(`<div class="card"><h3>🔁 오늘 복습할 문항 <span class="muted small">${due.length}</span></h3>
-      <div class="bar-row"><span class="bar-label">등급 구성</span>${barTrack(dv)}<span class="bar-num">${due.length}</span></div>
-      <div class="row tight" style="margin-top:8px"><button class="btn primary sm" id="dueGo">복습 시작 →</button></div>
-      <p class="small muted" style="margin-top:6px">망각곡선 간격 · ❌ 1→3→7일 · 🔺 3→7→14일 · ⭕ 14→30→60일</p>
-    </div>`);
-    $('#dueGo', box).addEventListener('click', () => {
-      const ids = dueQids().slice(0, 20);
-      startSession(ids, `오늘 복습 ${ids.length}문항`);
-    });
-    app.appendChild(box);
-  }
-
-  const mockHist = store.state.sessions.filter((s) => s.kind === 'mock');
-  const lastMock = mockHist[0];
-  if (lastMock) {
-    const canOpen = Array.isArray(lastMock.qids) && lastMock.qids.length;
-    const prev = mockHist.slice(1, 5).map((m) => `${m.score != null ? m.score : '-'}점`).join(', ');
-    app.appendChild(el(`<div class="card"><h3>최근 모의고사 <span class="muted small">${mockHist.length}회 응시</span></h3>
-      <div class="pass-line ${lastMock.pass ? 'ok' : 'bad'}">${lastMock.score != null ? lastMock.score + ' / 100점' : '-'} · ${lastMock.pass ? '✅ 합격' : '❌ 불합격'}</div>
-      <div class="small muted">${fmtWhen(lastMock.startedAt)}${prev ? ` · 이전: ${prev}` : ''}</div>
-      <div class="small muted" style="margin-top:4px">${canOpen ? `<a href="#/summary/${encodeURIComponent(lastMock.id)}">결과 다시보기</a> · ` : ''}<a href="#/history">전체 기록</a> · <a href="#/mock">새 모의고사 →</a></div>
-    </div>`));
-  }
-
+  /* ④ 약점 영역 */
   if (weak.length) {
-    const box = el(`<div class="card"><h3>약점 영역</h3></div>`);
+    app.appendChild(el(`<div class="sec-title"><span>약점 영역</span><a href="#/stats">전체 통계</a></div>`));
+    const box = el(`<div class="card" style="margin-top:0"></div>`);
     weak.forEach((w) => box.appendChild(el(
       `<div class="bar-row"><span class="bar-label">${esc(w.d)}</span>
        ${barTrack(w.v)}<span class="bar-num">${w.rate}%</span></div>`)));
-    box.appendChild(el(`<a class="btn sm" style="margin-top:8px" href="#/solve">이 영역 집중 풀기</a>`));
     app.appendChild(box);
   }
 
+  /* ⑤ 최근 틀린 문항 */
   if (recentWrong.length) {
-    const box = el(`<div class="card"><h3>최근 틀린 문항</h3></div>`);
+    app.appendChild(el(`<div class="sec-title"><span>최근 틀린 문항</span><a href="#/saved">오답 노트</a></div>`));
+    const box = el(`<div class="list"></div>`);
     recentWrong.forEach(({ q }) => {
-      const item = el(`<div class="rank-item"><span class="pill accent">${esc(qLabel(q))}</span><span class="small muted" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.question.slice(0, 40))}</span></div>`);
+      const item = el(`<div class="list-row"><span class="lr-main"><div class="lr-t">${esc(qLabel(q))}</div><div class="lr-s">${esc(q.question.replace(/\s+/g, ' ').slice(0, 46))}</div></span><span class="lr-go">›</span></div>`);
       item.addEventListener('click', () => navigate('#/q/' + q.qid));
       box.appendChild(item);
     });
     app.appendChild(box);
   }
 
-  app.appendChild(el(`<p class="small muted center" style="margin-top:24px">데이터 생성 ${DATA.builtAt.slice(0, 10)} · 총 ${QUESTIONS.length}문항 · 노트 ${DATA.notes.length}개</p>`));
+  app.appendChild(el(`<p class="small muted center" style="margin-top:28px">데이터 ${DATA.builtAt.slice(0, 10)} · ${QUESTIONS.length}문항 · 노트 ${DATA.notes.length}개</p>`));
 
   function countLast(g) { return QUESTIONS.filter((q) => store.lastGrade(q.qid) === g).length; }
 });
@@ -895,7 +962,41 @@ function solveSeg(mode) {
 /* ============ 풀기: 범위 선택 ============ */
 route('solve', (app) => {
   app.appendChild(solveSeg('solve'));
-  app.appendChild(el(`<h1>문제 풀기</h1>`));
+
+  /* 프리셋 — 자주 쓰는 범위는 한 번에 시작 */
+  const nDue = dueQids().length;
+  const nWrong = QUESTIONS.filter((q) => store.lastGrade(q.qid) === 'x').length;
+  const nMaybe = QUESTIONS.filter((q) => store.lastGrade(q.qid) === 'm').length;
+  const nUnseen = QUESTIONS.filter((q) => store.attemptCount(q.qid) === 0).length;
+  const presets = [
+    { k: 'due', ic: '🔁', t: '오늘 복습', s: nDue ? `${nDue}문항 · 망각곡선` : '복습할 문항 없음', n: nDue, primary: nDue > 0 },
+    { k: 'unseen', ic: '🆕', t: '안 푼 문제', s: `${nUnseen}문항`, n: nUnseen },
+    { k: 'wrong', ic: '❌', t: '오답만', s: `${nWrong}문항`, n: nWrong },
+    { k: 'maybe', ic: '🔺', t: '애매함만', s: `${nMaybe}문항`, n: nMaybe },
+    { k: 'random', ic: '🎲', t: '랜덤 20', s: '전 회차에서 무작위', n: QUESTIONS.length },
+    { k: 'mock', ic: '📝', t: '모의고사', s: '18문항 · 180분', n: PREDICTED.length },
+  ];
+  const grid = el(`<div class="preset-grid">${presets.map((p) => `
+    <button class="preset${p.primary ? ' primary' : ''}" data-k="${p.k}"${p.n ? '' : ' disabled'}>
+      <span class="p-ic">${p.ic}</span><span class="p-t">${p.t}</span><span class="p-s">${esc(p.s)}</span></button>`).join('')}</div>`);
+  grid.addEventListener('click', (e) => {
+    const b = e.target.closest('.preset');
+    if (!b || b.disabled) return;
+    const k = b.dataset.k;
+    if (k === 'mock') { navigate('#/mock'); return; }
+    let list;
+    if (k === 'due') { const set = new Set(dueQids()); list = QUESTIONS.filter((q) => set.has(q.qid)).slice(0, 30); }
+    else if (k === 'unseen') list = QUESTIONS.filter((q) => store.attemptCount(q.qid) === 0).slice(0, 30);
+    else if (k === 'wrong') list = QUESTIONS.filter((q) => store.lastGrade(q.qid) === 'x');
+    else if (k === 'maybe') list = QUESTIONS.filter((q) => store.lastGrade(q.qid) === 'm');
+    else { list = QUESTIONS.slice(); shuffle(list); list = list.slice(0, 20); }
+    if (!list.length) { toast('해당 조건의 문항이 없습니다'); return; }
+    startSession(list.map((q) => q.qid), `${b.querySelector('.p-t').textContent} ${list.length}문항`);
+  });
+  app.appendChild(grid);
+
+  const adv = el(`<details class="adv"><summary>직접 고르기 — 회차 · 영역 · 유형 · 즐겨찾기</summary></details>`);
+  app.appendChild(adv);
   const form = el(`<div class="card stack"></div>`);
 
   form.appendChild(el(`<label class="field"><span>범위</span>
@@ -930,7 +1031,7 @@ route('solve', (app) => {
 
   const startBtn = el(`<button class="btn primary wide" id="start">시작</button>`);
   form.appendChild(startBtn);
-  app.appendChild(form);
+  adv.appendChild(form);
 
   const scopeSel = $('#scope', form);
   function renderSub() {
@@ -1260,7 +1361,7 @@ route('summary', (app, args) => {
 
 /* ============ 지난 풀이 기록 (점수창 다시보기) ============ */
 route('history', (app) => {
-  app.appendChild(el(`<h1>지난 풀이 기록</h1>`));
+  app.appendChild(meSeg('history'));
   const sess = store.state.sessions;
   if (!sess.length) {
     app.appendChild(el(`<div class="empty">아직 제출한 세션이 없습니다.<br><span class="small">문제를 풀고 제출하면 점수창이 여기에 보관됩니다.</span></div>`));
@@ -1288,7 +1389,7 @@ route('history', (app) => {
 /* ============ 저장한 문항 (즐겨찾기 · 메모) ============ */
 let savedTab = 'fav';
 route('saved', (app) => {
-  app.appendChild(el(`<h1>저장한 문항</h1>`));
+  app.appendChild(meSeg('saved'));
   const getFavIds = () => store.state.favorites.filter((id) => anyQ(id));
   const getMemoIds = () => Object.keys(store.state.results).filter((qid) => store.state.results[qid].memo && anyQ(qid));
   const favIds = getFavIds();
@@ -1400,7 +1501,6 @@ function drawMock(opts = {}) {
 
 route('mock', (app) => {
   app.appendChild(solveSeg('mock'));
-  app.appendChild(el(`<h1>모의고사</h1>`));
 
   if (!PREDICTED.length) {
     app.appendChild(el(`<div class="empty">예상문제가 아직 없습니다.<br><span class="small"><code>exams/EIS/예상문제/</code> 폴더 작성 후 <code>node scripts/build.mjs</code></span></div>`));
@@ -1483,7 +1583,7 @@ route('mock', (app) => {
 /* ============ 통계 ============ */
 route('stats', (app) => {
   const s = computeStats();
-  app.appendChild(el(`<h1>통계</h1>`));
+  app.appendChild(meSeg('stats'));
 
   const roundsDone = DATA.rounds.filter((r) => s.perRound[r.round].done === r.total).length;
   app.appendChild(el(`
@@ -1568,7 +1668,6 @@ function barBox(title, obj) {
 /* ============ 노트 목록 ============ */
 let noteSort = 'default';   // 'default' | 'weak' | 'linked'
 route('notes', (app, args) => {
-  app.appendChild(el(`<h1>학습 노트</h1>`));
   if (!DATA.notes.length) {
     app.appendChild(el(`<div class="empty">아직 노트가 없습니다.<br><span class="small">저장소의 <code>notes/</code> 폴더에 마크다운 파일을 추가하고<br><code>node scripts/build.mjs</code> 를 실행하세요.</span></div>`));
     return;
@@ -1584,13 +1683,13 @@ route('notes', (app, args) => {
   if (curCat && !cats.includes(curCat)) curCat = '';
   if (curTag && !allTags.includes(curTag)) curTag = '';
 
-  const controls = el(`<div class="card stack">
-    <div class="chip-row" id="catRow">
+  const controls = el(`<div class="nl-controls stack">
+    <input type="search" id="nq" placeholder="노트 검색 — 제목·태그·본문" autocomplete="off" enterkeyhint="search">
+    <div class="chip-row scroll" id="catRow">
       <button class="chip" data-cat="">전체 <span>${DATA.notes.length}</span></button>
       ${cats.map((c) => `<button class="chip" data-cat="${esc(c)}">${esc(c)} <span>${catCount(c)}</span></button>`).join('')}
     </div>
     <div class="row tight">
-      <input type="text" id="nq" placeholder="제목·태그·본문 검색" style="flex:2;min-width:150px" autocomplete="off">
       <select id="ntag" style="flex:1;min-width:120px">
         <option value="">태그 전체</option>
         ${allTags.map((t) => `<option value="${esc(t)}">#${esc(t)}</option>`).join('')}
@@ -1658,7 +1757,7 @@ route('notes', (app, args) => {
       const pinned = n.category === '요약';
       return el(`<a class="note-item${pinned ? ' pinned' : ''}" href="#/note/${encodeURIComponent(n.slug)}">
         <span class="note-item-title">${pinned ? '📌 ' : ''}${esc(n.title)}</span>
-        <span class="note-item-meta">${(n.tags || []).slice(0, 5).map((t) => `<span class="pill">${esc(t)}</span>`).join(' ')}
+        <span class="note-item-meta">${(n.tags || []).slice(0, 3).map((t) => `<span class="pill">${esc(t)}</span>`).join(' ')}
           <span class="small muted">· ${linkTxt}${progTxt}</span>
           ${p.done ? `<span class="bar-track">
             <i class="o" style="width:${(p.v.o / p.total) * 100}%"></i>
@@ -1674,15 +1773,19 @@ route('notes', (app, args) => {
       const sorted = rest.slice().sort(noteSort === 'weak'
         ? (a, b) => prog.get(b.slug).weak - prog.get(a.slug).weak || prog.get(b.slug).total - prog.get(a.slug).total
         : (a, b) => prog.get(b.slug).total - prog.get(a.slug).total || a.slug.localeCompare(b.slug, 'ko'));
-      pinned.concat(sorted).forEach((n) => listWrap.appendChild(noteEl(n)));
+      const one = el(`<div class="list"></div>`);
+      pinned.concat(sorted).forEach((n) => one.appendChild(noteEl(n)));
+      listWrap.appendChild(one);
       return;
     }
 
     const byCat = {};
     notes.forEach((n) => (byCat[n.category] || (byCat[n.category] = [])).push(n));
     Object.entries(byCat).forEach(([cat, arr]) => {
-      if (!curCat) listWrap.appendChild(el(`<div class="note-cat">${esc(cat)}</div>`));
-      arr.forEach((n) => listWrap.appendChild(noteEl(n)));
+      if (!curCat) listWrap.appendChild(el(`<div class="note-cat">${esc(cat)} · ${arr.length}</div>`));
+      const lst = el(`<div class="list"></div>`);
+      arr.forEach((n) => lst.appendChild(noteEl(n)));
+      listWrap.appendChild(lst);
     });
   }
 
@@ -1705,41 +1808,65 @@ route('note', (app, args) => {
   const slug = decodeURIComponent(args.join('/'));
   const n = NOTE_BY_SLUG.get(slug);
   if (!n) { app.appendChild(el(`<div class="empty">노트를 찾을 수 없습니다.</div>`)); return; }
-  app.appendChild(el(`<a class="btn sm" href="#/notes">← 노트 목록</a>`));
-  app.appendChild(el(`<h1>${esc(n.title)}</h1>`));
-  app.appendChild(el(`<div class="row tight" style="margin-bottom:8px">
-    <a class="pill accent" href="#/notes/${encodeURIComponent(n.category)}">${esc(n.domain || n.category)}</a>
-    ${(n.tags || []).map((t) => `<a class="pill" href="#/notes/tag/${encodeURIComponent(t)}">${esc(t)}</a>`).join('')}</div>`));
+  const head = el(`<header class="note-head">
+    <div class="note-kicker"><a href="#/notes/${encodeURIComponent(n.category)}">${esc(n.domain || n.category)}</a></div>
+    <h1 class="note-title">${esc(n.title)}</h1>
+    <div class="row tight">${(n.tags || []).map((t) => `<a class="pill" href="#/notes/tag/${encodeURIComponent(t)}">${esc(t)}</a>`).join('')}</div>
+  </header>`);
+  app.appendChild(head);
 
-  const md = el(`<div class="card markdown"></div>`);
-  md.innerHTML = window.marked ? window.marked.parse(n.md) : `<pre>${esc(n.md)}</pre>`;
+  const md = el(`<article class="markdown note-body"></article>`);
+  md.innerHTML = window.marked ? window.marked.parse(noteMdPre(n.md)) : `<pre>${esc(n.md)}</pre>`;
   enhanceMarkdown(md);
 
-  /* 목차(TOC) — 이 노트(요약 카테고리)에만 적용. 대단원(h2)만 나열, 클릭 시 JS 스크롤
-     (실제 해시 앵커는 라우터가 페이지 이동으로 오인하므로 사용하지 않는다). */
-  if (n.category === '요약') {
-    const headings = [...md.querySelectorAll('h2')];
-    if (headings.length >= 3) {
-      headings.forEach((h, i) => { h.id = 'h-' + i; });
-      const toc = el(`<nav class="card note-toc">
-        <h3>목차</h3>
-        <div class="row tight">${headings.map((h) =>
-          `<button type="button" class="pill toc-link" data-target="${h.id}">${esc(h.textContent)}</button>`
-        ).join('')}</div>
-      </nav>`);
-      toc.addEventListener('click', (e) => {
-        const btn = e.target.closest('.toc-link');
-        if (!btn) return;
-        const target = document.getElementById(btn.dataset.target);
-        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-      app.appendChild(toc);
+  /* 목차 — 모든 노트(대단원 h2 3개 이상). 상단 고정 칩 바 + 스크롤 위치 추적.
+     실제 해시 앵커는 라우터가 페이지 이동으로 오인하므로 scrollIntoView 로 이동. */
+  const headings = [...md.querySelectorAll('h2')];
+  let spy = null, onScroll = null, bar = null;
+  if (headings.length >= 3) {
+    headings.forEach((h, i) => { h.id = 'h-' + i; });
+    const toc = el(`<nav class="note-toc" aria-label="목차">${headings.map((h, i) =>
+      `<button type="button" class="toc-link" data-target="h-${i}">${esc(h.textContent.replace(/^[\d.\s]+/, ''))}</button>`
+    ).join('')}</nav>`);
+    toc.addEventListener('click', (e) => {
+      const btn = e.target.closest('.toc-link');
+      if (!btn) return;
+      const target = document.getElementById(btn.dataset.target);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    app.appendChild(toc);
+    if ('IntersectionObserver' in window) {
+      spy = new IntersectionObserver((ents) => {
+        ents.forEach((en) => {
+          if (!en.isIntersecting) return;
+          toc.querySelectorAll('.toc-link').forEach((b) => {
+            const on = b.dataset.target === en.target.id;
+            b.classList.toggle('on', on);
+            if (on) b.scrollIntoView({ block: 'nearest', inline: 'center' });
+          });
+        });
+      }, { rootMargin: '-56px 0px -70% 0px' });
+      headings.forEach((h) => spy.observe(h));
     }
   }
+  bar = el(`<div class="read-bar" aria-hidden="true"><i></i></div>`);
+  document.body.appendChild(bar);
+  onScroll = () => {
+    const max = document.documentElement.scrollHeight - innerHeight;
+    bar.firstChild.style.width = (max > 0 ? Math.min(100, (scrollY / max) * 100) : 0) + '%';
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.__viewCleanup = () => {
+    if (spy) spy.disconnect();
+    window.removeEventListener('scroll', onScroll);
+    bar.remove();
+  };
+
+  app.appendChild(md);
 
   const prog = noteProgress(n);
   if (prog.total) {
-    const card = el(`<div class="card stack" style="gap:8px">
+    const card = el(`<div class="note-prog stack" style="gap:8px">
       <div class="small muted">📊 연결 ${prog.total}문항 · ${prog.done ? `${prog.done} 풀이 · 정답 ${prog.rate}%` : '아직 안 품'}</div>
       ${prog.done ? `<span class="bar-track">
         <i class="o" style="width:${(prog.v.o / prog.total) * 100}%"></i>
@@ -1754,8 +1881,6 @@ route('note', (app, args) => {
     }
     app.appendChild(card);
   }
-
-  app.appendChild(md);
 
   const isRepeat = n.category === '반복출제';
   const qBox = (title, ids, lookup, label) => {
@@ -1858,7 +1983,6 @@ function mnemoCard(item, opts = {}) {
 let mnCat = '';
 let mnFavOnly = false;   // 즐겨찾기만 보기 — 모듈 스코프 기억, 해시 미반영
 route('mnemonics', (app, args) => {
-  app.appendChild(el(`<h1>두음 암기</h1>`));
   if (!MNEMONICS.length) {
     app.appendChild(el(`<div class="empty">두음 데이터가 없습니다.<br><span class="small"><code>exams/EIS/두음.json</code> 작성 후 <code>node scripts/build.mjs</code></span></div>`));
     return;
@@ -2043,7 +2167,6 @@ function searchField(q, toks) {
 
 route('search', (app, args) => {
   const initial = args.length ? decodeURIComponent(args.join('/')) : '';
-  app.appendChild(el(`<h1>검색</h1>`));
   const form = el(`<div class="card stack">
     <label class="field"><input type="text" id="sq" placeholder="문제·정답·해설·노트 전체 검색" value="${esc(initial)}" autocomplete="off"></label>
     <div class="row tight">
@@ -2125,16 +2248,7 @@ route('search', (app, args) => {
 
 /* ============ 더보기 ============ */
 route('more', (app) => {
-  app.appendChild(el(`<h1>더보기</h1>`));
-
-  // 바로가기 메뉴
-  const memoN = Object.values(store.state.results).filter((r) => r.memo).length;
-  app.appendChild(el(`<div class="card" style="padding:2px 12px">
-    <a class="menu-row" href="#/search">🔍 통합 검색</a>
-    <a class="menu-row" href="#/saved">⭐ 즐겨찾기 · 💭 메모 <span class="muted">${store.state.favorites.length} · ${memoN}</span></a>
-    <a class="menu-row" href="#/history">🕐 지난 풀이 기록 <span class="muted">${store.state.sessions.length}회</span></a>
-    <a class="menu-row" href="#/stats">📊 통계</a>
-  </div>`));
+  app.appendChild(meSeg('more'));
 
   // 설정
   const set = store.state.settings;
@@ -2488,7 +2602,6 @@ function cRoute(name, fn) { CPPG_ROUTES[name] = fn; }
 
 route('cppg', (app, args) => {
   clearInterval(CTIMER); CTIMER = null;
-  app.appendChild(trackSwitch('cppg'));
   if (!CPPG) {
     if (window.CPPG_DATA) initCppg();   // 스크립트는 이미 있는데 init 전인 경우
   }
@@ -2496,7 +2609,7 @@ route('cppg', (app, args) => {
     app.appendChild(el('<div class="card"><p class="muted">CPPG 데이터를 불러오는 중…</p></div>'));
     ensureCppg().then((ok) => {
       if (ok) render();
-      else app.replaceChildren(trackSwitch('cppg'),
+      else app.replaceChildren(
         el('<div class="empty">CPPG 데이터를 불러오지 못했습니다.<br><span class="small">새로고침하거나 네트워크를 확인해 주세요.</span></div>'));
     });
     return;
@@ -2506,21 +2619,28 @@ route('cppg', (app, args) => {
 });
 
 cRoute('home', (app) => {
-  app.appendChild(el('<h1>CPPG 개인정보관리사</h1>'));
-
-  // 이어풀기
+  // 이어풀기 / 시작 히어로
   if (CSESSION && CSESSION.ids && CSESSION.ids.length) {
     const expd = cExpiresAt();
     const dead = expd && Date.now() >= expd;
-    const rc = el(`<div class="card resume-card">
-      <div><b>${CSESSION.kind === 'mock' ? '모의고사' : '이어풀기'}</b> <span class="muted small">${esc(CSESSION.label)} · ${CSESSION.idx + 1}/${CSESSION.ids.length}${expd ? ' · ' + (dead ? '시간 종료' : '남은 ' + fmtClock(expd - Date.now())) : ''}</span></div>
-      <div class="row tight" style="margin-top:8px">
-        <button class="btn primary sm" id="cResume">${dead ? '결과 보기' : '이어서 →'}</button>
-        <button class="btn sm" id="cQuit">그만두고 제출</button>
-      </div></div>`);
+    const rc = el(`<section class="hero">
+      <div class="hero-k">${CSESSION.kind === 'mock' ? '진행 중 모의고사' : '이어풀기'}</div>
+      <div class="hero-t">${esc(CSESSION.label)}</div>
+      <div class="hero-s">${CSESSION.idx + 1} / ${CSESSION.ids.length}${expd ? ' · ' + (dead ? '시간 종료' : '남은 ' + fmtClock(expd - Date.now())) : ''}</div>
+      <button class="btn" id="cResume">${dead ? '결과 보기' : '이어서 풀기 →'}</button>
+      <button class="btn line sm" id="cQuit">제출하고 종료</button>
+    </section>`);
     $('#cResume', rc).addEventListener('click', () => dead ? cFinish() : navigate('#/cppg/run'));
     $('#cQuit', rc).addEventListener('click', cFinish);
     app.appendChild(rc);
+  } else {
+    app.appendChild(el(`<section class="hero">
+      <div class="hero-k">CPPG 개인정보관리사</div>
+      <div class="hero-t">오늘도 한 세트 풀어볼까요?</div>
+      <div class="hero-s">5과목 · ${CQ.length}문항 · 100문항 120분 · 총점 60 + 과목별 40% 과락</div>
+      <a class="btn" href="#/cppg/quiz">문제 풀기 →</a>
+      <a class="btn line sm" href="#/cppg/mock">모의고사</a>
+    </section>`));
   }
 
   const st = store.state.cppg;
@@ -2532,18 +2652,12 @@ cRoute('home', (app) => {
   const cPaceCard = examPaceCard(store.state.settings.cppgExamDate, {
     unsolved: CQ.length - done, todayCount: cDayMap[dayKey()] || 0, streak: streakDays(cDayMap),
   });
-  if (cPaceCard) app.appendChild(cPaceCard);
-
-  app.appendChild(el(`<div class="stat-grid">
-    <div class="card"><div class="big">${done}<span class="muted" style="font-size:1rem">/${CQ.length}</span></div><div class="muted small">푼 문제</div></div>
-    <div class="card"><div class="big">${rate}%</div><div class="muted small">정답률</div></div>
-    <div class="card"><div class="big">${st.sessions.filter((s) => s.kind === 'mock').length}</div><div class="muted small">모의고사</div></div>
+  app.appendChild(el(`<div class="kpis">
+    <div><div class="k-n">${done}<small> / ${CQ.length}</small></div><div class="k-l">푼 문제</div></div>
+    <div><div class="k-n">${rate}<small>%</small></div><div class="k-l">정답률</div></div>
+    <div><div class="k-n">${st.sessions.filter((s) => s.kind === 'mock').length}</div><div class="k-l">모의고사</div></div>
   </div>`));
-
-  app.appendChild(el(`<div class="row" style="margin-top:14px">
-    <a class="btn primary" href="#/cppg/quiz">문제 풀기 →</a>
-    <a class="btn" href="#/cppg/mock">모의고사</a>
-  </div>`));
+  if (cPaceCard) { cPaceCard.style.marginTop = '18px'; app.appendChild(cPaceCard); }
 
   // 약점 과목
   const per = {};
@@ -2584,7 +2698,7 @@ function cQuizSeg(mode) {
 
 /* CPPG 저장 — 즐겨찾기 문제 */
 cRoute('saved', (app) => {
-  app.appendChild(el('<h1>CPPG 저장한 문제</h1>'));
+  app.appendChild(cMeSeg('saved'));
   const favs = store.state.cppg.favorites.filter((id) => CQ_BY_ID.has(id));
   if (!favs.length) {
     app.appendChild(el('<div class="empty">즐겨찾기가 없습니다.<br><span class="small">문제 카드의 ☆ 를 눌러 추가하세요.</span></div>'));
@@ -2609,7 +2723,6 @@ cRoute('saved', (app) => {
 
 cRoute('quiz', (app) => {
   app.appendChild(cQuizSeg('quiz'));
-  app.appendChild(el('<h1>CPPG 문제 풀기</h1>'));
   const allTags = [...new Set(CQ.flatMap((q) => q.tags || []))].sort((a, b) => a.localeCompare(b, 'ko'));
   const form = el(`<div class="card stack">
     <label class="field"><span>범위</span>
@@ -2699,7 +2812,6 @@ cRoute('quiz', (app) => {
 
 cRoute('mock', (app) => {
   app.appendChild(cQuizSeg('mock'));
-  app.appendChild(el('<h1>CPPG 모의고사</h1>'));
   const short = [];
   CSUBJ.forEach((s) => { const have = CQ.filter((q) => q.subject === s.id).length; if (have < s.count) short.push(`${s.no}과목 ${have}/${s.count}`); });
   const form = el(`<div class="card stack">
@@ -2846,7 +2958,7 @@ cRoute('result', (app) => {
 });
 
 cRoute('stats', (app) => {
-  app.appendChild(el('<h1>CPPG 통계</h1>'));
+  app.appendChild(cMeSeg('stats'));
   const st = store.state.cppg;
   const graded = CQ.map((q) => ({ q, a: cstore.lastAttempt(q.id) })).filter((x) => x.a);
   const done = graded.length;
@@ -2904,7 +3016,6 @@ cRoute('stats', (app) => {
 });
 
 cRoute('notes', (app, rest) => {
-  app.appendChild(el('<h1>CPPG 학습 노트</h1>'));
   const notes = CPPG.notes;
   if (!notes.length) { app.appendChild(el('<div class="empty">아직 노트가 없습니다.</div>')); return; }
   const subjNames = CSUBJ.map((s) => s.name);
@@ -2957,7 +3068,7 @@ cRoute('notes', (app, rest) => {
       if (!curCat) listWrap.appendChild(el(`<div class="note-cat">${esc(cat)}</div>`));
       arr.forEach((n) => listWrap.appendChild(el(`<a class="note-item" href="#/cppg/note/${encodeURIComponent(n.slug)}">
         <span class="note-item-title">${esc(n.title)}</span>
-        <span class="note-item-meta">${(n.tags || []).slice(0, 5).map((t) => `<span class="pill">${esc(t)}</span>`).join(' ')} <span class="small muted">· ${n.ref ? '참고자료' : '문제 ' + n.quiz.length}</span></span></a>`)));
+        <span class="note-item-meta">${(n.tags || []).slice(0, 3).map((t) => `<span class="pill">${esc(t)}</span>`).join(' ')} <span class="small muted">· ${n.ref ? '참고자료' : '문제 ' + n.quiz.length}</span></span></a>`)));
     });
   }
   $('#ccatRow', controls).addEventListener('click', (e) => { const b = e.target.closest('.chip'); if (!b) return; curCat = b.dataset.cat; syncChips(); syncHash(); draw(); });
@@ -3019,14 +3130,8 @@ cRoute('q', (app, rest) => {
 });
 
 cRoute('more', (app) => {
-  app.appendChild(el('<h1>CPPG 더보기</h1>'));
+  app.appendChild(cMeSeg('more'));
   const st = store.state.cppg;
-
-  app.appendChild(el(`<div class="card" style="padding:2px 12px">
-    <a class="menu-row" href="#/cppg/saved">⭐ 즐겨찾기 <span class="muted">${st.favorites.length}</span></a>
-    <a class="menu-row" href="#/cppg/notes">📓 학습 노트 <span class="muted">${(CPPG.notes || []).length}</span></a>
-    <a class="menu-row" href="#/cppg/stats">📊 통계</a>
-  </div>`));
 
   const setBox = el(`<div class="card stack"><h3>설정</h3>
     <label class="field"><span>시험일 (D-day · 하루 권장 페이스)</span>
