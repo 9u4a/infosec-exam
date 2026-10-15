@@ -149,7 +149,7 @@ p { margin: .5em 0; }
   font-size: .78rem; font-weight: 600; white-space: nowrap;
 }
 .pill.accent { background: var(--accent-weak); color: var(--accent); }
-select, input[type="text"], input[type="number"], input[type="search"], input[type="date"], textarea {
+select, input[type="text"], input[type="password"], input[type="url"], input[type="number"], input[type="search"], input[type="date"], textarea {
   font: inherit; color: var(--text); background: var(--surface);
   border: 1px solid var(--border); border-radius: 9px; padding: 9px 11px;
   width: 100%;
@@ -598,7 +598,7 @@ a.qref {
 .chip.on { background: var(--text); border-color: var(--text); color: var(--bg); }
 .chip.on span { opacity: .7; }
 .chip.fav-chip.on { background: var(--star); border-color: var(--star); color: var(--on-solid); }
-select, input[type="text"], input[type="number"], input[type="search"], input[type="date"], textarea {
+select, input[type="text"], input[type="password"], input[type="url"], input[type="number"], input[type="search"], input[type="date"], textarea {
   border-radius: 12px; padding: 11px 13px; background: var(--surface);
 }
 
@@ -714,3 +714,5 @@ details.adv > summary::-webkit-details-marker { display: none; }
 
 .card > h3:first-child, .card > h2:first-child { margin-top: 0; }
 .card { padding: 18px; }
+
+input[type="password"], input[type="url"] { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 11px 13px; width: 100%; }
