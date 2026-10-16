@@ -1187,6 +1187,36 @@ route('session', (app) => {
   const quit = el(`<button class="btn sm" style="margin-top:12px">그만두고 제출</button>`);
   quit.addEventListener('click', finishSession);
   app.appendChild(quit);
+
+  // 좌우 스와이프로 이전/다음 (입력창·가로 스크롤 영역에서 시작한 제스처는 무시)
+  let sx = 0, sy = 0, sok = false;
+  const onStart = (e) => {
+    const t = e.touches[0];
+    sx = t.clientX; sy = t.clientY;
+    sok = !e.target.closest('textarea,input,.md-table,pre,details[open]');
+  };
+  const onEnd = (e) => {
+    if (!sok) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - sx, dy = t.clientY - sy;
+    if (Math.abs(dx) < 90 || Math.abs(dy) > 40) return;
+    if (dx < 0 && !isLast) next.click();
+    else if (dx > 0 && idx > 0) prev.click();
+  };
+  if (app.__swipe) {
+    app.removeEventListener('touchstart', app.__swipe[0]);
+    app.removeEventListener('touchend', app.__swipe[1]);
+  }
+  app.__swipe = [onStart, onEnd];
+  app.addEventListener('touchstart', onStart, { passive: true });
+  app.addEventListener('touchend', onEnd, { passive: true });
+  const prevCleanup = window.__viewCleanup;
+  window.__viewCleanup = () => {
+    if (prevCleanup) prevCleanup();
+    app.removeEventListener('touchstart', onStart);
+    app.removeEventListener('touchend', onEnd);
+    app.__swipe = null;
+  };
 });
 
 /* 2023 배점: 단답 3 / 서술 12 / 실무 16. ⭕만 만점, 🔺·❌ 0점. 모의고사는 실무형 2문제 중 최고 등급 1개만 채점 */
