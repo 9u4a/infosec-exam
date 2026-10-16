@@ -609,6 +609,8 @@ function applyTheme() {
   const t = store.state.settings.theme;
   if (t === 'auto') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme', t);
+  const fs = store.state.settings.fontScale;
+  document.documentElement.style.fontSize = fs && fs !== 100 ? fs + '%' : '';
 }
 
 /* ============ 문제 카드 컴포넌트 ============ */
@@ -1631,6 +1633,9 @@ route('stats', (app) => {
     </div>
   `));
 
+  // 영역별
+  app.appendChild(barBox('영역별 정답률', s.perDomain));
+
   // 최근 14일
   const heat = el(`<div class="card"><h3>최근 14일 학습량</h3><div class="heat"></div></div>`);
   const hc = $('.heat', heat);
@@ -1644,9 +1649,9 @@ route('stats', (app) => {
   app.appendChild(heat);
 
   // 오답 랭킹
-  const rank = el(`<div class="card"><h3>오답 랭킹</h3></div>`);
+  const rank = el(`<div class="card"><h3>취약 TOP5</h3></div>`);
   if (!s.wrongRank.length) rank.appendChild(el(`<p class="muted small">아직 틀리거나 애매한 문항이 없습니다.</p>`));
-  s.wrongRank.forEach(({ q, x, m }) => {
+  s.wrongRank.slice(0, 5).forEach(({ q, x, m }) => {
     const item = el(`<div class="rank-item">
       <span class="pill accent">${esc(qLabel(q))}</span>
       <span class="small muted" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.question.slice(0, 32))}</span>
@@ -1658,10 +1663,10 @@ route('stats', (app) => {
   });
   app.appendChild(rank);
 
-  // 영역별
-  app.appendChild(barBox('영역별 정답률', s.perDomain));
-  app.appendChild(barBox('유형별 정답률', s.perType));
-
+  // 상세 (접기)
+  const more = el(`<details class="adv"><summary>유형·회차·예상문제 상세</summary><div class="adv-body"></div></details>`);
+  const mbody = $('.adv-body', more);
+  mbody.appendChild(barBox('유형별 정답률', s.perType));
   // 회차별 (접기)
   const rbox = el(`<div class="card"><h3>회차별 정답률</h3></div>`);
   const roundCounts = roundAttemptCounts();
@@ -1671,7 +1676,7 @@ route('stats', (app) => {
     rbox.appendChild(el(`<div class="bar-row"><span class="bar-label">${r.round}회</span>${barTrack(v)}
       <span class="bar-num">${v.done}/${v.total}</span>${cnt ? `<span class="small muted" style="flex:none">· ${cnt}회 풀이</span>` : ''}</div>`));
   });
-  app.appendChild(rbox);
+  mbody.appendChild(rbox);
 
   // 예상문제 · 모의고사 (기출 통계와 별도)
   if (PREDICTED.length) {
@@ -1689,8 +1694,9 @@ route('stats', (app) => {
       box.appendChild(el(`<p class="small muted" style="margin-top:8px">모의고사 총점 추이</p>`));
       box.appendChild(mb);
     }
-    app.appendChild(box);
+    mbody.appendChild(box);
   }
+  app.appendChild(more);
 });
 
 function barBox(title, obj) {
@@ -1955,6 +1961,17 @@ route('note', (app, args) => {
           t.category === '반복출제' ? '🔁 ' : '📎 '}${esc(t.title)}${
           r.shared ? ` <span class="muted">${r.shared}</span>` : ''}</a>`;
       }).join('')}</div></div>`));
+  }
+
+  // 같은 카테고리 안 이전/다음 노트
+  const sib = DATA.notes.filter((x) => x.category === n.category);
+  const si = sib.findIndex((x) => x.slug === n.slug);
+  if (sib.length > 1 && si >= 0) {
+    const pn = sib[si - 1], nn = sib[si + 1];
+    const row = el(`<div class="nav-row note-nav"></div>`);
+    const mk = (t, lab) => t ? `<a class="btn" href="#/note/${encodeURIComponent(t.slug)}"><span class="small muted">${lab}</span><br>${esc(t.title)}</a>` : `<span class="btn" style="visibility:hidden"></span>`;
+    row.innerHTML = mk(pn, '← 이전') + mk(nn, '다음 →');
+    app.appendChild(row);
   }
 });
 
@@ -2297,11 +2314,16 @@ route('more', (app) => {
         <option value="light" ${set.theme === 'light' ? 'selected' : ''}>라이트</option>
         <option value="dark" ${set.theme === 'dark' ? 'selected' : ''}>다크</option>
       </select></label>
+    <label class="field"><span>글자 크기</span>
+      <select id="fontScale">
+        ${[[90,'작게'],[100,'보통'],[110,'크게'],[120,'아주 크게']].map(([v, l]) => `<option value="${v}" ${(set.fontScale || 100) === v ? 'selected' : ''}>${l}</option>`).join('')}
+      </select></label>
     <label class="field"><span>시험일 (D-day · 하루 권장 페이스)</span>
       <input type="date" id="examDate" value="${esc(set.examDate || '')}"></label>
   </div>`);
   $('#showAns', setBox).addEventListener('change', (e) => { set.alwaysShowAnswer = e.target.checked; store.save(); });
   $('#theme', setBox).addEventListener('change', (e) => { set.theme = e.target.value; store.save(); applyTheme(); });
+  $('#fontScale', setBox).addEventListener('change', (e) => { set.fontScale = +e.target.value; store.save(); applyTheme(); });
   $('#examDate', setBox).addEventListener('change', (e) => { set.examDate = e.target.value; store.save(); });
 
   if (window.matchMedia && window.matchMedia('(min-width: 900px)').matches) {

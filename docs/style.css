@@ -716,3 +716,8 @@ details.adv > summary::-webkit-details-marker { display: none; }
 .card { padding: 18px; }
 
 input[type="password"], input[type="url"] { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 11px 13px; width: 100%; }
+
+/* 노트 이전/다음 */
+.note-nav { position: static; }
+.note-nav .btn { flex: 1; min-width: 0; flex-direction: column; align-items: flex-start; text-align: left; height: auto; padding: 10px 14px; line-height: 1.35; font-size: .88rem; }
+.note-nav .btn:last-child { align-items: flex-end; text-align: right; }
