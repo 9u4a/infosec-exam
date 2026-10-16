@@ -129,6 +129,7 @@ const SYNC = {
   rev: 0,
   status: 'off',       // off | idle | syncing | error | offline
   lastAt: 0,
+  lastError: '',       // 진단용: 마지막 실패 원인(표시 전용)
   _timer: null,        // 고정 주기 push 타이머(setInterval) — on 인 동안 계속 돎
   _dirty: false,       // 다음 타이머 tick 에 push 가 필요한 변경이 있었는지
   _pushed: '',
@@ -141,7 +142,9 @@ const SYNC = {
   async login(url, passphrase) {
     url = String(url || '').trim().replace(/\/+$/, '');
     if (!/^https?:\/\//.test(url)) throw new Error('서버 주소는 https:// 로 시작해야 합니다');
-    const r = await fetch(url + '/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ passphrase }) });
+    let r;
+    try { r = await fetch(url + '/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ passphrase }) }); }
+    catch (e) { throw new Error('서버에 연결할 수 없습니다 — 주소 오타, 네트워크, 또는 서버의 허용 출처(ALLOW_ORIGIN) 설정을 확인하세요'); }
     if (!r.ok) {
       const e = await r.json().catch(() => ({}));
       throw new Error(e.error === 'invalid_passphrase' ? '암호가 올바르지 않습니다'
@@ -193,9 +196,25 @@ const SYNC = {
     } catch (e) {
       if (e && e.message === 'unauthorized') return;
       this.status = navigator.onLine ? 'error' : 'offline';
+      this.lastError = SYNC.explain(e);
       console.warn('sync pull 실패', e);
     }
     updateSyncUI();
+  },
+  explain(e) {
+    const m = String((e && e.message) || e || '');
+    if (/Failed to fetch|NetworkError|Load failed/i.test(m)) return '서버에 닿지 않음 (네트워크·주소·CORS/ALLOW_ORIGIN 확인)';
+    if (/HTTP 5\d\d|exceeded|limit/i.test(m)) return '서버 오류/한도 초과: ' + m + ' (KV 무료 쓰기 한도일 수 있음)';
+    return m;
+  },
+  async test() {   // 연결 테스트: 서버 도달 + 토큰 유효성 확인 (쓰기 없음)
+    if (!this.on) return '미연결 상태입니다';
+    try {
+      const r = await fetch(this.cfg.url + '/state', { headers: { Authorization: 'Bearer ' + this.cfg.token } });
+      if (r.status === 401) return '서버에는 닿았지만 토큰이 거부됨(401) — 다시 로그인하세요';
+      if (!r.ok) return '서버 응답 HTTP ' + r.status;
+      return '정상 — 서버 도달, 토큰 유효';
+    } catch (e) { return this.explain(e); }
   },
   schedulePush() {
     if (!this.on) return;
@@ -232,10 +251,11 @@ const SYNC = {
       if (!r.ok) throw new Error(out.error || ('HTTP ' + r.status));
       this.rev = out.rev; this._pushed = JSON.stringify(store.state); this._persist();
       this._dirty = false;
-      this.status = 'idle'; this.lastAt = Date.now();
+      this.status = 'idle'; this.lastAt = Date.now(); this.lastError = '';
     } catch (e) {
       if (e && e.message === 'unauthorized') return;
       this.status = navigator.onLine ? 'error' : 'offline';
+      this.lastError = SYNC.explain(e);
       console.warn('sync push 실패', e);
       // _dirty 는 그대로 true 로 남겨 다음 주기 타이머 tick(또는 다음 pull/visibility 이벤트)에 재시도
     }
@@ -304,7 +324,7 @@ function updateSyncUI() {
   const box = document.getElementById('syncState');
   if (!box) return;
   const label = { off: '미연결', idle: '동기화됨', syncing: '동기화 중…', error: '동기화 오류 (로컬엔 저장됨)', offline: '오프라인 (로컬 저장)' }[SYNC.status] || '';
-  box.textContent = (SYNC.on ? '✅ 연결됨 · ' : '') + label + (SYNC.on && SYNC.lastAt ? ' · ' + fmtWhen(SYNC.lastAt) : '');
+  box.textContent = (SYNC.on ? '✅ 연결됨 · ' : '') + label + (SYNC.on && SYNC.lastAt ? ' · ' + fmtWhen(SYNC.lastAt) : '') + (SYNC.on && SYNC.lastError && SYNC.status === 'error' ? ' — ' + SYNC.lastError : '');
 }
 
 /* 노트에 연결된 문항(기출+예상)의 학습 진도. store.result() 는 빈 엔트리를 만들므로
@@ -2347,6 +2367,7 @@ route('more', (app) => {
       <div class="small muted">서버: ${esc(SYNC.cfg.url)}</div>
       <div class="row tight">
         <button class="btn sm" id="syncNow">지금 동기화</button>
+        <button class="btn sm" id="syncTest">연결 테스트</button>
         <button class="btn sm" id="syncOut" style="color:var(--bad)">로그아웃</button>
       </div>` : `
       <label class="field"><span>서버 주소</span>
@@ -2354,12 +2375,14 @@ route('more', (app) => {
       <label class="field"><span>암호</span>
         <input type="password" id="syncPass" autocomplete="current-password"></label>
       <button class="btn primary sm" id="syncIn">로그인</button>
+      <div id="syncErr" class="small" style="color:var(--bad);font-weight:600" role="alert"></div>
       <p class="small muted">서버는 <code>server/</code> 폴더의 안내대로 한 번만 배포하면 됩니다.</p>`}
   </div>`);
   app.appendChild(syncBox);
   updateSyncUI();
   if (SYNC.on) {
-    $('#syncNow', syncBox).addEventListener('click', async () => { toast('동기화 중…'); await SYNC.pull(); toast('동기화 완료'); });
+    $('#syncNow', syncBox).addEventListener('click', async () => { toast('동기화 중…'); await SYNC.pull(); toast(SYNC.status === 'idle' ? '동기화 완료' : '동기화 실패: ' + (SYNC.lastError || SYNC.status)); });
+    $('#syncTest', syncBox).addEventListener('click', async () => { toast('확인 중…'); toast(await SYNC.test()); });
     $('#syncOut', syncBox).addEventListener('click', () => { if (confirm('로그아웃합니다. 이 기기의 학습 기록은 그대로 남습니다.')) { SYNC.logout(); toast('로그아웃됨'); render(); } });
   } else {
     $('#syncIn', syncBox).addEventListener('click', async () => {
@@ -2367,7 +2390,7 @@ route('more', (app) => {
       if (!url || !pass) { toast('서버 주소와 암호를 입력하세요'); return; }
       btn.disabled = true; btn.textContent = '로그인 중…';
       try { await SYNC.login(url, pass); toast('로그인·동기화 완료'); render(); }
-      catch (e) { toast(e.message || '로그인 실패'); btn.disabled = false; btn.textContent = '로그인'; }
+      catch (e) { const m = e.message || '로그인 실패'; toast(m); $('#syncErr', syncBox).textContent = m; btn.disabled = false; btn.textContent = '로그인'; }
     });
   }
 
