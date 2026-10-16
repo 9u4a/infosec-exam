@@ -2097,12 +2097,9 @@ route('q', (app, args) => {
   const q = anyQ(decodeURIComponent(args.join('/')));
   if (!q) { app.appendChild(el(`<div class="empty">문항을 찾을 수 없습니다.</div>`)); return; }
 
-  const top = el(`<div class="row tight" style="margin-bottom:6px">
-    <a class="btn sm" href="#/search">🔍 검색</a>
-    ${SESSION && SESSION.qids && SESSION.qids.length ? `<a class="btn sm" href="#/session">풀던 세션으로 →</a>` : ''}
-  </div>`);
-  app.appendChild(top);
-  app.appendChild(el(`<h1>${esc(qLabel(q))}</h1>`));
+  if (SESSION && SESSION.qids && SESSION.qids.length) {
+    app.appendChild(el(`<div class="row tight" style="margin-bottom:10px"><a class="btn sm" href="#/session">풀던 세션으로 →</a></div>`));
+  }
   app.appendChild(questionCard(q));
 
   // 이전/다음: 예상문제는 같은 영역, 기출은 같은 회차
