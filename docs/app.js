@@ -1022,10 +1022,11 @@ route('solve', (app) => {
     if (!list.length) { toast('해당 조건의 문항이 없습니다'); return; }
     startSession(list.map((q) => q.qid), `${b.querySelector('.p-t').textContent} ${list.length}문항`);
   });
-  app.appendChild(grid);
-
-  const adv = el(`<details class="adv"><summary>직접 고르기 — 회차 · 영역 · 유형 · 즐겨찾기</summary></details>`);
+  const adv = el(`<details class="adv" open><summary>범위 선택 — 회차 · 영역 · 유형 · 즐겨찾기</summary></details>`);
+  adv.style.marginTop = '0';
   app.appendChild(adv);
+  app.appendChild(el(`<div class="sec-title">빠른 시작</div>`));
+  app.appendChild(grid);
   const form = el(`<div class="card stack"></div>`);
 
   form.appendChild(el(`<label class="field"><span>범위</span>
@@ -3312,3 +3313,9 @@ if ('serviceWorker' in navigator) {
 
 /* 테스트용 노출 (스모크에서 병합·동기화 로직 검증) */
 try { window.__sync = { SYNC, mergeState, mergeResults, mergeSessions, store, dayKey, streakDays, computeStats, dueQids, reviewDueAt, ensureCppg, roundAttemptCounts }; } catch (e) { /* noop */ }
+
+/* 오프라인 표시 — 상단 바 제목 옆에 작은 점 + 본문 상단 배너 대신 body 클래스만 토글 */
+function syncOnlineClass() { document.body.classList.toggle('is-offline', !navigator.onLine); }
+window.addEventListener('online', syncOnlineClass);
+window.addEventListener('offline', syncOnlineClass);
+syncOnlineClass();

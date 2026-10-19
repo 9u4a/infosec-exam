@@ -721,3 +721,8 @@ input[type="password"], input[type="url"] { font: inherit; color: var(--text); b
 .note-nav { position: static; }
 .note-nav .btn { flex: 1; min-width: 0; flex-direction: column; align-items: flex-start; text-align: left; height: auto; padding: 10px 14px; line-height: 1.35; font-size: .88rem; }
 .note-nav .btn:last-child { align-items: flex-end; text-align: right; }
+
+/* 오프라인 표시 */
+body.is-offline #topbar .tb-title::after { content: '오프라인'; margin-left: 8px; font-size: .68rem; font-weight: 700; color: var(--on-solid); background: var(--maybe); border-radius: 999px; padding: 2px 8px; vertical-align: middle; }
+
+@media (min-width: 900px) { #app { max-width: 820px; } .note-toc { top: 64px; } }
