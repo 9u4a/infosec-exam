@@ -31,6 +31,7 @@ const DEFAULT_STATE = () => ({
   v: 1,
   results: {},        // qid -> { attempts: [{t, g}], memo: '' }
   favorites: [],       // [qid]
+  mnemoKnown: [],      // [mnemonic id] 플래시카드에서 '알아'로 분류한 항목
   noteQuiz: {},        // slug -> { t, k, n } 노트 확인 퀴즈 마지막 결과(맞힘 k / 총 n)
   mnemoFavs: [],       // [mnemonic id] — 두음 즐겨찾기(문항 favorites 와 별개)
   sessions: [],        // [{ id, startedAt, endedAt, scopeLabel, graded: {o,m,x} }]
@@ -272,6 +273,7 @@ function mergeState(local, remote) {
   out.results = mergeResults(local.results, remote.results);
   out.favorites = unionArr(remote.favorites, local.favorites);
   out.mnemoFavs = unionArr(remote.mnemoFavs, local.mnemoFavs);
+  out.mnemoKnown = unionArr(remote.mnemoKnown, local.mnemoKnown);
   out.noteQuiz = Object.assign({}, remote.noteQuiz, local.noteQuiz);
   for (const k of Object.keys(remote.noteQuiz || {})) { const l = (local.noteQuiz || {})[k]; if (l && l.t < remote.noteQuiz[k].t) out.noteQuiz[k] = remote.noteQuiz[k]; }
   out.sessions = mergeSessions(local.sessions, remote.sessions);
@@ -2137,6 +2139,7 @@ route('mnemonics', (app, args) => {
       <input type="text" id="mq" placeholder="항목·두음·뜻 검색" style="flex:2;min-width:150px" autocomplete="off">
       <button class="btn sm" id="mnBlind" style="flex:1;min-width:120px">${mnBlind ? '👁 뜻 보이기' : '🙈 가리고 암기'}</button>
     </div>
+    <button class="btn primary sm" id="mnFlash">🃏 플래시카드 학습 <span class="small" id="mnKnownCnt"></span></button>
   </div>`);
   app.appendChild(controls);
   const listWrap = el(`<div id="mnlist"></div>`);
@@ -2158,6 +2161,62 @@ route('mnemonics', (app, args) => {
     const t = mnCat ? '#/mnemonics/' + encodeURIComponent(mnCat) : '#/mnemonics';
     try { if (location.hash !== t) history.replaceState(null, '', t); } catch (e) { /* noop */ }
   }
+
+  const known = () => (store.state.mnemoKnown = store.state.mnemoKnown || []);
+  const kc = () => { $('#mnKnownCnt', controls).textContent = `(알아 ${known().length}/${MNEMONICS.length})`; };
+  kc();
+  $('#mnFlash', controls).addEventListener('click', () => {
+    const base = MNEMONICS.filter((m) => (!mnCat || m.cat === mnCat) && (!mnFavOnly || store.isMnemoFav(m.id)));
+    const deck = base.filter((m) => !known().includes(m.id));
+    if (!deck.length) {
+      if (base.length && confirm('이 범위는 전부 "알아"로 분류됐습니다. 분류를 초기화하고 다시 할까요?')) {
+        const ids = new Set(base.map((m) => m.id));
+        store.state.mnemoKnown = known().filter((id) => !ids.has(id)); store.save(); kc();
+        $('#mnFlash', controls).click();
+      } else if (!base.length) toast('해당 범위에 항목이 없습니다');
+      return;
+    }
+    shuffle(deck);
+    let i = 0, got = 0;
+    listWrap.innerHTML = '';
+    const stage = el(`<div class="flash"></div>`);
+    listWrap.appendChild(stage);
+    const next = (ok) => {
+      if (ok) { got++; if (!known().includes(deck[i].id)) { known().push(deck[i].id); store.save(); kc(); } }
+      i++; show();
+    };
+    const show = () => {
+      if (i >= deck.length) {
+        stage.innerHTML = `<div class="card stack"><h3>끝났습니다</h3><p>${deck.length}장 중 <b>${got}장</b>을 알았습니다.${deck.length - got ? ` 모르는 ${deck.length - got}장은 다음에 다시 나옵니다.` : ' 🎉'}</p><button class="btn primary sm" id="flDone">목록으로</button></div>`;
+        $('#flDone', stage).addEventListener('click', draw);
+        return;
+      }
+      const m = deck[i];
+      stage.innerHTML = `<div class="small muted" style="margin:6px 2px">${i + 1} / ${deck.length} · 두음과 뜻을 떠올려 보세요</div>
+        <div class="card stack fl-card"><div class="mn-topic">${esc(m.topic)}</div>${m.cat ? `<span class="pill">${esc(m.cat)}</span>` : ''}
+        <div class="fl-back" hidden></div>
+        <button class="btn primary wide" id="flShow">정답 확인 ▼</button>
+        <div class="row tight" id="flGrade" hidden><button class="btn" id="flNo" style="flex:1">❌ 몰라</button><button class="btn primary" id="flYes" style="flex:1">⭕ 알아</button></div></div>
+        <button class="btn sm" id="flStop" style="margin-top:10px">그만하기</button>`;
+      $('#flShow', stage).addEventListener('click', () => {
+        const back = $('.fl-back', stage);
+        back.innerHTML = mnemoHeroHtml(m.dueum) + (m.list ? `<ol class="mnemo-list">${m.list.map((t, k) => `<li><span class="mn-no">${CIRCLED_NUM[k] || (k + 1)}</span>${esc(t)}</li>`).join('')}</ol>` : `<div class="mnemo-formula">${esc(m.formula)}</div>`);
+        back.hidden = false; $('#flShow', stage).hidden = true; $('#flGrade', stage).hidden = false;
+      });
+      $('#flYes', stage).addEventListener('click', () => next(true));
+      $('#flNo', stage).addEventListener('click', () => next(false));
+      $('#flStop', stage).addEventListener('click', draw);
+    };
+    let sx = 0;
+    stage.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; }, { passive: true });
+    stage.addEventListener('touchend', (e) => {
+      if ($('#flGrade', stage) && !$('#flGrade', stage).hidden) {
+        const dx = e.changedTouches[0].clientX - sx;
+        if (dx > 90) next(true); else if (dx < -90) next(false);
+      }
+    }, { passive: true });
+    show();
+  });
 
   const cardOpts = { onFavToggle: () => { syncFavOnlyBtn(); if (mnFavOnly) draw(); } };
 

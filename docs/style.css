@@ -734,3 +734,8 @@ body.is-offline #topbar .tb-title::after { content: '오프라인'; margin-left:
 /* 노트 확인 퀴즈 */
 .nq-front { font-size: 1.15rem; font-weight: 800; margin: 8px 0; }
 .nq-back { padding: 10px 12px; border-radius: 12px; background: var(--surface-2); margin-bottom: 10px; line-height: 1.6; }
+
+/* 두음 플래시카드 */
+.fl-card { min-height: 220px; }
+.fl-card .mn-topic { font-size: 1.3rem; font-weight: 800; }
+.fl-back { margin: 6px 0; }
