@@ -920,6 +920,32 @@ route('home', (app) => {
   });
   if (paceCard) { paceCard.style.marginTop = '18px'; app.appendChild(paceCard); }
 
+  /* ②-2 오늘의 학습 플랜 — 복습 → 약한 영역 노트 → 약한 영역 새 문제 */
+  {
+    const wk = Object.entries(s.perDomain).map(([d, v]) => ({ d, v, rate: v.done ? pct(v.o, v.done) : 0 }))
+      .sort((x, y) => x.rate - y.rate || x.v.done - y.v.done)[0];
+    const steps = [];
+    if (due.length) steps.push({ t: `복습 ${Math.min(due.length, 20)}문항`, s: '잊기 전에 다시 풀기', go: () => { const ids = dueQids().slice(0, 20); startSession(ids, `오늘 복습 ${ids.length}문항`); } });
+    if (wk) {
+      const cand = DATA.notes.filter((n) => n.category === wk.d && n.questions && n.questions.length)
+        .map((n) => ({ n, p: noteProgress(n) })).sort((x, y) => y.p.weak - x.p.weak || y.n.questions.length - x.n.questions.length)[0];
+      if (cand) steps.push({ t: `${wk.d} 노트 읽기`, s: `${cand.n.title}${cand.p.done ? ` · 정답 ${cand.p.rate}%` : ''}`, go: () => navigate('#/note/' + encodeURIComponent(cand.n.slug)) });
+      const pool = QUESTIONS.filter((q) => q.domain === wk.d && store.attemptCount(q.qid) === 0).slice(0, 10);
+      if (pool.length) steps.push({ t: `${wk.d} 새 문제 ${pool.length}개`, s: '약한 영역부터 채우기', go: () => startSession(pool.map((q) => q.qid), `${wk.d} 새 문제 ${pool.length}문항`) });
+    }
+    if (steps.length) {
+      app.appendChild(el(`<div class="sec-title"><span>오늘의 플랜</span></div>`));
+      const list = el(`<div class="list"></div>`);
+      steps.forEach((st, i) => {
+        const row = el(`<button type="button" class="list-row" style="width:100%;text-align:left"><span class="lr-ic">${i + 1}</span>
+          <span class="lr-main"><div class="lr-t">${esc(st.t)}</div><div class="lr-s">${esc(st.s)}</div></span><span class="lr-go">›</span></button>`);
+        row.addEventListener('click', st.go);
+        list.appendChild(row);
+      });
+      app.appendChild(list);
+    }
+  }
+
   /* ③ 바로가기 */
   const lastMock = store.state.sessions.filter((x) => x.kind === 'mock')[0];
   const rows = [

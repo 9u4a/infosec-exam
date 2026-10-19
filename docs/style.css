@@ -739,3 +739,7 @@ body.is-offline #topbar .tb-title::after { content: '오프라인'; margin-left:
 .fl-card { min-height: 220px; }
 .fl-card .mn-topic { font-size: 1.3rem; font-weight: 800; }
 .fl-back { margin: 6px 0; }
+
+/* 버튼으로 만든 list-row (홈 오늘의 플랜) */
+button.list-row { background: transparent; color: var(--text); font: inherit; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; cursor: pointer; }
+.list > button.list-row:last-child { border-bottom: 0; }
