@@ -31,6 +31,7 @@ const DEFAULT_STATE = () => ({
   v: 1,
   results: {},        // qid -> { attempts: [{t, g}], memo: '' }
   favorites: [],       // [qid]
+  noteQuiz: {},        // slug -> { t, k, n } 노트 확인 퀴즈 마지막 결과(맞힘 k / 총 n)
   mnemoFavs: [],       // [mnemonic id] — 두음 즐겨찾기(문항 favorites 와 별개)
   sessions: [],        // [{ id, startedAt, endedAt, scopeLabel, graded: {o,m,x} }]
   session: null,       // 진행 중 세션 { qids, label, idx, startedAt }
@@ -271,6 +272,8 @@ function mergeState(local, remote) {
   out.results = mergeResults(local.results, remote.results);
   out.favorites = unionArr(remote.favorites, local.favorites);
   out.mnemoFavs = unionArr(remote.mnemoFavs, local.mnemoFavs);
+  out.noteQuiz = Object.assign({}, remote.noteQuiz, local.noteQuiz);
+  for (const k of Object.keys(remote.noteQuiz || {})) { const l = (local.noteQuiz || {})[k]; if (l && l.t < remote.noteQuiz[k].t) out.noteQuiz[k] = remote.noteQuiz[k]; }
   out.sessions = mergeSessions(local.sessions, remote.sessions);
   out.session = local.session || remote.session || null;   // 진행 중 세션은 이 기기 우선
   if (out.session && out.sessions.some((s) => s.id === out.session.id)) out.session = null;   // 이미 완료 기록이 있으면 되살리지 않음(중복 제출 방지)
@@ -720,6 +723,7 @@ function questionCard(q, opts = {}) {
           <button class="btn" data-g="m" aria-pressed="false"><span class="g-ico">🔺</span>애매함</button>
           <button class="btn" data-g="x" aria-pressed="false"><span class="g-ico">❌</span>틀림</button>
         </div>
+        <div class="grade-note" hidden></div>
         <label class="field" style="margin-bottom:0">
           <span>💭 내 메모</span>
           <textarea class="memo" rows="1" placeholder="헷갈린 점, 암기 포인트 등">${esc(r.memo || '')}</textarea>
@@ -729,6 +733,12 @@ function questionCard(q, opts = {}) {
     const gr = $('.grade-row', wrap);
     const paint = () => {
       const cur = store.lastGradeSince(q.qid, sinceTs);   // 이번 풀이에서 매긴 것만 하이라이트
+      const gn = $('.grade-note', wrap);
+      if (gn) {
+        const nl = (cur === 'x' || cur === 'm') ? noteLinksHtml(q) : '';
+        gn.hidden = !nl;
+        gn.innerHTML = nl ? `<span class="small">${cur === 'x' ? '틀렸다면' : '헷갈렸다면'} 개념부터 복습 →</span> ${nl}` : '';
+      }
       gr.querySelectorAll('.btn').forEach((b) => {
         const on = b.dataset.g === cur;
         b.classList.toggle('sel', on);
@@ -1927,6 +1937,8 @@ route('note', (app, args) => {
   };
 
   app.appendChild(md);
+  const quizBox = noteQuizCard(n, md);
+  if (quizBox) app.appendChild(quizBox);
 
   const prog = noteProgress(n);
   if (prog.total) {
@@ -1995,6 +2007,51 @@ route('note', (app, args) => {
     app.appendChild(row);
   }
 });
+
+/* 노트 확인 퀴즈 — 본문 표(키워드 | 설명…)의 행을 앞면/뒷면 카드로. 빌드·데이터 변경 없음 */
+function noteQuizCard(n, md) {
+  const cards = [];
+  md.querySelectorAll('table').forEach((t) => {
+    t.querySelectorAll('tbody tr').forEach((tr) => {
+      const c = [...tr.children].map((x) => x.textContent.trim());
+      if (c.length >= 2 && c[0] && c[0].length <= 30 && c.slice(1).join(' ').length >= 4) cards.push({ f: c[0], b: c.slice(1).filter(Boolean).join(' · ') });
+    });
+  });
+  if (cards.length < 4) return null;
+  const last = (store.state.noteQuiz || {})[n.slug];
+  const box = el(`<div class="card stack note-quiz"><h3>🧠 확인 퀴즈 <span class="muted small">표 내용을 가리고 떠올리기</span></h3>
+    <div class="nq-body small muted">${last ? `지난 결과 ${last.k}/${last.n} · ${fmtWhen(last.t)}` : '아직 안 풀었습니다'}</div>
+    <button class="btn primary sm" id="nqStart">시작 (${Math.min(8, cards.length)}장)</button></div>`);
+  $('#nqStart', box).addEventListener('click', () => {
+    const deck = cards.slice(); shuffle(deck);
+    const pick = deck.slice(0, 8);
+    let i = 0, ok = 0;
+    const body = $('.nq-body', box);
+    const btn = $('#nqStart', box); btn.remove();
+    const show = () => {
+      if (i >= pick.length) {
+        store.state.noteQuiz = store.state.noteQuiz || {};
+        store.state.noteQuiz[n.slug] = { t: Date.now(), k: ok, n: pick.length };
+        store.save();
+        body.className = 'nq-body';
+        body.innerHTML = `<b>${ok}/${pick.length}</b> 기억함 ${ok === pick.length ? '🎉' : '— 틀린 항목은 본문 표를 다시 확인하세요'}`;
+        return;
+      }
+      body.className = 'nq-body';
+      body.innerHTML = `<div class="small muted">${i + 1} / ${pick.length}</div><div class="nq-front">${esc(pick[i].f)}</div>
+        <button class="btn sm wide" id="nqShow">설명 떠올렸으면 확인 ▼</button>`;
+      $('#nqShow', body).addEventListener('click', () => {
+        body.innerHTML = `<div class="small muted">${i + 1} / ${pick.length}</div><div class="nq-front">${esc(pick[i].f)}</div>
+          <div class="nq-back">${esc(pick[i].b)}</div>
+          <div class="row tight"><button class="btn sm" id="nqNo" style="flex:1">❌ 몰랐음</button><button class="btn sm primary" id="nqYes" style="flex:1">⭕ 알았음</button></div>`;
+        $('#nqYes', body).addEventListener('click', () => { ok++; i++; show(); });
+        $('#nqNo', body).addEventListener('click', () => { i++; show(); });
+      });
+    };
+    show();
+  });
+  return box;
+}
 
 /* ============ 두음 (두문자 암기) ============ */
 let mnBlind = false;   // 가리기(암기) 모드 — 모듈 스코프 기억, 해시 미반영

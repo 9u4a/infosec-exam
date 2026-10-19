@@ -726,3 +726,11 @@ input[type="password"], input[type="url"] { font: inherit; color: var(--text); b
 body.is-offline #topbar .tb-title::after { content: '오프라인'; margin-left: 8px; font-size: .68rem; font-weight: 700; color: var(--on-solid); background: var(--maybe); border-radius: 999px; padding: 2px 8px; vertical-align: middle; }
 
 @media (min-width: 900px) { #app { max-width: 820px; } .note-toc { top: 64px; } }
+
+/* 오답 직후 관련 노트 유도 */
+.grade-note { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--bad) 10%, transparent); display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.grade-note a { font-weight: 700; }
+
+/* 노트 확인 퀴즈 */
+.nq-front { font-size: 1.15rem; font-weight: 800; margin: 8px 0; }
+.nq-back { padding: 10px 12px; border-radius: 12px; background: var(--surface-2); margin-bottom: 10px; line-height: 1.6; }
