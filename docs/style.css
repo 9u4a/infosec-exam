@@ -796,3 +796,10 @@ button.list-row { background: transparent; color: var(--text); font: inherit; bo
   .markdown { font-size: 10.5pt; line-height: 1.55; }
   .markdown.summary h2 { margin: 1.4em 0 .6em; padding: 8px 12px; }
 }
+
+/* ============ 약점 집중 ============ */
+.wk-row { padding: 12px 0; border-top: 1px solid var(--border); display: grid; gap: 6px; }
+.wk-row:first-of-type { border-top: 0; }
+.wk-top { display: flex; align-items: center; gap: 8px; }
+.wk-no { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--on-solid); font-size: .8rem; font-weight: 800; display: grid; place-items: center; }
+.wk-title { font-weight: 700; color: var(--text); text-decoration: none; }

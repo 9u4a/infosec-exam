@@ -583,7 +583,7 @@ function render() {
   tabbar.querySelectorAll('.tabs').forEach((g) => { g.hidden = g.dataset.track !== track; });
   updateTopbar(path, args, track);
   // 라우트 → 하단 탭 매핑 (탭이 없는 라우트는 부모 탭을 활성화)
-  const EIS_TAB = { mock: 'solve', note: 'notes', saved: 'more', stats: 'more', history: 'more', cram: 'more' };
+  const EIS_TAB = { mock: 'solve', weak: 'solve', note: 'notes', saved: 'more', stats: 'more', history: 'more', cram: 'more' };
   const CPPG_TAB = { mock: 'quiz', note: 'notes', saved: 'more', stats: 'more' };
   const activeTab = track === 'cppg'
     ? (CPPG_TAB[args[0]] || args[0] || '')
@@ -606,10 +606,10 @@ const cMeSeg = (cur) => segLinks([['stats', '통계', '#/cppg/stats'], ['saved',
 
 /* 상단 바 — 화면 제목·뒤로가기·검색·트랙 전환 */
 const TOP_TITLE = {
-  home: '홈', solve: '풀기', session: '문제 풀이', summary: '결과', history: '지난 기록', cram: '시험 직전 정리', saved: '저장',
+  home: '홈', solve: '풀기', session: '문제 풀이', summary: '결과', history: '지난 기록', cram: '시험 직전 정리', weak: '약점 집중', saved: '저장',
   mock: '모의고사', stats: '통계', notes: '노트', note: '노트', mnemonics: '암기', q: '문항', search: '검색', more: '나',
 };
-const TOP_BACK = new Set(['note', 'q', 'summary', 'search', 'history', 'cram']);
+const TOP_BACK = new Set(['note', 'q', 'summary', 'search', 'history', 'cram', 'weak']);
 const CPPG_TOP = { quiz: '문제', notes: '노트', note: '노트', saved: '저장', stats: '통계', more: '나', mock: '모의고사', run: '풀이', result: '결과', q: '문항' };
 function updateTopbar(path, args, track) {
   const bar = $('#topbar');
@@ -1027,6 +1027,59 @@ function solveSeg(mode) {
 }
 
 /* ============ 풀기: 범위 선택 ============ */
+/* ============ 약점 집중 — 약한 노트 순위 → 그 노트의 약한 문항을 묶어 풀기 ============ */
+let weakDom = '';
+route('weak', (app) => {
+  app.appendChild(solveSeg('solve'));
+  const doms = ['시스템보안', '네트워크보안', '애플리케이션보안', '정보보안일반', '정보보안관리및법규'];
+  const rows = DATA.notes
+    .filter((n) => n.category !== '요약' && n.category !== '반복출제' && (!weakDom || n.domain === weakDom))
+    .map((n) => ({ n, p: noteProgress(n) }))
+    .filter((r) => r.p.done > 0 && (r.p.v.x + r.p.v.m) > 0)      // 실제 채점 근거가 있는 노트만
+    .sort((a, b) => b.p.weak - a.p.weak);
+
+  const head = el(`<div class="card stack"><h3>🎯 약점 집중 <span class="muted small">틀린 문항이 많은 노트 순</span></h3>
+    <p class="small muted">❌ 오답·🔺 애매가 몰린 노트를 골라 그 노트의 약한 문항(+안 푼 문항)만 묶어 풉니다. 노트를 먼저 읽고 풀면 효과가 큽니다.</p>
+    <div class="chip-row" id="wkDom">
+      <button class="chip" data-d="">전체</button>${doms.map((d) => `<button class="chip" data-d="${esc(d)}">${esc(d)}</button>`).join('')}
+    </div></div>`);
+  app.appendChild(head);
+  head.querySelectorAll('.chip').forEach((c) => {
+    c.classList.toggle('on', c.dataset.d === weakDom);
+    c.addEventListener('click', () => { weakDom = c.dataset.d; render(); });
+  });
+
+  if (!rows.length) {
+    app.appendChild(el(`<div class="empty">${weakDom ? '이 영역엔' : '아직'} 틀리거나 애매한 문항이 있는 노트가 없습니다.<br><span class="small">문제를 풀고 채점하면 약점이 여기에 모입니다.</span></div>`));
+    return;
+  }
+
+  // 상위 3개 노트 묶음 — ❌ → 🔺 → 안 푼 순, 최대 30문항
+  const top = rows.slice(0, 3);
+  const rank = { x: 0, m: 1 };
+  const seen = new Set();
+  const bundle = top.flatMap((r) => noteWeakIds(r.n)).filter((id) => !seen.has(id) && seen.add(id) && anyQ(id))
+    .sort((a, b) => (rank[store.lastGrade(a)] ?? 2) - (rank[store.lastGrade(b)] ?? 2)).slice(0, 30);
+  const go = el(`<button class="btn primary">상위 ${top.length}개 노트 약한 문항 ${bundle.length}개 한 번에 풀기</button>`);
+  go.addEventListener('click', () => startSession(bundle, `약점 집중 ${bundle.length}문항`));
+  app.appendChild(go);
+
+  const list = el(`<div class="card"><h3>약한 노트 ${Math.min(rows.length, 15)}개</h3></div>`);
+  rows.slice(0, 15).forEach(({ n, p }, i) => {
+    const ids = noteWeakIds(n);
+    const row = el(`<div class="wk-row">
+      <div class="wk-top"><span class="wk-no">${i + 1}</span>
+        <a class="wk-title" href="#/note/${encodeURIComponent(n.slug)}">${esc(n.title)}</a></div>
+      <div class="small muted">${esc(n.domain || n.category)} · ❌${p.v.x} 🔺${p.v.m} ⭕${p.v.o} · 푼 ${p.done}/${p.total} · 정답률 ${p.rate}%</div>
+      <div class="bar-row">${barTrack(p.v)}</div>
+      <div class="row tight"><a class="btn sm" href="#/note/${encodeURIComponent(n.slug)}">📖 읽기</a><button class="btn sm wk-go">약한 문항 풀기 (${ids.length})</button></div>
+    </div>`);
+    $('.wk-go', row).addEventListener('click', () => startSession(ids.filter((id) => anyQ(id)), `${n.title} 약한 문항 ${ids.length}`));
+    list.appendChild(row);
+  });
+  app.appendChild(list);
+});
+
 route('solve', (app) => {
   app.appendChild(solveSeg('solve'));
 
@@ -1040,6 +1093,7 @@ route('solve', (app) => {
     { k: 'unseen', ic: '🆕', t: '안 푼 문제', s: `${nUnseen}문항`, n: nUnseen },
     { k: 'wrong', ic: '❌', t: '오답만', s: `${nWrong}문항`, n: nWrong },
     { k: 'maybe', ic: '🔺', t: '애매함만', s: `${nMaybe}문항`, n: nMaybe },
+    { k: 'weak', ic: '🎯', t: '약점 집중', s: '약한 노트 순 · 묶어 풀기', n: 1 },
     { k: 'random', ic: '🎲', t: '랜덤 20', s: '전 회차에서 무작위', n: QUESTIONS.length },
     { k: 'mock', ic: '📝', t: '모의고사', s: '18문항 · 180분', n: PREDICTED.length },
   ];
@@ -1051,6 +1105,7 @@ route('solve', (app) => {
     if (!b || b.disabled) return;
     const k = b.dataset.k;
     if (k === 'mock') { navigate('#/mock'); return; }
+    if (k === 'weak') { navigate('#/weak'); return; }
     let list;
     if (k === 'due') { const set = new Set(dueQids()); list = QUESTIONS.filter((q) => set.has(q.qid)).slice(0, 30); }
     else if (k === 'unseen') list = QUESTIONS.filter((q) => store.attemptCount(q.qid) === 0).slice(0, 30);
@@ -1721,6 +1776,7 @@ route('stats', (app) => {
     rank.appendChild(item);
   });
   app.appendChild(rank);
+  app.appendChild(el(`<a class="btn" href="#/weak" style="text-align:center">🎯 약점 집중으로 풀기</a>`));
 
   // 상세 (접기)
   const more = el(`<details class="adv"><summary>유형·회차·예상문제 상세</summary><div class="adv-body"></div></details>`);
