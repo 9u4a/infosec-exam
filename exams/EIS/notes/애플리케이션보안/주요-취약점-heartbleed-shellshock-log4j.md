@@ -26,14 +26,16 @@ tags: [HeartBleed, Shellshock, Log4j, POODLE, CVE, OpenSSL]
 - **OpenSSL** TLS/DTLS **heartbeat 확장**이 요청이 명시한 payload 길이를 **검증 없이** 응답 버퍼 크기로 사용
 - → 서버 메모리를 **최대 64KB 씩 반복 열람** → 개인키 · 세션쿠키 · 평문 비밀번호 유출
 - 영향: **OpenSSL 1.0.1 ~ 1.0.1f** (1.0.2-beta 포함)
-- 대응: **1.0.1g 이상** 업그레이드 (불가 시 `-DOPENSSL_NO_HEARTBEATS` 재컴파일) + **인증서·개인키 재발급** + 사용자 세션·비밀번호 재설정
+- 대응: **1.0.1g 이상** 업그레이드 (불가 시 `-DOPENSSL_NO_HEARTBEATS` 재컴파일)
+  - **인증서·개인키 재발급** + 사용자 세션·비밀번호 재설정
 - 탐지: `content:"|18 03 00|"` (heartbeat, SSLv3) + 비정상적으로 큰 길이 필드
 
 ### Shellshock (Bashdoor) — CVE-2014-6271 {{29-8}}
 
 - **Bash** 가 환경변수의 함수 정의(`() { :;};`) **뒤에 붙은 명령까지 실행**
 - CGI 가 요청 헤더(User-Agent · Referer)를 환경변수로 넘기는 점을 악용 → **리버스 셸** 또는 **웹셸 파일 생성**
-- 로그 예: `"GET /cgi-bin/websrc HTTP/1.1" 301 ... "() { :;}; ... b.php"` → `b.php` 웹셸 업로드 시도
+- 로그 예: `"GET /cgi-bin/websrc HTTP/1.1" 301 ... "() { :;}; ... b.php"`
+  - `b.php` 웹셸 업로드 시도
 - 대응: Bash 패치 · mod_cgi 비활성 · WAF (`() {` 패턴 차단)
 
 ```text

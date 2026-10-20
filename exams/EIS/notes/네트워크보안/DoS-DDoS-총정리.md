@@ -68,10 +68,13 @@ tags: [DoS, DDoS, Smurf, SYN Flooding, Slowloris, DRDoS, 증폭공격]
 
 ### Smurf 세부 {{7-11}}
 
-- 원리: 출발지를 피해자로 위조한 **ICMP Echo Request** 를 증폭망 **브로드캐스트 주소**로 전송 → 그 망 호스트 전체가 피해자에게 Echo Reply
+- 원리: 출발지를 피해자로 위조한 **ICMP Echo Request** 를 증폭망 **브로드캐스트 주소**로 전송
+  - 그 망 호스트 전체가 피해자에게 Echo Reply
 - 방화벽·IDS 없이 방어:
   - 라우터: `no ip directed-broadcast`
-  - 호스트: 브로드캐스트 ICMP 에 응답 안 하게 — `net.ipv4.icmp_echo_ignore_broadcasts=1` (Solaris `ndd ... ip_forward_directed_broadcasts 0`)
+  - 호스트: 브로드캐스트 ICMP 에 응답 안 하게
+    - `net.ipv4.icmp_echo_ignore_broadcasts=1`
+    - Solaris: `ndd ... ip_forward_directed_broadcasts 0`
 
 ### NTP 증폭 대응 4가지 {{12-15}} {{27-18}}
 
@@ -104,7 +107,8 @@ GitHub 2018 년 **1.35Tbps** 공격에 악용됐다. UDP 11211 이 열린 Memcac
 
 `Content-Length: 1000000` 처럼 큰 본문을 예고한 뒤 **본문을 1바이트씩** 느리게 보낸다. 서버는 수신이 끝날 때까지 세션을 유지하다 자원이 소진된다.
 
-- 대응: Read/Connection **타임아웃 단축** · 동일 IP 동시연결 수 제한(iptables) · 최소 전송률 강제 · 역방향 프록시 버퍼링
+- 대응: Read/Connection **타임아웃 단축** · 동일 IP 동시연결 수 제한(iptables)
+  - 최소 전송률 강제 · 역방향 프록시 버퍼링
 
 ## 기출 포인트
 

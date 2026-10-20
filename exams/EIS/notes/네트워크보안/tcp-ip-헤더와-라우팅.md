@@ -49,7 +49,10 @@ tcpdump 출력 예: `frag 95: 1480 @ 2920+`
 | `+` | **MF(More Fragments)=1** — 뒤에 단편이 더 있음 (마지막은 `+` 없음) |
 
 - Offset 은 헤더에 **8바이트 단위**로 저장 (2920 = 365 × 8)
-- 악용: Teardrop(offset 중첩) · Tiny Fragment(헤더 분할로 필터 우회) · Ping of Death(재조합 65535 초과)
+- 악용
+  - Teardrop(offset 중첩)
+  - Tiny Fragment(헤더 분할로 필터 우회)
+  - Ping of Death(재조합 65535 초과)
 
 ## 서브넷 마스크 {{25-8}}
 
