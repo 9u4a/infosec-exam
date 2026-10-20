@@ -15,7 +15,9 @@ function walk(d) {
 const warns = [];
 const W = (f, ln, msg) => warns.push(`${f}:${ln}  ${msg}`);
 
+// 요약/ 은 개인 종합 요약(긴 정의가 의도적)이라 길이 규칙에서 제외
 for (const f of ROOTS.flatMap(walk)) {
+  if (f.split(path.sep).includes('요약')) continue;
   const raw = fs.readFileSync(f, 'utf8').replace(/\r\n/g, '\n');
   const m = raw.match(/^---\n([\s\S]*?)\n---\n/);
   const fmQs = new Set();
