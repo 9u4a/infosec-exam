@@ -743,3 +743,28 @@ body.is-offline #topbar .tb-title::after { content: '오프라인'; margin-left:
 /* 버튼으로 만든 list-row (홈 오늘의 플랜) */
 button.list-row { background: transparent; color: var(--text); font: inherit; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; cursor: pointer; }
 .list > button.list-row:last-child { border-bottom: 0; }
+
+/* ============ 핵심 요약 노트 — 한 번에 훑어 읽기용 가시성 ============ */
+.markdown.summary h2 {
+  margin: 2.6em 0 .9em; padding: 14px 16px; border-radius: 12px;
+  background: var(--accent); color: var(--on-solid); font-size: 1.25rem;
+}
+.markdown.summary h2::before { color: var(--on-solid); opacity: .75; }
+.markdown.summary h3 {
+  margin: 2em 0 .7em; padding: 7px 12px; font-size: 1.05rem; font-weight: 800;
+  border-left: 5px solid var(--accent); background: var(--accent-weak); border-radius: 0 8px 8px 0;
+}
+.markdown.summary p.lbl {
+  margin: 1.3em 0 .35em; font-size: .88rem; color: var(--accent); letter-spacing: .01em;
+}
+.markdown.summary p.lbl strong { color: inherit; }
+.markdown.summary p.lbl::before { content: "▎"; margin-right: 2px; }
+.markdown.summary table { font-size: .93rem; }
+.markdown.summary tbody tr:nth-child(even) td { background: var(--surface-2); }
+.markdown.summary td:first-child { font-weight: 600; }
+.markdown.summary td, .markdown.summary th { padding-top: 8px; padding-bottom: 8px; }
+.markdown.summary pre { border: 1px solid var(--border); border-left: 4px solid var(--accent); }
+.markdown.summary hr { border: 0; height: 0; margin: 2.2em 0 0; }
+.markdown.summary ul { padding-left: 1.2em; }
+.markdown.summary li { margin: .3em 0; }
+.markdown.summary li::marker { color: var(--accent); }

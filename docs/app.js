@@ -1920,6 +1920,13 @@ route('note', (app, args) => {
   const md = el(`<article class="markdown note-body"></article>`);
   md.innerHTML = window.marked ? window.marked.parse(noteMdPre(n.md)) : `<pre>${esc(n.md)}</pre>`;
   enhanceMarkdown(md);
+  if (n.category === '요약') {
+    md.classList.add('summary');
+    // 굵은 글씨만 있는 한 줄 문단(예: **특수 권한**)을 소제목 라벨로 표시
+    md.querySelectorAll(':scope > p').forEach((p) => {
+      if (p.children.length === 1 && p.firstElementChild.tagName === 'STRONG' && p.textContent.trim() === p.firstElementChild.textContent.trim()) p.classList.add('lbl');
+    });
+  }
 
   /* 목차 — 모든 노트(대단원 h2 3개 이상). 상단 고정 칩 바 + 스크롤 위치 추적.
      실제 해시 앵커는 라우터가 페이지 이동으로 오인하므로 scrollIntoView 로 이동. */
