@@ -583,7 +583,7 @@ function render() {
   tabbar.querySelectorAll('.tabs').forEach((g) => { g.hidden = g.dataset.track !== track; });
   updateTopbar(path, args, track);
   // 라우트 → 하단 탭 매핑 (탭이 없는 라우트는 부모 탭을 활성화)
-  const EIS_TAB = { mock: 'solve', note: 'notes', saved: 'more', stats: 'more', history: 'more' };
+  const EIS_TAB = { mock: 'solve', note: 'notes', saved: 'more', stats: 'more', history: 'more', cram: 'more' };
   const CPPG_TAB = { mock: 'quiz', note: 'notes', saved: 'more', stats: 'more' };
   const activeTab = track === 'cppg'
     ? (CPPG_TAB[args[0]] || args[0] || '')
@@ -606,10 +606,10 @@ const cMeSeg = (cur) => segLinks([['stats', '통계', '#/cppg/stats'], ['saved',
 
 /* 상단 바 — 화면 제목·뒤로가기·검색·트랙 전환 */
 const TOP_TITLE = {
-  home: '홈', solve: '풀기', session: '문제 풀이', summary: '결과', history: '지난 기록', saved: '저장',
+  home: '홈', solve: '풀기', session: '문제 풀이', summary: '결과', history: '지난 기록', cram: '시험 직전 정리', saved: '저장',
   mock: '모의고사', stats: '통계', notes: '노트', note: '노트', mnemonics: '암기', q: '문항', search: '검색', more: '나',
 };
-const TOP_BACK = new Set(['note', 'q', 'summary', 'search', 'history']);
+const TOP_BACK = new Set(['note', 'q', 'summary', 'search', 'history', 'cram']);
 const CPPG_TOP = { quiz: '문제', notes: '노트', note: '노트', saved: '저장', stats: '통계', more: '나', mock: '모의고사', run: '풀이', result: '결과', q: '문항' };
 function updateTopbar(path, args, track) {
   const bar = $('#topbar');
@@ -2468,6 +2468,72 @@ route('search', (app, args) => {
 });
 
 /* ============ 더보기 ============ */
+/* ============ 시험 직전 정리 (인쇄 · PDF) ============ */
+const CRAM_OPT = { sum: true, mn: true, mnFav: false, weak: true, fav: false, ans: true };
+route('cram', (app) => {
+  app.appendChild(meSeg('cram'));
+  const nW = QUESTIONS.filter((q) => ['x', 'm'].includes(store.lastGrade(q.qid))).length;
+  const nF = store.state.favorites.filter((id) => anyQ(id)).length;
+  const nM = store.state.mnemoFavs.length;
+  const ctl = el(`<div class="card stack no-print"><h3>시험 직전 정리 <span class="muted small">인쇄 · PDF 저장</span></h3>
+    <p class="small muted">고른 항목을 한 문서로 모아 보여 줍니다. 아래 <b>인쇄 / PDF 저장</b>을 누르면 브라우저 인쇄 창에서 'PDF로 저장'을 고를 수 있습니다.</p>
+    <label class="row" style="align-items:center;gap:8px"><input type="checkbox" data-k="sum" style="width:auto"> 실기 핵심 요약 노트</label>
+    <label class="row" style="align-items:center;gap:8px"><input type="checkbox" data-k="mn" style="width:auto"> 두음 암기표 (${MNEMONICS.length}항목)</label>
+    <label class="row" style="align-items:center;gap:8px;padding-left:22px"><input type="checkbox" data-k="mnFav" style="width:auto"> ⭐ 즐겨찾기한 두음만 (${nM})</label>
+    <label class="row" style="align-items:center;gap:8px"><input type="checkbox" data-k="weak" style="width:auto"> 약점 문항 — 오답·애매 (${nW})</label>
+    <label class="row" style="align-items:center;gap:8px"><input type="checkbox" data-k="fav" style="width:auto"> 즐겨찾기 문항 (${nF})</label>
+    <label class="row" style="align-items:center;gap:8px;padding-left:22px"><input type="checkbox" data-k="ans" style="width:auto"> 문항에 정답 포함</label>
+    <button class="btn primary" id="cramPrint">🖨 인쇄 / PDF 저장</button>
+  </div>`);
+  app.appendChild(ctl);
+  const out = el(`<article class="cram"></article>`);
+  app.appendChild(out);
+
+  const qBlock = (q) => {
+    const r = store.state.results[q.qid] || {};
+    const g = store.lastGrade(q.qid);
+    return `<div class="cram-q"><div class="cram-qh">${esc(q.qid.replace(/^r(\d+)q(\d+)$/, '$1회 $2번'))} <span class="pill">${esc(q.domain || '')}</span>${g ? ` <span class="small">${{ o: '⭕', m: '🔺', x: '❌' }[g]}</span>` : ''}</div>
+      <div class="q-body">${esc(q.question)}</div>
+      ${CRAM_OPT.ans ? `<div class="a-body">${renderAnswer(q.answer)}</div>` : ''}
+      ${r.memo ? `<div class="small">💭 ${esc(r.memo)}</div>` : ''}</div>`;
+  };
+
+  function draw() {
+    let h = '';
+    if (CRAM_OPT.sum) {
+      const n = NOTE_BY_SLUG.get('요약/실기-핵심요약');
+      if (n) h += `<section class="cram-sec"><h2 class="cram-h">핵심 요약</h2><div class="markdown summary" id="cramSum"></div></section>`;
+    }
+    if (CRAM_OPT.mn) {
+      const list = MNEMONICS.filter((m) => !CRAM_OPT.mnFav || store.isMnemoFav(m.id));
+      h += `<section class="cram-sec"><h2 class="cram-h">두음 암기표 <span class="small">${list.length}항목</span></h2>
+        <table class="cram-mn"><thead><tr><th>항목</th><th>두음</th><th>내용</th></tr></thead><tbody>${list.map((m) =>
+          `<tr><td><b>${esc(m.topic)}</b></td><td class="cram-du">${esc(m.dueum)}</td><td>${m.list ? m.list.map(esc).join(' · ') : esc(m.formula)}</td></tr>`).join('')}</tbody></table></section>`;
+    }
+    if (CRAM_OPT.weak) {
+      const list = QUESTIONS.filter((q) => ['x', 'm'].includes(store.lastGrade(q.qid)));
+      h += `<section class="cram-sec"><h2 class="cram-h">약점 문항 <span class="small">${list.length}문항</span></h2>${list.map(qBlock).join('') || '<p class="muted">오답·애매 문항이 없습니다.</p>'}</section>`;
+    }
+    if (CRAM_OPT.fav) {
+      const list = store.state.favorites.map((id) => anyQ(id)).filter(Boolean);
+      h += `<section class="cram-sec"><h2 class="cram-h">즐겨찾기 문항 <span class="small">${list.length}문항</span></h2>${list.map(qBlock).join('') || '<p class="muted">즐겨찾기한 문항이 없습니다.</p>'}</section>`;
+    }
+    out.innerHTML = h || '<div class="empty">포함할 항목을 고르세요.</div>';
+    const box = $('#cramSum', out);
+    if (box) {
+      const n = NOTE_BY_SLUG.get('요약/실기-핵심요약');
+      box.innerHTML = window.marked ? window.marked.parse(noteMdPre(n.md)) : `<pre>${esc(n.md)}</pre>`;
+      enhanceMarkdown(box);
+    }
+  }
+  ctl.querySelectorAll('input[data-k]').forEach((cb) => {
+    cb.checked = !!CRAM_OPT[cb.dataset.k];
+    cb.addEventListener('change', () => { CRAM_OPT[cb.dataset.k] = cb.checked; draw(); });
+  });
+  $('#cramPrint', ctl).addEventListener('click', () => window.print());
+  draw();
+});
+
 route('more', (app) => {
   app.appendChild(meSeg('more'));
 
@@ -2488,6 +2554,7 @@ route('more', (app) => {
       <select id="fontScale">
         ${[[90,'작게'],[100,'보통'],[110,'크게'],[120,'아주 크게']].map(([v, l]) => `<option value="${v}" ${(set.fontScale || 100) === v ? 'selected' : ''}>${l}</option>`).join('')}
       </select></label>
+    <a class="btn" href="#/cram" style="text-align:center">🖨 시험 직전 정리 (인쇄·PDF)</a>
     <label class="field"><span>시험일 (D-day · 하루 권장 페이스)</span>
       <input type="date" id="examDate" value="${esc(set.examDate || '')}"></label>
   </div>`);

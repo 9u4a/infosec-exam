@@ -768,3 +768,31 @@ button.list-row { background: transparent; color: var(--text); font: inherit; bo
 .markdown.summary ul { padding-left: 1.2em; }
 .markdown.summary li { margin: .3em 0; }
 .markdown.summary li::marker { color: var(--accent); }
+
+/* ============ 시험 직전 정리 (화면 + 인쇄) ============ */
+.cram { margin-top: 12px; }
+.cram-h { font-size: 1.2rem; margin: 1.6em 0 .6em; padding-bottom: 6px; border-bottom: 2px solid var(--accent); }
+.cram-q { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin: 10px 0; background: var(--surface); }
+.cram-qh { font-weight: 700; margin-bottom: 4px; }
+.cram-q .q-body { white-space: pre-wrap; word-break: keep-all; margin: 4px 0; }
+.cram-mn { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.cram-mn th, .cram-mn td { border: 1px solid var(--border); padding: 6px 8px; vertical-align: top; text-align: left; }
+.cram-mn th { background: var(--surface-2); }
+.cram-du { font-weight: 800; color: var(--accent); white-space: nowrap; }
+@media print {
+  :root, :root[data-theme] {
+    --bg: #fff; --surface: #fff; --surface-2: #f1f1f1; --border: #bbb; --text: #000; --text-dim: #444;
+    --accent: #0f766e; --accent-weak: #e3f1ef; --on-solid: #fff; --ok: #15803d; --maybe: #b45309; --bad: #b91c1c; --shadow: none;
+  }
+  html, body { background: #fff !important; color: #000; }
+  #topbar, #tabbar, .no-print, .sub-seg, .read-bar, .note-toc, .tb-btn, #toast { display: none !important; }
+  #app { max-width: none !important; padding: 0 !important; margin: 0 !important; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cram-q, .cram-mn tr, .markdown table, .markdown pre { break-inside: avoid; }
+  .cram-h, .markdown h2, .markdown h3 { break-after: avoid; }
+  .cram-sec { break-before: page; }
+  .cram-sec:first-child { break-before: auto; }
+  .md-table { overflow: visible !important; }
+  .markdown { font-size: 10.5pt; line-height: 1.55; }
+  .markdown.summary h2 { margin: 1.4em 0 .6em; padding: 8px 12px; }
+}
