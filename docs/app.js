@@ -954,6 +954,7 @@ route('home', (app) => {
     PREDICTED.length ? { ic: '📝', t: '모의고사', s: lastMock ? `최근 ${lastMock.score != null ? lastMock.score + '점' : '-'} · ${lastMock.pass ? '합격' : '불합격'}` : '18문항 · 180분 · 60점 합격', h: '#/mock' } : null,
     { ic: '📓', t: '노트', s: `${DATA.notes.length}개 · 약한 영역부터 읽기`, h: '#/notes' },
     { ic: '📿', t: '두음 암기', s: `${MNEMONICS.length}개 항목`, h: '#/mnemonics' },
+    { ic: '🖨', t: '시험 직전 정리', s: '요약·두음·약점 문항을 한 문서로 (인쇄·PDF)', h: '#/cram' },
   ].filter(Boolean);
   app.appendChild(el(`<div class="sec-title"><span>바로가기</span></div>`));
   app.appendChild(el(`<div class="list">${rows.map((r) => `
