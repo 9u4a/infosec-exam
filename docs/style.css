@@ -297,7 +297,7 @@ mark { background: var(--star); color: var(--on-solid); padding: 0 1px; border-r
 .score-line b { color: var(--accent); font-size: 2rem; }
 .score-line .muted { font-size: 1rem; font-weight: 600; }
 .bar-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: .88rem; }
-.bar-row .bar-label { width: 92px; flex: none; color: var(--text-dim); }
+.bar-row .bar-label { width: 9.4em; max-width: 42%; flex: none; color: var(--text-dim); }
 .bar-track { flex: 1; height: 16px; background: var(--surface-2); border-radius: 4px; overflow: hidden; display: flex; }
 .bar-track > i { display: block; height: 100%; }
 .bar-track > i.o { background: var(--ok); }

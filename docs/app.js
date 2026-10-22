@@ -344,8 +344,10 @@ function noteProgress(n) {
     done++; v[g]++;
   }
   const rate = done ? Math.round((v.o / done) * 100) : null;
-  const weak = ids.length ? (v.x * 2 + v.m + (ids.length - done) * 0.5) / ids.length : 0;
-  return { total: ids.length, done, v, rate, weak, ids };
+  let weak = ids.length ? (v.x * 2 + v.m + (ids.length - done) * 0.5) / ids.length : 0;
+  const quiz = (store.state.noteQuiz || {})[n.slug] || null;   // 노트 확인 퀴즈 마지막 결과 { t, k, n }
+  if (quiz && quiz.n) weak += ((quiz.n - quiz.k) / quiz.n) * (ids.length ? 0.5 : 1);
+  return { total: ids.length, done, v, rate, weak, ids, quiz };
 }
 
 /* 마지막 채점이 ❌·🔺 이거나 아직 안 푼 문항 id 목록 */
@@ -1912,11 +1914,12 @@ route('notes', (app, args) => {
       const progTxt = p.done
         ? ` · ${p.done}/${p.total} 풀이 · 정답 ${p.rate}%`
         : (p.total ? ' · 아직 안 품' : '');
+      const quizTxt = p.quiz ? ` · 🧠 퀴즈 ${p.quiz.k}/${p.quiz.n}` : '';
       const pinned = n.category === '요약';
       return el(`<a class="note-item${pinned ? ' pinned' : ''}" href="#/note/${encodeURIComponent(n.slug)}">
         <span class="note-item-title">${pinned ? '📌 ' : ''}${esc(n.title)}</span>
         <span class="note-item-meta">${(n.tags || []).slice(0, 3).map((t) => `<span class="pill">${esc(t)}</span>`).join(' ')}
-          <span class="small muted">· ${linkTxt}${progTxt}</span>
+          <span class="small muted">· ${linkTxt}${progTxt}${quizTxt}</span>
           ${p.done ? `<span class="bar-track">
             <i class="o" style="width:${(p.v.o / p.total) * 100}%"></i>
             <i class="m" style="width:${(p.v.m / p.total) * 100}%"></i>
