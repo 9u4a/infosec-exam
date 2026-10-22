@@ -1846,7 +1846,7 @@ route('notes', (app, args) => {
 
   const controls = el(`<div class="nl-controls stack">
     <input type="search" id="nq" placeholder="노트 검색 — 제목·태그·본문" autocomplete="off" enterkeyhint="search">
-    <div class="chip-row scroll" id="catRow">
+    <div class="chip-row" id="catRow">
       <button class="chip" data-cat="">전체 <span>${DATA.notes.length}</span></button>
       ${cats.map((c) => `<button class="chip" data-cat="${esc(c)}">${esc(c)} <span>${catCount(c)}</span></button>`).join('')}
     </div>

@@ -690,9 +690,6 @@ details.adv > summary::-webkit-details-marker { display: none; }
 .toast { bottom: calc(var(--tabbar-h) + 20px); }
 .nl-controls { margin-bottom: 6px; }
 .nl-controls > * + * { margin-top: 10px; }
-.chip-row.scroll { flex-wrap: nowrap; overflow-x: auto; margin: 0 -18px; padding: 0 18px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-.chip-row.scroll::-webkit-scrollbar { display: none; }
-.chip-row.scroll .chip { flex: none; white-space: nowrap; }
 .list > .note-item .note-item-title { font-size: 1rem; font-weight: 700; letter-spacing: -.01em; }
 
 /* 풀이: 이전/다음 하단 고정 (엄지 영역) */
