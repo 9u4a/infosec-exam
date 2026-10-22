@@ -64,7 +64,8 @@
     },
     "16": {
       "domain": "네트워크보안",
-      "explanation": "**TCP SYN Flooding**: 다수 출발지 IP에서 SYN만 대량 전송 → 서버의 half-open 연결 대기 큐(백로그) 고갈 → 정상 사용자 접속 불가. iptables 완화: `iptables -A INPUT -p tcp --syn --dport 80 -m limit --limit 10/s -j ACCEPT`(초과분은 DROP), 또는 `--limit` 로 rate 제한 + `-j DROP`. 근본 대응: **SYN 쿠키**(`tcp_syncookies=1`), 백로그 확대, 타임아웃 단축. 3·9회 반복."
+      "explanation": "**TCP SYN Flooding**: 다수 출발지 IP에서 SYN만 대량 전송 → 서버의 half-open 연결 대기 큐(백로그) 고갈 → 정상 사용자 접속 불가. iptables 완화: `iptables -A INPUT -p tcp --syn --dport 80 -m limit --limit 10/s -j ACCEPT`(초과분은 DROP), 또는 `--limit` 로 rate 제한 + `-j DROP`. 근본 대응: **SYN 쿠키**(`tcp_syncookies=1`), 백로그 확대, 타임아웃 단축. 3·9회 반복.",
+      "question": "다음은 패킷 캡처 분석과 관련된 물음이다. 답하시오.\n\n다수의 출발지 IP에서 단일 목적지 IP의 80번 포트로 SYN 패킷을 대량 전송하는 패킷 캡처가 확인되었다.\n(1) 해당 공격의 명칭을 쓰시오.\n(2) 서버에서 발생할 수 있는 상황을 서술하시오.\n(3) 다음 iptables 명령어의 빈칸 (가), (나), (다)를 채우시오. iptables -A INPUT -p tcp ( 가 ) -m limit ( 나 ) ( 다 ) DROP (1초에 10회 초과 시 차단)"
     }
   }
 }

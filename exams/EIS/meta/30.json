@@ -72,7 +72,8 @@
     },
     "18": {
       "domain": "애플리케이션보안",
-      "explanation": "`... WHERE id='user1' AND pw='password'` 처럼 입력값을 문자열로 이어붙이면 SQL 인젝션에 취약. pw 자리에 `' OR '1'='1` 을 넣으면 `WHERE id='user1' AND pw='' OR '1'='1'` → 조건이 항상 참이 되어 인증 우회. 근본 대응은 **PreparedStatement(파라미터 바인딩)** — 입력이 데이터로만 취급되어 쿼리 구조가 바뀌지 않는다. 추가로 최소권한 계정·입력검증·오류메시지 최소화."
+      "explanation": "`... WHERE id='user1' AND pw='password'` 처럼 입력값을 문자열로 이어붙이면 SQL 인젝션에 취약. pw 자리에 `' OR '1'='1` 을 넣으면 `WHERE id='user1' AND pw='' OR '1'='1'` → 조건이 항상 참이 되어 인증 우회. 근본 대응은 **PreparedStatement(파라미터 바인딩)** — 입력이 데이터로만 취급되어 쿼리 구조가 바뀌지 않는다. 추가로 최소권한 계정·입력검증·오류메시지 최소화.",
+      "question": "다음 쿼리 관련 물음에 답하시오.\nSELECT * FROM member WHERE id='user1' AND pw='password'\n\n(1) 위 쿼리에서 확인할 수 있는 정보를 서술하시오.\n(2) 해당 쿼리가 취약한 공격 기법의 명칭을 쓰시오.\n(3) pw 필드에 입력하여 인증을 우회할 수 있는 SQL Injection 구문을 쓰시오."
     }
   }
 }
