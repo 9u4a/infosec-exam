@@ -46,7 +46,7 @@ tags: [XSS, CSRF, 쿠키, HttpOnly, SameSite, CSRF토큰]
 | 방법 | 설명 |
 |---|---|
 | **CSRF 토큰** | 요청마다 임의 토큰을 발급해 세션 저장값과 대조 (외부 페이지는 토큰을 알 수 없음) |
-| **SameSite 쿠키** | `Lax` / `Strict` — 교차 사이트 요청에 쿠키 미전송 |
+| **SameSite 쿠키** | `Strict` 교차 요청 전부 미전송 · `Lax` 최상위 GET 이동만 전송 |
 | **Referer / Origin 검증** | 요청 출처 확인 |
 | **재인증** | 중요 기능에서 비밀번호 재입력 |
 | 메서드 | 상태 변경은 GET 금지, **POST + 토큰** |
@@ -74,8 +74,11 @@ tags: [XSS, CSRF, 쿠키, HttpOnly, SameSite, CSRF토큰]
 |---|---|---|
 | **Secure** | HTTPS 연결에서만 전송 | 평문 구간 스니핑 |
 | **HttpOnly** | JS(`document.cookie`) 접근 차단 | XSS 쿠키 탈취 |
-| **SameSite** | 교차 사이트 요청에 미전송 | CSRF |
+| **SameSite** | 교차 사이트 요청 시 전송 제한 | CSRF |
 | **Expires / Max-Age** | 만료 시각 | 탈취 쿠키 재사용 창 축소 |
+
+SameSite 값: `Strict` 교차 요청 전부 미전송 · `Lax` 링크 클릭 등 최상위 GET 이동만 전송
+(교차 POST·iframe·img 는 미전송) · `None` 항상 전송(`Secure` 필수)
 
 ### 쿠키 vs 세션 {{31-18}}
 
@@ -91,6 +94,12 @@ tags: [XSS, CSRF, 쿠키, HttpOnly, SameSite, CSRF토큰]
 ## URL Rewrite / mod_rewrite {{31-10}}
 
 **IIS 의 URL Rewrite 모듈**(Apache 는 `mod_rewrite`)은 요청 URL 패턴을 정의해 다른 URL 로 **재작성·리디렉션**한다.
+
+- 인바운드 규칙: 요청 URL 재작성·리디렉션
+- **아웃바운드 규칙**: 응답 헤더·본문 재작성 — 예: `Server` 헤더 제거
+
+> [!시험] 31회 10번 정답
+> "IIS 아웃바운드 필터링으로 특정 HTTP 응답 헤더 제거" = **URL Rewrite 모듈**
 
 - 보안 활용: 악성 패턴 URL 차단 · 확장자 숨김 · HTTPS 강제 · 트래버설·인젝션 URL 정규화·거부
 - 그 자체가 방화벽은 아니며 WAF·입력 검증을 보완하는 수단이다

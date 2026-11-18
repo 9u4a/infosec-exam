@@ -14,7 +14,8 @@ tags: [DoS, DDoS, Smurf, SYN Flooding, Slowloris, DRDoS, 증폭공격]
 | 고갈 대상 | 대표 공격 | 특징 |
 |---|---|---|
 | **네트워크 대역폭** | Smurf · DNS/NTP/Memcached 증폭 · UDP Flooding | 반사·증폭으로 회선을 채움 → **상류(ISP)** 에서 막아야 함 |
-| **연결 테이블** (half-open) | SYN Flooding · Land | 소량 트래픽으로 **백로그 큐**만 채움, 대역폭은 멀쩡 |
+| **연결 테이블** (half-open) | SYN Flooding | 소량 트래픽으로 **백로그 큐**만 채움, 대역폭은 멀쩡 |
+| **프로토콜 처리 오류** | Land · Teardrop · Ping of Death | 비정상 패킷 1개로 스택 오류·정지 유발 → OS 패치 |
 | **소켓·커넥션** (established) | Slowloris · RUDY · Slow Read | 연결을 열어 두고 안 놓음 → 동시연결 한도 소진 |
 | **서버 CPU·앱 자원** | HTTP GET Flooding · 캐시 우회 GET · 해시충돌 | 요청은 정상 형태, 처리 비용이 큼 → L7 에서 판별 |
 
@@ -74,14 +75,20 @@ tags: [DoS, DDoS, Smurf, SYN Flooding, Slowloris, DRDoS, 증폭공격]
   - 라우터: `no ip directed-broadcast`
   - 호스트: 브로드캐스트 ICMP 에 응답 안 하게
     - `net.ipv4.icmp_echo_ignore_broadcasts=1`
-    - Solaris: `ndd ... ip_forward_directed_broadcasts 0`
+    - Solaris: `ndd -set /dev/ip ip_respond_to_echo_broadcast 0`
+  - 참고: Solaris `ip_forward_directed_broadcasts 0` 은 호스트 응답이 아니라
+    directed broadcast **포워딩**(라우터 역할)을 끄는 설정
 
 ### NTP 증폭 대응 4가지 {{12-15}} {{27-18}}
 
 1. NTP 를 **4.2.8 이상**으로 업그레이드 (monlist 제거)
 2. 불가하면 `ntp.conf` 에 `disable monitor`
 3. 대상 서버가 monlist(`ntpdc -c monlist`)에 응답하는지 점검
-4. iptables/ACL 로 신뢰 대역만 UDP 123 허용, 개방형 NTP 차단
+4. iptables/ACL 로 신뢰 대역만 UDP 123 허용, **100바이트 이상 NTP 응답 차단**
+
+> [!팁] 기출 해설 표현 vs 실제
+> 27-18 해설은 "정상 NTP 패킷은 40바이트 이하"라고 쓰지만, 실제 NTP 메시지는 **48바이트**(UDP 페이로드)다.
+> 어느 쪽이든 100바이트 임계값으로 monlist 응답만 걸러진다는 결론은 같다.
 
 ### DNS 증폭 · 로그 판별 {{6-13}} {{18-16}} {{22-16}}
 

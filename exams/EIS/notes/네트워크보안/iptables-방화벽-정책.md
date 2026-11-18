@@ -50,9 +50,11 @@ tags: [iptables, DROP, REJECT, chain, state, recent, SYN]
 
 | | DROP | REJECT |
 |---|---|---|
-| 동작 | 조용히 폐기, **무응답** | 폐기 + 출발지에 RST(TCP) 또는 ICMP unreachable |
+| 동작 | 조용히 폐기, **무응답** | 폐기 + 출발지에 ICMP unreachable 또는 RST(TCP) |
 | 스캐너 관점 | filtered 인지 판별이 어려움 (타임아웃) | 닫혔음을 즉시 알려 스캔이 빨라짐 |
 | 권장 | **DROP** — 정보 노출 최소화, 스캔 지연 | 내부망 사용성이 필요할 때 제한적으로 |
+
+REJECT 기본 응답은 ICMP port-unreachable 이다. TCP RST 는 `--reject-with tcp-reset` 을 줘야 보낸다.
 
 ## 규칙 예제
 
@@ -91,6 +93,8 @@ iptables -A INPUT -p tcp --syn --dport 80 -m recent --set --name SYN_DROP
 | `--dport 80` | 목적지 포트 80 |
 | `-m recent --update --seconds 2 --hitcount 30` | 최근 목록에서 2초 내 30회 이상이면 매치 |
 | `-j DROP` | 폐기 |
+
+실환경 참고: xt_recent 는 출발지별 기록 개수(`ip_pkt_list_tot`) 기본값이 20이라, 커널에 따라 `--hitcount 30` 이 거부될 수 있다(모듈 파라미터 상향 필요). 시험 답은 위 형태 그대로 쓴다.
 
 > [!팁] 같은 목적의 다른 방식
 > `-m limit --limit 25/minute --limit-burst 100` (토큰 버킷)도 자주 출제된다.

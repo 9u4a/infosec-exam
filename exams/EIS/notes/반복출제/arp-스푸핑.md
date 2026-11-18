@@ -11,7 +11,7 @@ tags: [ARP스푸핑, MITM, 스니핑, gratuitousARP, DAI]
 
 > [!암기] 핵심 정답
 > - **ARP 스푸핑(ARP Cache Poisoning)**: 공격자가 위조된 **ARP Reply**로 피해자·게이트웨이의 ARP 캐시에 자기 MAC을 심어 트래픽을 자신을 경유하게 함(**MITM**) → 감청·변조·세션 하이재킹.
-> - 원인: ARP에 **인증이 없어** 요청하지 않은(gratuitous) Reply도 무조건 수용.
+> - 원인: ARP에 **인증이 없어** 요청하지 않은(unsolicited) Reply·Gratuitous ARP도 무조건 수용.
 > - 대응: 정적 ARP 등록, **DAI**(Dynamic ARP Inspection) + DHCP 스누핑, arpwatch, 상위계층 암호화(HTTPS/SSH).
 
 > [!팁] 왜 그런가

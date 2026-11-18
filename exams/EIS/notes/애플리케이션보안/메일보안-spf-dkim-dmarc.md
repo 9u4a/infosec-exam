@@ -53,7 +53,7 @@ _dmarc.example.com.  IN TXT  "v=DMARC1; p=reject; rua=mailto:dmarc@example.com; 
 | 헤더 | 확인 포인트 |
 |---|---|
 | **Received** | **아래에서 위로** 경유 서버 추적. 최하단이 최초 발신 서버 IP → 발송 도메인과 불일치 시 스푸핑 의심 |
-| **Return-Path** (Envelope From) | 반송 주소. **From 과 다르면** 위조 가능 (SPF 는 이 값 기준) |
+| **Return-Path** (Envelope From) | 반송 주소(SPF 기준값). From 과 달라도 정상일 수 있어 SPF/DMARC 결과와 함께 판단 |
 | **From** | 사용자에게 보이는 발신자 — 위조 쉬움 (DMARC 가 정렬 검사) |
 | **Message-ID** | 발송 서버 도메인과 다르면 의심 |
 | **Authentication-Results** | 수신 서버가 기록한 spf/dkim/dmarc 결과 |

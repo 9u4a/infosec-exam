@@ -55,7 +55,7 @@ GRANT SELECT ON emp_view TO user1;       -- 원본의 salary 컬럼은 접근 �
 
 ### 접근 권한 관리 {{26-17}}
 
-일반·원격 사용자에게 **부여 금지** 권한(Oracle 예): `CREATE USER` · `DROP USER` · `DROP ANY TABLE` · `ALTER SYSTEM` · `GRANT ANY PRIVILEGE` · `SELECT ANY TABLE`
+일반·원격 사용자에게 **부여 금지** 권한(Oracle 예): `CREATE USER` · `DROP USER` · `DROP ANY TABLE` · `BACKUP ANY TABLE`(Export 로 임의 테이블 백업, 26회 기출 답) · `ALTER SYSTEM` · `GRANT ANY PRIVILEGE` · `SELECT ANY TABLE`
 
 최소화 방법: ① 역할(ROLE) 기반 부여 ② 업무별 최소 권한 ③ `PUBLIC` 에 준 불필요 권한 회수 ④ 주기적 검토·미사용 계정 잠금
 

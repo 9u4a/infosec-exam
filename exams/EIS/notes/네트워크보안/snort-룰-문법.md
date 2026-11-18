@@ -53,6 +53,10 @@ content:"POST"; offset:0; depth:4; content:"/admin"; distance:0; within:20;
 > [!함정] offset/depth 와 distance/within 을 섞지 말 것
 > 첫 content 의 위치는 offset/depth 로, **두 번째 이후 패턴의 순서·간격**은 distance/within 으로 지정한다.
 
+> [!팁] 기출 해설 표현 vs 실제 {{17-15}}
+> 17-15 해설은 `content:"|00|"; depth:1` 을 "앞선 패턴 종료 지점부터 1바이트"로 풀이한다.
+> 실제 Snort 의 depth 는 **절대 위치** 옵션이라 페이로드 첫 1바이트를 본다. 상대 위치는 within.
+
 ## 실기 룰 작성 예제
 
 ```text
@@ -62,7 +66,7 @@ alert tcp any any -> $HTTP_SERVERS 80 (msg:"Dir Traversal"; flow:to_server,estab
 
 # 2) SQL 인젝션 (UNION SELECT)
 alert tcp any any -> $HTTP_SERVERS 80 (msg:"SQLi UNION"; flow:to_server,established;
-  content:"union"; nocase; http_uri; content:"select"; nocase; distance:0; sid:1000011;)
+  content:"union"; nocase; http_uri; content:"select"; nocase; http_uri; distance:0; sid:1000011;)
 
 # 3) GET Flooding — 같은 출발지가 10초에 100회 초과
 alert tcp any any -> $HTTP_SERVERS 80 (msg:"HTTP GET Flooding"; flow:to_server,established;
@@ -74,7 +78,12 @@ alert tcp any any -> any any (msg:"Malware Sig"; content:"|90 90 90 90 E8|"; sid
 ```
 
 > [!시험] 채점 포인트
-> `flow:to_server,established`(정상 세션만 검사 → 성능↑·오탐↓) · `http_uri` · `nocase` · `sid` ≥ 1000000 · flooding 은 `detection_filter`(구 threshold)
+> `flow:to_server,established`(정상 세션만 검사 → 성능↑·오탐↓) · `http_uri` · `nocase` · `sid` ≥ 1000000
+
+> [!함정] GET Flooding 기출 답은 threshold {{2-12}} {{12-13}}
+> - 기출 정답 룰은 `threshold: type threshold, track …, count 10, seconds 1` 형태다
+> - `detection_filter` 는 threshold 의 새 이름이 아니다. 횟수 초과 후 **매번** 경보하는 별도 옵션
+> - 룰 안 threshold 를 대체하는 건 `event_filter`(threshold.conf) 쪽이다
 
 ### sid 범위
 
@@ -109,9 +118,9 @@ threshold: type <limit|threshold|both>, track <by_src|by_dst>, count N, seconds 
 | `sameIP` | 출발지=목적지 IP (Land Attack 은 플래그가 아니라 이 옵션) |
 
 ```text
-alert tcp any any -> 10.10.10.0/24 any (msg:"SYNFIN Scan Detect"; flags:SF; sid:100240;)
-alert tcp any any -> 10.10.10.0/24 any (msg:"NULL Scan Detect"; flags:!UAPRSF; sid:100270;)
-alert ip any any -> HOME_NET any (msg:"Land Attack SRC=DST Same IP"; sameIP; sid:100230;)
+alert tcp any any -> 10.10.10.0/24 any (msg:"SYNFIN Scan Detect"; flags:SF; sid:1000240;)
+alert tcp any any -> 10.10.10.0/24 any (msg:"NULL Scan Detect"; flags:!UAPRSF; sid:1000270;)
+alert ip any any -> $HOME_NET any (msg:"Land Attack SRC=DST Same IP"; sameIP; sid:1000230;)
 ```
 
 ### threshold 활용
@@ -121,7 +130,7 @@ alert ip any any -> HOME_NET any (msg:"Land Attack SRC=DST Same IP"; sameIP; sid
 alert tcp 10.10.10.0/24 23 -> any any (msg:"Telnet brute force"; content:"Login incorrect"; nocase;
   threshold: type limit, track by_dst, count 1, seconds 5; sid:1000120;)
 
-# SSH 브루트포스 — 30초 내 5회 중 첫 1회 (both)
+# SSH 브루트포스 — 30초 내 5회 도달 시 1회만 (both)
 alert tcp any any -> 10.10.10.0/24 22 (msg:"SSH login brute force"; content:"SSH-2.0"; nocase;
   threshold: type both, track by_src, count 5, seconds 30; sid:1000150;)
 

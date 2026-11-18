@@ -20,7 +20,7 @@ DOS 헤더 → DOS Stub → NT 헤더(Signature + File Header + Optional Header)
 | 섹션 | 내용 |
 |---|---|
 | **.text** | 실행 코드(기계어) — 실행·읽기 |
-| **.data** | 초기화된 전역 변수·상수 — 읽기·쓰기 |
+| **.data** | 초기화된 전역 변수·상수(기출 표현, 실제 상수는 주로 .rdata) — 읽기·쓰기 |
 | **.rdata** | 읽기 전용 데이터·문자열 |
 | **.bss** | 초기화되지 않은 전역 변수 |
 | **.idata** | Import — 사용하는 **DLL·API 목록**(IAT) |
@@ -45,7 +45,7 @@ DOS 헤더 → DOS Stub → NT 헤더(Signature + File Header + Optional Header)
 
 **최대 로그 크기 = 단일 이벤트 최대 크기 × 하루 최대 이벤트 수 × 보관 일수**
 
-예) 500 B × 1,000개 × 30일 = 15,000,000 B ≈ 15,000 KB ≈ **14.3 MB**
+예) 500 B × 1,000개 × 30일 = 15,000,000 B ≈ **15,000 KB**(기출 표기, 1KB=1000B) · 1024 기준 약 14.3 MB
 
 설정: 이벤트 뷰어 → 해당 로그 → 속성 → "최대 로그 크기" + 초과 시 정책(덮어쓰기/보관)
 
@@ -54,7 +54,7 @@ DOS 헤더 → DOS Stub → NT 헤더(Signature + File Header + Optional Header)
 | 4624 / 4625 | 로그온 성공 / 실패 |
 | 4634 | 로그오프 |
 | 4720 | 계정 생성 |
-| 4728 | 그룹에 구성원 추가 |
+| 4728 / 4732 | 전역 / 로컬 보안 그룹에 구성원 추가 |
 | 4672 | 특수 권한 할당 |
 | **1102** | **감사 로그 삭제** (침해 흔적) |
 
@@ -70,13 +70,13 @@ DOS 헤더 → DOS Stub → NT 헤더(Signature + File Header + Optional Header)
 
 ## NetBIOS 바인딩 취약점 {{23-15}} {{28-14}}
 
-**왜 취약한가:** 인터넷에 직접 연결된 Windows 에서 TCP/IP over NetBIOS(137~139)가 켜져 있으면, 공격자가 원격에서 **공유 자원 열거·접근(널 세션)** 과 계정·시스템 정보 수집을 할 수 있다.
+**왜 취약한가:** 인터넷에 직접 연결된 Windows 에서 NetBIOS over TCP/IP(NetBT, 137~139)가 켜져 있으면, 공격자가 원격에서 **공유 자원 열거·접근(널 세션)** 과 계정·시스템 정보 수집을 할 수 있다.
 
 **설정 경로 (ncpa.cpl):**
 
 1. 시작 → 실행 → `ncpa.cpl`
 2. 해당 연결 우클릭 → 속성 → **TCP/IPv4** → 고급
-3. **WINS 탭 → "TCP/IP over NetBIOS 사용 안 함"**
+3. **WINS 탭 → "NetBIOS over TCP/IP 사용 안 함"**
 
 추가로 "Microsoft 네트워크용 파일 및 프린터 공유" 바인딩을 해제하고, 방화벽에서 137~139 / 445 를 차단한다.
 
@@ -96,15 +96,20 @@ net share C$ /delete      # 즉시 삭제 (재부팅하면 재생성됨)
 net session               # 연결 세션 확인
 net session /delete       # 모든 세션 강제 종료
 
-# 재부팅 후에도 영구 차단 (레지스트리)
+# 재부팅 후에도 영구 차단 (레지스트리) — 서버 OS
 reg add HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters ^
   /v AutoShareServer /t REG_DWORD /d 0 /f
+# 클라이언트 OS(Windows 10/11)는 값 이름이 AutoShareWks
 ```
 
 > [!함정] 즉시 삭제 ≠ 영구 차단
-> `net share C$ /delete` 는 **재부팅하면 되살아난다.** 영구 차단은 `AutoShareServer = 0`.
+> `net share C$ /delete` 는 **재부팅하면 되살아난다.**
+> 영구 차단은 `AutoShareServer=0`(서버) / `AutoShareWks=0`(클라이언트). IPC$ 는 제외된다.
 
 **널 세션(익명 IPC$) 차단:** `HKLM\SYSTEM\CurrentControlSet\Control\LSA` 의 `RestrictAnonymous = 2` (완전 차단, 1 은 부분 제한)
+
+> [!현행] RestrictAnonymous=2 는 Windows 2000 시절 값
+> XP/2003 이후는 `RestrictAnonymous=1` + `RestrictAnonymousSAM=1` 조합이 일반적이다 (KISA 가이드 원문 확인).
 
 ## 기출 포인트
 

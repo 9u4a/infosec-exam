@@ -11,7 +11,7 @@ tags: [DNS, 포트53, UDP, TCP, DNS캐시, TTL]
 
 > [!암기] 핵심 정답
 > - DNS는 **53번 포트**.
-> - **(A) 전송 프로토콜**: 일반 질의는 **UDP**(빠름, 512바이트 이하), Zone Transfer·512바이트 초과·EDNS0/DNSSEC 시 **TCP**.
+> - **(A) 전송 프로토콜**: 일반 질의는 **UDP**(빠름, 512바이트 이하), Zone Transfer·응답 잘림(TC 비트) 시 **TCP**. EDNS0 는 512바이트 넘는 **UDP** 응답을 허용하는 확장(TCP 아님).
 > - **(B) 캐시(DNS Cache)**: 재귀 서버가 결과를 저장해 상위 DNS 부하를 줄임.
 > - **(C) TTL (Time To Live)**: 각 레코드가 캐시에 유지되는 기간.
 

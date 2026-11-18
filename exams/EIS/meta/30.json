@@ -68,7 +68,8 @@
     },
     "17": {
       "domain": "시스템보안",
-      "explanation": "리눅스 서버 기본 하드닝. ①세션 타임아웃: `/etc/profile`에 `export TMOUT=600` ②콘솔 root 직접 로그인 제한: `/etc/securetty`(허용 tty만 기재, 비우면 전면 차단) ③`/etc/shadow` 권한 400(또는 640/000, root만) ④SUID/SGID 탐색: `find / -perm -4000 -o -perm -2000` ⑤기본 생성 권한: `umask 022`(파일 644/디렉토리 755) ⑥xinetd 서비스 비활성화: 해당 설정에 `disable = yes`."
+      "explanation": "리눅스 서버 기본 하드닝. ①세션 타임아웃: `/etc/profile`에 `export TMOUT=600` ②콘솔 root 직접 로그인 제한: `/etc/securetty`(허용 tty만 기재, 비우면 전면 차단) ③`/etc/shadow` 권한 400(또는 640/000, root만) ④SUID/SGID 탐색: `find / -perm -4000 -o -perm -2000` ⑤기본 생성 권한: `umask 022`(파일 644/디렉토리 755) ⑥xinetd 서비스 비활성화: 해당 설정에 `disable = yes`. ※ 원본 데이터 정답의 \"644\" 는 해시를 모든 사용자에게 노출하므로 오답 — 400 으로 정정(18-15 정답 chmod 400 과 동일).",
+      "answer": "(1) /etc/profile 등 사용자 환경설정 파일에 export TMOUT=600 설정\n(2) /etc/securetty\n(3) 400 (소유자 root 읽기 전용, 또는 000 — 일반 사용자가 읽을 수 없어야 함)\n(4) find / -type f ( -perm -4000 -o -perm -2000 ) | xargs ls -al\n(5) umask 022\n(6) disable = yes"
     },
     "18": {
       "domain": "애플리케이션보안",

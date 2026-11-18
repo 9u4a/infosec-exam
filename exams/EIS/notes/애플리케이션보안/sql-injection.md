@@ -20,6 +20,8 @@ SELECT * FROM member WHERE id='user1' AND pw='입력값'
 | `pw` 에 `' OR '1'='1` | `... AND pw='' OR '1'='1'` | **항상 참** → 인증 우회·전체 행 노출 |
 | `id` 에 `admin'--` | `... WHERE id='admin'--' AND pw=...` | **뒤 조건이 주석 처리** → admin 로그인 |
 
+- 주석 기호: MSSQL·Oracle 은 `--`, MySQL 은 `-- `(뒤 공백 필수) 또는 `#` ({{22-17}} 은 `#`)
+
 ## 유형
 
 | 유형 | 설명 |
@@ -39,6 +41,10 @@ SELECT * FROM member WHERE id='user1' AND pw='입력값'
 
 > [!암기] 결과가 보이면 Error/Union, 안 보이면 Blind
 > Blind 는 다시 **참/거짓 차이**(Boolean)와 **시간차**(Time)로 나뉜다.
+
+> [!함정] UNION 을 써도 Blind 가 정답인 경우 {{11-14}}
+> `union select(substr(database(),0,1))='t'` 처럼 비교 결과(1/0)만 얻어 한 글자씩 추정하면 **Blind**.
+> 11회 14번 정답은 Blind SQL Injection 이다. 데이터 자체가 찍혀야 Union based.
 
 ## 대응 — 우선순위 순
 

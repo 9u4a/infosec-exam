@@ -8,7 +8,9 @@
     },
     "2": {
       "domain": "시스템보안",
-      "explanation": "x86-64 System V ABI 함수 호출 규약: 정수/포인터 인자는 **RDI, RSI, RDX, RCX, R8, R9** 순으로 레지스터 전달, 초과분은 스택. 반환값은 RAX. 32비트(cdecl)는 스택 전달과 대비. 리버싱·익스플로잇에서 함수 인자를 추적할 때 필수 지식(printf: RDI=포맷, RSI/RDX/RCX=가변인자)."
+      "explanation": "x86-64 System V ABI 함수 호출 규약: 정수/포인터 인자는 **RDI, RSI, RDX, RCX, R8, R9** 순으로 레지스터 전달, 초과분은 스택. 반환값은 RAX. 32비트(cdecl)는 스택 전달과 대비. 리버싱·익스플로잇에서 함수 인자를 추적할 때 필수 지식(printf: RDI=포맷, RSI/RDX/RCX=가변인자). ※ 원본 데이터 정답 \"RDI, RSI, RDX\" 는 포맷 문자열(1번째 인자 RDI)을 빠뜨린 오답이라 정정했다. System V AMD64 ABI 정수 인자 순서: RDI → RSI → RDX → RCX → R8 → R9.",
+      "question": "64비트 리눅스에서 아래 프로그램 코드를 실행하려고 한다. printf를 통해 함수가 호출될 때 A, B, C 각 파라미터가 저장되는 레지스터 명을 기술하시오.\nint main()\n{ printf(\"%c, %c, %c\\n\", 'A', 'B', 'C'); }",
+      "answer": "A : RSI\nB : RDX\nC : RCX\n(1번째 인자인 포맷 문자열이 RDI)"
     },
     "3": {
       "domain": "시스템보안",

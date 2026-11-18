@@ -9,7 +9,7 @@ tags: [OWASP, 시큐어코딩, SDLC, SDL, SAST, DAST, 위협모델링]
 
 웹 보안의 **전체 지도**다. 개별 취약점(SQLi·XSS 등)은 각 노트에 있고, 여기서는 *어떤 취약점들이 있고(OWASP Top 10) → 개발 단계 어디서 막고(시큐어 SDLC) → 어떤 틀로 위협을 찾는지(STRIDE)* 를 정리한다. 필기·실기 공통.
 
-## OWASP Top 10 (2021)
+## OWASP Top 10 (2021, 기출 기준)
 
 | 순위 | 항목 | 핵심 |
 |---|---|---|
@@ -26,6 +26,14 @@ tags: [OWASP, 시큐어코딩, SDLC, SDL, SAST, DAST, 위협모델링]
 
 > [!함정] 2017 → 2021 변화
 > **XXE 는 A05 에 흡수**, **XSS 는 A03(인젝션)에 통합**, **A04 · A08 · A10 신설.**
+
+> [!현행] OWASP Top 10:2025 (2025-11 발표, top10.owasp.org)
+> A01 Broken Access Control · A02 Security Misconfiguration
+> A03 Software Supply Chain Failures(신설) · A04 Cryptographic Failures
+> A05 Injection · A06 Insecure Design · A07 Authentication Failures
+> A08 Software or Data Integrity Failures · A09 Security Logging and Alerting Failures
+> A10 Mishandling of Exceptional Conditions(신설)
+> 변화: SSRF 는 A01 에 흡수, 보안 설정 오류 A05→A02, 구식 컴포넌트는 A03 공급망으로 확대
 
 ## 시큐어 SDLC / SDL
 
@@ -64,6 +72,7 @@ tags: [OWASP, 시큐어코딩, SDLC, SDL, SAST, DAST, 위협모델링]
 
 > [!암기] 행안부 7대 취약점 유형
 > 입력 데이터 검증·표현 / 보안 기능 / 시간 및 상태 / 에러 처리 / 코드 오류 / 캡슐화 / API 오용
+> "코드 오류"는 2회 기출 모범답안에서 "코드 품질"로도 표기됐다.
 
 ## 기출 포인트
 

@@ -24,6 +24,9 @@ tags: [VPN, 터널링, IPSec, SSL VPN, PPTP, L2TP, 사이트투사이트, PFS]
 | OpenVPN | 4 (TLS 기반) | 오픈소스, UDP/TCP |
 | WireGuard | 3 | 경량·고속, 최신 암호 |
 
+> [!함정] L2TP 자체엔 암호화가 없다
+> L2TP 는 터널만 만든다. 기밀성은 **L2TP/IPSec** 처럼 IPSec 과 결합해야 생긴다.
+
 ## 구성 형태
 
 | 형태 | 설명 | IPSec 모드 |
@@ -47,8 +50,11 @@ tags: [VPN, 터널링, IPSec, SSL VPN, PPTP, L2TP, 사이트투사이트, PFS]
 
 매 세션마다 **임시(ephemeral) DH 키**로 세션키를 만든다. 서버 개인키가 나중에 유출돼도 **과거 트래픽은 복호화할 수 없다.**
 
-- IPSec: IKE Phase 1/2 에서 DH 그룹을 재협상하는 옵션
+- IPSec: IKE **Phase 2(Quick Mode)** 에서 DH 를 다시 수행하는 옵션
 - TLS: `ECDHE` · `DHE` 암호군을 쓰면 제공 (**정적 RSA 키 교환은 PFS 없음**)
+
+> [!함정] 정적 RSA 키 교환은 PFS 가 아니다
+> TLS 에서 PFS 는 **ECDHE·DHE** 암호군일 때만 제공된다. 서버 개인키로 세션키를 감싸는 방식은 해당 없음.
 
 ## 운영 시 보안 고려사항
 

@@ -20,6 +20,9 @@ related: [네트워크보안/프로토콜-계층별-보안-총정리, 정보보�
 
 PDU: GetRequest · GetNextRequest · GetBulkRequest(v2) · SetRequest · Response · **Trap** · InformRequest
 
+> [!함정] 161 과 162 의 방향 {{11-7}}
+> Manager → Agent 요청은 **161**, Agent → Manager 보고(Trap)는 **162**. 둘을 바꿔 쓰는 오답이 흔하다.
+
 ## 수집 방식 {{1-2}}
 
 | 방식 | 설명 |
@@ -27,6 +30,9 @@ PDU: GetRequest · GetNextRequest · GetBulkRequest(v2) · SetRequest · Respons
 | **Polling** | NMS 가 주기적으로 Agent 에 **질의**해 수집 |
 | **Event Reporting (Trap)** | Agent 가 이벤트 발생 시 NMS 로 **능동 통보** |
 | **syslog** | 장비가 로그를 서버로 전송 (**UDP 514**). Trap 과 비슷하지만 텍스트 로그용 |
+
+> [!함정] Trap 과 syslog 는 다른 답 {{1-2}}
+> 장비 이벤트를 NMS 로 보내는 건 Event Reporting(Trap), 텍스트 로그를 서버로 보내는 건 **syslog** 로 따로 적는다.
 
 ## 버전별 보안 {{6-2}}
 

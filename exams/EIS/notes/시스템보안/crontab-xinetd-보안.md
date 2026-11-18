@@ -92,7 +92,7 @@ ALL : ALL                                   # 나머지 전부 차단
 | `/etc/shadow` | root | 400 | root 만 읽기 |
 | `/etc/hosts` | root | 600 | IP 매핑 보호 |
 | `/etc/xinetd.conf` | root | 600 | 서비스 기동 설정 보호 |
-| `/etc/syslog.conf` (`rsyslog.conf`) | root | 644 | 로그 설정 보호 |
+| `/etc/syslog.conf` (`rsyslog.conf`) | root | 644 | 로그 설정 보호 (KISA 가이드는 640 이하로 알려짐 — 원문 확인) |
 
 ## 취약 파일 탐지
 
@@ -100,7 +100,7 @@ ALL : ALL                                   # 나머지 전부 차단
 find / -type f -perm -2 -exec ls -al {} \;      # World Writable 파일
 chmod o-w [파일명]                               # 쓰기 권한 제거
 
-find / -nouser -o -nogroup -exec ls -al {} \;    # 소유자·그룹 없는(고아) 파일 — 계정 삭제 후 잔존
+find / \( -nouser -o -nogroup \) -exec ls -al {} \;   # 소유자·그룹 없는(고아) 파일 — 계정 삭제 후 잔존
 ```
 
 ## 기타 하드닝 체크리스트
@@ -110,10 +110,14 @@ find / -nouser -o -nogroup -exec ls -al {} \;    # 소유자·그룹 없는(고�
 | 세션 타임아웃 | `/etc/profile` 에 `export TMOUT=600` |
 | 콘솔 root 로그인 제한 | `/etc/securetty` (허용 tty 만, 비우면 차단) |
 | SSH root 로그인 | `sshd_config` → `PermitRootLogin no` |
-| r 명령 신뢰 파일 | `/etc/hosts.equiv` · `~/.rhosts` → 소유자 root, 권한 600, `+` 제거 (SSH 로 대체) |
+| r 명령 신뢰 파일 | `hosts.equiv` 소유자 root · `.rhosts` 해당 계정, 600 이하, `+` 제거 |
 | 로그 순환 | `logrotate` (`weekly` `rotate N` `compress` `create`) |
 | 계정 잠금 | PAM `pam_faillock` / `pam_tally2` (`deny=5 unlock_time=120`) |
 | SUID / SGID | `find / -perm -4000 -o -perm -2000` 후 불필요분 `chmod -s` |
+
+> [!현행] securetty · pam_tally2 는 기출 당시 기준
+> securetty 는 pam_securetty 기반이라 SSH 엔 효과가 없다 — 현행은 `PermitRootLogin no` 위주.
+> pam_tally2 는 Linux-PAM 1.5 에서 제거됐다 — 현행은 `pam_faillock`.
 
 ## 기출 포인트
 

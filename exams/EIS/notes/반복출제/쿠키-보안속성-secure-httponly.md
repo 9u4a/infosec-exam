@@ -13,7 +13,8 @@ tags: [쿠키보안, Secure, HttpOnly, SameSite, XSS, 스니핑]
 > - **Secure**: **HTTPS 연결에서만** 쿠키 전송 → 평문 **스니핑**으로 인한 세션쿠키 탈취 방지.
 > - **HttpOnly**: 자바스크립트(`document.cookie`) 접근 차단 → **XSS**를 통한 쿠키 탈취 방지.
 > - **Expires/Max-Age**: 만료 시각 지정 → 탈취된 쿠키의 재사용 창 최소화.
-> - **SameSite**: 크로스 사이트 요청에 쿠키 미전송 → **CSRF** 완화.
+> - **SameSite**: 크로스 사이트 요청 시 쿠키 전송 제한 → **CSRF** 완화.
+>   (`Strict` 전부 미전송 · `Lax` 최상위 GET 이동만 전송 · `None` 항상 전송+`Secure` 필수)
 
 > [!함정] 함정
 > Secure = 스니핑, HttpOnly = XSS. 세트: `Set-Cookie: sid=...; Secure; HttpOnly; SameSite=Lax`.

@@ -24,7 +24,7 @@ Cisco 보안 문제는 **① 접근 통제(패스워드·VTY·SNMP) → ② 공�
 
 ```text
 Router(config)# service password-encryption     # 평문 패스워드를 약한 암호화(Type 7)로
-Router(config)# enable secret <PW>              # 특권 모드, MD5 해시(Type 5) — 권장
+Router(config)# enable secret <PW>              # 특권 모드, MD5 해시(Type 5)
 Router(config)# enable password <PW>            # 구식, 평문/Type 7
 Router(config)# line vty 0 4
 Router(config-line)# password <PW>
@@ -33,6 +33,10 @@ Router(config-line)# login                      # 또는 login local / transport
 
 > [!함정] secret 과 password 가 함께 있으면
 > **`enable secret` 이 우선**한다. secret 은 단방향 해시라 복호화가 안 되고, `service password-encryption`(Type 7)은 복호화 도구가 있는 **보조 수단**일 뿐이다.
+
+> [!현행] enable secret 해시 방식
+> - **기출 답**: `enable secret` (Type 5, MD5) — 1-15 정답 그대로 쓴다
+> - **현행 권장**: Type 8(PBKDF2)·9(scrypt). `enable algorithm-type scrypt secret <PW>`
 
 ### 콘솔 · VTY 원격 접근
 
@@ -56,12 +60,12 @@ Router(config-line)# access-class 10 in
 
 ```text
 Router(config)# no snmp-server                          # ① 완전 비활성 (가장 강력)
-Router(config)# snmp-server community [문자열] ro 11     # ② 기본 community 변경 + RO 만
 Router(config)# access-list 11 permit host [관리IP]      # ③ ACL 로 IP 제한
 Router(config)# access-list 11 deny any
-Router(config)# interface FastEthernet 0/0
-Router(config-if)# ip access-group 11 in
+Router(config)# snmp-server community [문자열] ro 11     # ② 기본값 변경 + RO + ACL 11
 ```
+
+ACL 은 community 뒤에 번호(`ro 11`)로 붙여 SNMP 에만 적용한다. 인터페이스에 `ip access-group 11 in` 으로 걸면 관리 IP 외 **모든 트래픽이 차단**되니 주의.
 
 ④ 가능하면 **SNMPv3** (인증 + 암호화)
 
@@ -111,13 +115,17 @@ ip access-list extended SERVICE_FILTER
  deny   tcp any any eq 23          # telnet 차단
  permit tcp any any eq www         # http(80) 허용
  permit udp any any eq snmp        # snmp(161) 허용
- deny   tcp any any eq 20
- deny   tcp any any eq ftp
+ permit tcp any any eq pop3        # pop3(110) 허용
+ deny   tcp any any eq ftp         # ftp(21) 차단
+ deny   tcp any any eq ftp-data    # ftp-data(20) 차단
 ```
 
 - **위 → 아래 순차 평가**, 첫 매치에서 종료
 - 끝에 **암묵적 `deny any`**
-- "차단된 포트" 문제 → `deny` 항목 + permit 되지 않은 나머지 전부
+- 32-2 정답: **tcp/20(ftp-data) · tcp/21(ftp) · tcp/23(telnet)** — 명시된 deny 만 쓴다
+
+> [!함정] 암묵적 deny 까지 답에 넣지 말 것
+> 실제로는 permit 안 된 나머지 트래픽도 암묵적 `deny any` 로 막힌다. 하지만 기출 정답은 **명시 deny 포트만** 적는다. 암묵적 deny 는 부연으로만.
 - 표준 ACL(1~99)은 **출발지 IP 만**, 확장 ACL(100~199)은 출발지·목적지·프로토콜·포트
 
 ### Ingress · Egress · Blackhole {{2-1}} {{18-13}}
