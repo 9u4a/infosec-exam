@@ -15,7 +15,7 @@ tags: [ARP, 스푸핑, 스니핑, promiscuous, MITM, MAC플러딩, 세션하이�
 |---|---|---|
 | ARP Request | **브로드캐스트** (MAC 을 모르므로) | `ff:ff:ff:ff:ff:ff` |
 | ARP Reply | 요청자에게 **유니캐스트** | 요청자 MAC |
-| RARP | 반대로 MAC → IP (디스크리스 부팅) | 지금은 BOOTP/DHCP 로 대체 · 2027 실기 출제기준에서 **삭제** |
+| RARP | 반대로 MAC → IP (디스크리스 부팅) | 지금은 BOOTP/DHCP 로 대체 · 2027 실기 원문(1-2-3)엔 없음 |
 
 {{14-2}} {{22-7}}
 
